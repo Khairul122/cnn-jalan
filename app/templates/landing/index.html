@@ -113,19 +113,21 @@ tailwind.config = {
   .leaflet-popup-content-wrapper {
     background: #ffffff !important;
     border-radius: 12px !important;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1) !important;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.12), 0 4px 10px -4px rgba(0,0,0,0.08) !important;
     color: #1e293b !important;
+    overflow: hidden !important;
     padding: 0 !important;
   }
   .leaflet-popup-tip { background: #ffffff !important; }
-  .leaflet-popup-content { margin: 12px 14px !important; font-size: .8rem; }
-  
-  .popup-img  { width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:.5rem; }
-  .popup-row  { display:flex;justify-content:space-between;align-items:center;
-                padding:.35rem 0;border-bottom:1px solid #f1f5f9;font-size:.75rem; color:#1e293b; }
+  .leaflet-popup-content { margin: 0 !important; font-size: .8rem; }
+
+  .popup-img  { width:100%;height:120px;object-fit:cover;display:block; }
+  .popup-body { padding: 10px 14px 6px; }
+  .popup-row  { display:flex;justify-content:space-between;align-items:center;gap:.5rem;
+                padding:.32rem 0;border-bottom:1px solid #f1f5f9;font-size:.75rem;color:#1e293b; }
   .popup-row:last-child { border-bottom:none; }
-  .popup-label { color:#64748b; font-weight: 500; }
-  .popup-chip  { padding:.1rem .5rem;border-radius:999px;font-size:.68rem;font-weight:700; }
+  .popup-label { color:#64748b;font-weight:500;flex-shrink:0; }
+  .popup-chip  { padding:.12rem .5rem;border-radius:999px;font-size:.68rem;font-weight:700; }
 </style>
 </head>
 <body class="bg-background text-on-surface selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
@@ -383,120 +385,155 @@ tailwind.config = {
 </section>
 
 <!-- ─── INTERACTIVE MAP ───────────────────────────── -->
-<section class="relative w-full overflow-hidden" id="map-section" style="height:700px;">
+<section class="bg-surface-container-low py-xl px-md md:px-xl" id="map-section">
+  <div class="max-w-7xl mx-auto">
 
-  <!-- Leaflet map (base layer) -->
-  <div id="landing-map" class="absolute inset-0 z-0"></div>
-
-  <!-- skeleton loader -->
-  <div id="map-skeleton" class="absolute inset-0 z-10 bg-surface-dim flex flex-col items-center justify-center gap-sm">
-    <span class="material-symbols-outlined text-4xl text-outline">map</span>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Memuat peta interaktif...</p>
-  </div>
-
-  <!-- floating zoom controls -->
-  <div class="absolute top-map-gutter left-map-gutter flex flex-col gap-xs z-20">
-    <div class="glass-panel p-xs rounded-xl shadow-lg border border-white flex flex-col gap-xs">
-      <button onclick="lmap.zoomIn()"
-              class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest hover:bg-surface-variant rounded-lg transition-all">
-        <span class="material-symbols-outlined">add</span>
-      </button>
-      <button onclick="lmap.zoomOut()"
-              class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest hover:bg-surface-variant rounded-lg transition-all">
-        <span class="material-symbols-outlined">remove</span>
-      </button>
-      <div class="h-[1px] bg-outline-variant mx-1"></div>
-      <button onclick="lmap.setView([5.1801,97.1499],13)"
-              class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest hover:bg-surface-variant rounded-lg transition-all">
-        <span class="material-symbols-outlined">my_location</span>
-      </button>
+    <!-- Section header -->
+    <div class="mb-lg" data-motion>
+      <h2 class="font-headline-lg text-headline-lg text-on-surface">Peta Sebaran Kerusakan Jalan</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+        Visualisasi prediksi CNN per titik lokasi — Kota Lhokseumawe, Aceh
+      </p>
     </div>
-  </div>
 
-  <!-- filter pills / search top center -->
-  <div class="absolute top-map-gutter left-1/2 -translate-x-1/2 z-20 flex gap-xs">
-    <button data-filter="all"
-            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-primary transition-all">
-      Semua
-    </button>
-    <button data-filter="berat"
-            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-on-surface-variant transition-all">
-      Berat
-    </button>
-    <button data-filter="sedang"
-            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-on-surface-variant transition-all">
-      Sedang
-    </button>
-    <button data-filter="ringan"
-            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-on-surface-variant transition-all">
-      Ringan
-    </button>
-  </div>
-
-  <!-- legend bottom right -->
-  <div class="absolute bottom-map-gutter right-map-gutter z-20">
-    <div class="glass-panel p-md rounded-xl shadow-lg border border-white w-56">
-      <h3 class="font-label-md text-label-md text-on-surface-variant mb-md uppercase tracking-widest">Legenda</h3>
-      <div class="flex flex-col gap-sm">
-        <div class="flex items-center gap-md">
-          <span class="w-3 h-3 rounded-full bg-error ring-4 ring-error/20 flex-shrink-0"></span>
-          <span class="font-body-sm text-body-sm">Kerusakan Berat</span>
-        </div>
-        <div class="flex items-center gap-md">
-          <span class="w-3 h-3 rounded-full bg-tertiary ring-4 ring-tertiary/20 flex-shrink-0"></span>
-          <span class="font-body-sm text-body-sm">Kerusakan Sedang</span>
-        </div>
-        <div class="flex items-center gap-md">
-          <span class="w-3 h-3 rounded-full bg-primary ring-4 ring-primary/20 flex-shrink-0"></span>
-          <span class="font-body-sm text-body-sm">Kerusakan Ringan</span>
-        </div>
+    <!-- Stats bar -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-md mb-md">
+      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md text-center shadow-sm">
+        <span id="stat-total" class="block font-headline-md text-headline-md text-on-surface">—</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant mt-xs block">Total Foto</span>
       </div>
-      <div class="mt-md pt-sm border-t border-outline-variant">
-        <p class="font-label-sm text-label-sm text-on-surface-variant" id="marker-count">Memuat...</p>
+      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md text-center shadow-sm">
+        <span id="stat-benar" class="block font-headline-md text-headline-md" style="color:#10B981;">—</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant mt-xs block">Prediksi Benar</span>
+      </div>
+      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md text-center shadow-sm">
+        <span id="stat-salah" class="block font-headline-md text-headline-md text-error">—</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant mt-xs block">Prediksi Salah</span>
+      </div>
+      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md text-center shadow-sm">
+        <span id="stat-akurasi" class="block font-headline-md text-headline-md text-primary">—</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant mt-xs block">Akurasi Peta</span>
       </div>
     </div>
-  </div>
 
-  <!-- info sidebar right -->
-  <div class="absolute top-map-gutter right-map-gutter bottom-map-gutter hidden lg:block z-20 pointer-events-none"
-       style="right:calc(14rem + 40px);">
-    <div class="pointer-events-auto h-full w-[280px] glass-panel rounded-xl shadow-xl border border-white p-lg flex flex-col gap-lg">
-      <div>
-        <h4 class="font-headline-md text-headline-md text-primary">Sebaran Prediksi</h4>
-        <p class="font-label-sm text-label-sm text-on-surface-variant">Kota Lhokseumawe</p>
+    <!-- Filter pills row -->
+    <div class="flex items-center gap-xs flex-wrap mb-md">
+      <span class="font-label-sm text-label-sm text-on-surface-variant">Filter:</span>
+      <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
+                     bg-surface-container-lowest font-label-md text-label-md text-primary
+                     shadow-sm transition-all" data-cnn-filter="all" style="border-color:#003d9b;">
+        Semua
+      </button>
+      <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
+                     bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
+                     shadow-sm transition-all" data-cnn-filter="berat">
+        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#E53E3E;"></span>Berat
+      </button>
+      <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
+                     bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
+                     shadow-sm transition-all" data-cnn-filter="sedang">
+        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#F59E0B;"></span>Sedang
+      </button>
+      <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
+                     bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
+                     shadow-sm transition-all" data-cnn-filter="ringan">
+        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#10B981;"></span>Ringan
+      </button>
+      <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
+                     bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
+                     shadow-sm transition-all" data-cnn-filter="salah">
+        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#94a3b8;border:2px dashed #fff;outline:1px solid #94a3b8;"></span>Salah Prediksi
+      </button>
+      <span id="map-filter-count" class="ml-auto font-label-sm text-label-sm text-on-surface-variant"></span>
+    </div>
+
+    <!-- Error state -->
+    <div id="map-error" style="display:none;"
+         class="mb-md p-md rounded-xl border border-error bg-error-container text-on-error-container
+                flex items-center gap-md font-body-sm text-body-sm">
+      <span class="material-symbols-outlined">warning</span>
+      <span id="map-error-msg">Gagal memuat data peta.</span>
+      <button onclick="loadGIS()"
+              class="ml-auto font-label-md text-label-md underline hover:no-underline transition-all">
+        Coba lagi
+      </button>
+    </div>
+
+    <!-- Map container -->
+    <div class="relative rounded-2xl overflow-hidden shadow-xl border border-outline-variant" style="height:520px;">
+
+      <!-- Leaflet map -->
+      <div id="landing-map" class="absolute inset-0 z-0"></div>
+
+      <!-- Skeleton loader -->
+      <div id="map-skeleton"
+           class="absolute inset-0 z-10 bg-surface-dim flex flex-col items-center justify-center gap-sm">
+        <span class="material-symbols-outlined text-4xl text-outline">map</span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Memuat peta interaktif...</p>
       </div>
-      {% if total_pred and total_pred > 0 %}
-      {% set total_ct = (berat_ct or 0) + (sedang_ct or 0) + (ringan_ct or 0) %}
-      <div class="flex flex-col gap-sm">
-        {% for lbl, ct, clr in [('Berat', berat_ct or 0, 'bg-error'), ('Sedang', sedang_ct or 0, 'bg-tertiary'), ('Ringan', ringan_ct or 0, 'bg-primary')] %}
-        <div>
-          <div class="flex justify-between items-center mb-xs">
-            <span class="font-label-sm text-label-sm text-on-surface-variant">{{ lbl }}</span>
-            <span class="font-mono-data text-mono-data text-on-surface">{{ ct }}</span>
-          </div>
-          <div class="h-1.5 bg-surface-container rounded-full overflow-hidden">
-            <div class="{{ clr }} h-full"
-                 style="width:{{ ((ct / total_ct * 100)|round(0)|int if total_ct > 0 else 0) }}%"></div>
-          </div>
+
+      <!-- Custom zoom controls (inside map, top-left) -->
+      <div class="absolute z-[500] flex flex-col gap-xs" style="top:20px;left:20px;">
+        <div class="glass-panel p-xs rounded-xl shadow-lg border border-white flex flex-col gap-xs">
+          <button onclick="lmap.zoomIn()"
+                  class="w-9 h-9 flex items-center justify-center bg-surface-container-lowest
+                         hover:bg-surface-variant rounded-lg transition-all text-on-surface">
+            <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+          </button>
+          <button onclick="lmap.zoomOut()"
+                  class="w-9 h-9 flex items-center justify-center bg-surface-container-lowest
+                         hover:bg-surface-variant rounded-lg transition-all text-on-surface">
+            <span class="material-symbols-outlined" style="font-size:18px;">remove</span>
+          </button>
+          <div style="height:1px;" class="bg-outline-variant mx-1"></div>
+          <button onclick="lmap.setView([5.1801,97.1499],13)"
+                  class="w-9 h-9 flex items-center justify-center bg-surface-container-lowest
+                         hover:bg-surface-variant rounded-lg transition-all text-on-surface">
+            <span class="material-symbols-outlined" style="font-size:18px;">my_location</span>
+          </button>
         </div>
-        {% endfor %}
       </div>
-      <div class="mt-auto p-sm bg-surface-container rounded-lg">
-        <p class="font-label-sm text-label-sm text-on-surface-variant">Total Titik Terpetakan</p>
-        <p class="font-headline-md text-headline-md text-primary">{{ total_pred }}</p>
-      </div>
-      {% else %}
-      <div class="flex-1 bg-surface-container-low rounded-lg border border-dashed border-outline-variant
-                  flex flex-col items-center justify-center text-center p-md">
-        <span class="material-symbols-outlined text-outline text-4xl mb-md">touch_app</span>
-        <p class="font-body-sm text-body-sm text-on-surface-variant">
-          Jalankan prediksi model untuk melihat sebaran data di peta.
+
+      <!-- Legend (inside map, bottom-right) -->
+      <div class="absolute z-[500] glass-panel rounded-xl shadow-lg border border-white p-md"
+           style="bottom:20px;right:20px;min-width:172px;">
+        <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mb-sm">
+          Legenda Prediksi CNN
         </p>
+        <div class="flex flex-col gap-xs mb-sm">
+          <div class="flex items-center gap-xs">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#E53E3E;border:2px solid #fff;"></span>
+            <span class="font-body-sm text-body-sm text-on-surface">Berat</span>
+          </div>
+          <div class="flex items-center gap-xs">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#F59E0B;border:2px solid #fff;"></span>
+            <span class="font-body-sm text-body-sm text-on-surface">Sedang</span>
+          </div>
+          <div class="flex items-center gap-xs">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#10B981;border:2px solid #fff;"></span>
+            <span class="font-body-sm text-body-sm text-on-surface">Ringan</span>
+          </div>
+        </div>
+        <div class="border-t border-outline-variant pt-xs flex flex-col gap-xs">
+          <div class="flex items-center gap-xs">
+            <span class="w-3 h-3 rounded-full flex-shrink-0 bg-transparent"
+                  style="border:2px solid #475569;"></span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant">Prediksi Benar</span>
+          </div>
+          <div class="flex items-center gap-xs">
+            <span class="w-3 h-3 rounded-full flex-shrink-0 bg-transparent"
+                  style="border:2px dashed #94a3b8;"></span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant">Prediksi Salah</span>
+          </div>
+        </div>
+        <div class="border-t border-outline-variant pt-xs mt-xs">
+          <span class="font-label-sm text-label-sm text-on-surface-variant" id="marker-count">Memuat...</span>
+        </div>
       </div>
-      {% endif %}
-    </div>
-  </div>
 
+    </div><!-- /map container -->
+
+  </div>
 </section>
 
 <!-- ─── TENTANG CNN ───────────────────────────────── -->
@@ -701,93 +738,149 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   });
 });
 
-// ── Leaflet map (global so buttons can access)
+// ── Leaflet map
 const lmap = L.map('landing-map', { zoomControl: false, attributionControl: true })
                .setView([5.1801, 97.1499], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(lmap);
 
-let markerLayer = L.layerGroup().addTo(lmap);
-let allFeatures = [];
+const markerLayer = L.layerGroup().addTo(lmap);
+let allFeatures   = [];
+let activeFilter  = 'all';
 
+const CLABEL_WARNA = { Berat:'#E53E3E', Sedang:'#F59E0B', Ringan:'#10B981' };
+
+// ── helpers
+function showSkeleton(show) {
+  document.getElementById('map-skeleton').style.display = show ? 'flex' : 'none';
+}
+function showError(msg) {
+  const el = document.getElementById('map-error');
+  el.style.display = 'flex';
+  document.getElementById('map-error-msg').textContent = msg || 'Gagal memuat data peta.';
+}
+function hideError() { document.getElementById('map-error').style.display = 'none'; }
+
+// ── update stats bar
+function updateStats(features) {
+  const total  = features.length;
+  const benar  = features.filter(f => f.properties.benar).length;
+  const salah  = total - benar;
+  const akurasi = total > 0 ? ((benar / total) * 100).toFixed(1) : '—';
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-benar').textContent   = benar;
+  document.getElementById('stat-salah').textContent   = salah;
+  document.getElementById('stat-akurasi').textContent = total > 0 ? akurasi + '%' : '—';
+}
+
+// ── load GIS data
 async function loadGIS() {
+  hideError();
+  showSkeleton(true);
   try {
     const res  = await fetch('/api/landing/gis');
+    if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     allFeatures = data.features || [];
-    renderMarkers('all');
-    document.getElementById('map-skeleton').style.display = 'none';
+    updateStats(allFeatures);
+    renderMarkers(activeFilter);
+    showSkeleton(false);
+    lmap.invalidateSize();
   } catch {
-    document.getElementById('map-skeleton').innerHTML =
-      '<span class="material-symbols-outlined text-3xl text-outline">warning</span>' +
-      '<p class="font-body-sm text-on-surface-variant">Gagal memuat data peta</p>';
+    showSkeleton(false);
+    showError('Gagal memuat data peta. Periksa koneksi dan coba lagi.');
   }
 }
 
-const WARNA = { berat:'#ba1a1a', sedang:'#7b2600', ringan:'#003d9b' };
-
+// ── render markers for active filter
 function renderMarkers(filter) {
+  activeFilter = filter;
   markerLayer.clearLayers();
-  const filtered = filter === 'all'
-    ? allFeatures
-    : allFeatures.filter(f => (f.properties.prediksi||'').toLowerCase() === filter);
+
+  const filtered = allFeatures.filter(f => {
+    if (filter === 'all')   return true;
+    if (filter === 'salah') return !f.properties.benar;
+    return (f.properties.prediksi || '').toLowerCase() === filter;
+  });
 
   filtered.forEach(f => {
     const [lng, lat] = f.geometry.coordinates;
-    const p = f.properties;
+    const p          = f.properties;
+    const clr       = p.warna || '#999';
+    const aktualStr = (p.aktual && p.aktual !== '?') ? p.aktual : null;
+    const aktualClr = CLABEL_WARNA[aktualStr] || '#94a3b8';
+    const imgUrl    = p.path_file
+                      ? '/static/' + p.path_file.split('/').map(encodeURIComponent).join('/')
+                      : null;
 
-    const clr = p.warna;
-    const aktualClr = p.aktual === 'Berat' ? '#E53E3E' : (p.aktual === 'Sedang' ? '#F59E0B' : (p.aktual === 'Ringan' ? '#10B981' : '#94a3b8'));
-    const confidenceVal = (typeof p.confidence === 'number' ? p.confidence : parseFloat(p.confidence || 0)).toFixed(2);
-    const namaCitra = p.nama_citra || 'Tidak Diketahui';
-    
-    const popupHtml = `
-      <img src="/static/${p.path_file}" class="popup-img" onerror="this.style.display='none'">
-      <div class="popup-row">
-        <span class="popup-label">Lokasi</span>
-        <span style="font-weight:600;font-size:.72rem;">${namaCitra}</span>
-      </div>
-      <div class="popup-row">
-        <span class="popup-label">Prediksi</span>
-        <span class="popup-chip" style="background:${clr}22;color:${clr};">${p.prediksi}</span>
-      </div>
-      <div class="popup-row">
-        <span class="popup-label">Aktual</span>
-        <span class="popup-chip" style="background:${aktualClr}22;color:${aktualClr};">${p.aktual}</span>
-      </div>
-      <div class="popup-row">
-        <span class="popup-label">Confidence</span>
-        <strong>${confidenceVal}%</strong>
-      </div>
-      <div class="popup-row">
-        <span class="popup-label">Hasil</span>
-        <strong style="color:${p.benar ? '#10B981' : '#EF4444'};">
-          ${p.benar ? '✓ Benar' : '✗ Salah'}
-        </strong>
-      </div>
-    `;
+    const marker = L.circleMarker([lat, lng], {
+      radius:      8,
+      fillColor:   clr,
+      fillOpacity: 0.85,
+      color:       '#ffffff',
+      weight:      2,
+      dashArray:   p.benar ? null : '5 4',
+      opacity:     0.95,
+    });
 
-    L.circleMarker([lat, lng], {
-      radius: 8, fillColor: p.warna, color: '#fff',
-      weight: 1.5, fillOpacity: .85,
-    })
-    .bindPopup(popupHtml, { maxWidth: 220 })
-    .addTo(markerLayer);
+    marker.bindPopup(
+      (imgUrl ? `<img src="${imgUrl}" class="popup-img" onerror="this.style.display='none'">` : '') +
+      `<div class="popup-body">
+         <div class="popup-row">
+           <span class="popup-label">Lokasi</span>
+           <span style="font-weight:600;font-size:.72rem;max-width:120px;text-align:right;
+                        word-break:break-word;">${p.nama_citra || '—'}</span>
+         </div>
+         <div class="popup-row">
+           <span class="popup-label">Prediksi CNN</span>
+           <span class="popup-chip" style="background:${clr}22;color:${clr};">${p.prediksi || '—'}</span>
+         </div>
+         <div class="popup-row">
+           <span class="popup-label">Label Aktual</span>
+           <span class="popup-chip" style="background:${aktualClr}22;color:${aktualClr};">
+             ${aktualStr || '—'}
+           </span>
+         </div>
+         <div class="popup-row">
+           <span class="popup-label">Hasil</span>
+           <strong style="color:${p.benar ? '#10B981' : '#EF4444'};">
+             ${p.benar ? '&#10003; Benar' : '&#10007; Salah'}
+           </strong>
+         </div>
+       </div>`,
+      { maxWidth: 240 }
+    );
+    marker.addTo(markerLayer);
   });
 
+  // update count label & filter-count badge
+  const filterLabel = filter === 'all' ? 'Semua' : filter.charAt(0).toUpperCase() + filter.slice(1);
   document.getElementById('marker-count').textContent =
-    `${filtered.length} titik${filter !== 'all' ? ' — ' + filter : ''}`;
+    `${filtered.length} titik ditampilkan`;
+  document.getElementById('map-filter-count').textContent =
+    filtered.length + ' titik — ' + filterLabel;
 }
 
-// filter buttons
+// ── filter pill interaction
 document.querySelectorAll('.map-filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    // reset all
     document.querySelectorAll('.map-filter-btn').forEach(b => {
-      b.classList.remove('text-primary', 'border-primary');
+      b.style.borderColor = '';
+      b.style.color       = '';
+      b.classList.remove('text-primary');
       b.classList.add('text-on-surface-variant');
     });
-    btn.classList.add('text-primary', 'border-primary');
+    // activate clicked
+    const f = btn.dataset.cnnFilter;
+    const activeColor = f === 'berat' ? '#E53E3E'
+                      : f === 'sedang' ? '#F59E0B'
+                      : f === 'ringan' ? '#10B981'
+                      : f === 'salah'  ? '#94a3b8'
+                      : '#003d9b';
+    btn.style.borderColor = activeColor;
+    btn.style.color       = activeColor;
     btn.classList.remove('text-on-surface-variant');
-    renderMarkers(btn.dataset.filter);
+    renderMarkers(f);
   });
 });
 
