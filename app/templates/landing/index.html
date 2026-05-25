@@ -122,8 +122,8 @@ tailwind.config = {
   </div>
   <nav class="hidden md:flex gap-lg items-center" id="desktop-nav">
     <a class="text-primary border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Dashboard</a>
+        <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#analytics">Prediksi</a>
     <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#map-section">Peta GIS</a>
-    <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#analytics">Prediksi</a>
     <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#about-cnn">Metodologi</a>
   </nav>
   <div class="flex gap-md items-center">
@@ -146,8 +146,8 @@ tailwind.config = {
 <div id="mobile-menu" class="hidden md:hidden bg-surface-container-lowest border-b border-outline-variant shadow-md">
   <nav class="flex flex-col px-lg py-md gap-md" id="mobile-nav">
     <a href="#"            class="font-label-md text-label-md text-primary" data-mobile-nav>Dashboard</a>
-    <a href="#map-section" class="font-label-md text-label-md text-on-surface-variant" data-mobile-nav>Peta GIS</a>
     <a href="#analytics"   class="font-label-md text-label-md text-on-surface-variant" data-mobile-nav>Prediksi</a>
+    <a href="#map-section" class="font-label-md text-label-md text-on-surface-variant" data-mobile-nav>Peta GIS</a>
     <a href="#about-cnn"   class="font-label-md text-label-md text-on-surface-variant" data-mobile-nav>Metodologi</a>
     <a href="{{ url_for('auth.login') }}"
        class="bg-primary text-on-primary text-center py-xs rounded-lg font-label-md text-label-md">
