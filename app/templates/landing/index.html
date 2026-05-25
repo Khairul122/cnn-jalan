@@ -108,6 +108,24 @@ tailwind.config = {
 
   /* fade-up animation */
   [data-motion] { opacity: 0; transform: translateY(20px); }
+
+  /* Leaflet custom popup styling matching /peta/ */
+  .leaflet-popup-content-wrapper {
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1) !important;
+    color: #1e293b !important;
+    padding: 0 !important;
+  }
+  .leaflet-popup-tip { background: #ffffff !important; }
+  .leaflet-popup-content { margin: 12px 14px !important; font-size: .8rem; }
+  
+  .popup-img  { width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:.5rem; }
+  .popup-row  { display:flex;justify-content:space-between;align-items:center;
+                padding:.35rem 0;border-bottom:1px solid #f1f5f9;font-size:.75rem; color:#1e293b; }
+  .popup-row:last-child { border-bottom:none; }
+  .popup-label { color:#64748b; font-weight: 500; }
+  .popup-chip  { padding:.1rem .5rem;border-radius:999px;font-size:.68rem;font-weight:700; }
 </style>
 </head>
 <body class="bg-background text-on-surface selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
@@ -717,26 +735,31 @@ function renderMarkers(filter) {
     const [lng, lat] = f.geometry.coordinates;
     const p = f.properties;
 
+    const clr = p.warna;
     const aktualClr = p.aktual === 'Berat' ? '#E53E3E' : (p.aktual === 'Sedang' ? '#F59E0B' : (p.aktual === 'Ringan' ? '#10B981' : '#94a3b8'));
     const popupHtml = `
-      <div style="font-family:Inter,sans-serif;font-size:12px;width:180px;color:#1e293b;">
-        <img src="/static/${p.path_file}" alt="Foto Kerusakan" 
-             style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;"
-             onerror="this.style.display='none'">
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:11px;">
-          <span style="color:#64748b;">Prediksi CNN:</span>
-          <span style="font-weight:600;color:${p.warna};">${p.prediksi}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:11px;">
-          <span style="color:#64748b;">Aktual:</span>
-          <span style="font-weight:600;color:${aktualClr};">${p.aktual}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;align-items:center;">
-          <span style="color:#64748b; margin-top:2px;">Hasil:</span>
-          <span style="font-weight:700;color:${p.benar ? '#10B981' : '#EF4444'}; margin-top:2px;">
-            ${p.benar ? '✓ Benar' : '✗ Salah'}
-          </span>
-        </div>
+      <img src="/static/${p.path_file}" class="popup-img" onerror="this.style.display='none'">
+      <div class="popup-row">
+        <span class="popup-label">Lokasi</span>
+        <span style="font-weight:600;font-size:.72rem;">${p.nama_citra}</span>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Prediksi</span>
+        <span class="popup-chip" style="background:${clr}22;color:${clr};">${p.prediksi}</span>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Aktual</span>
+        <span class="popup-chip" style="background:${aktualClr}22;color:${aktualClr};">${p.aktual}</span>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Confidence</span>
+        <strong>${p.confidence.toFixed(2)}%</strong>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Hasil</span>
+        <strong style="color:${p.benar ? '#10B981' : '#EF4444'};">
+          ${p.benar ? '✓ Benar' : '✗ Salah'}
+        </strong>
       </div>
     `;
 

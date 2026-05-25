@@ -56,8 +56,10 @@ def landing_gis():
     rows = (db.session.query(
                 PrediksiModel.prediksi,
                 PrediksiModel.aktual,
+                PrediksiModel.confidence,
                 LokasiKerusakan.latitude,
                 LokasiKerusakan.longitude,
+                LokasiKerusakan.nama_citra,
                 DokumentasiFoto.path_file,
             )
             .join(DokumentasiFoto, PrediksiModel.dokumentasi_id == DokumentasiFoto.id)
@@ -69,8 +71,10 @@ def landing_gis():
         'type': 'Feature',
         'geometry': {'type': 'Point', 'coordinates': [float(r.longitude), float(r.latitude)]},
         'properties': {
+            'nama_citra': r.nama_citra,
             'prediksi': LABEL.get(r.prediksi, '?'),
             'aktual'  : LABEL.get(r.aktual, '?') if r.aktual is not None else '?',
+            'confidence': float(r.confidence) if r.confidence is not None else 0.0,
             'warna'   : WARNA.get(r.prediksi, '#999'),
             'benar'   : r.aktual is not None and r.prediksi == r.aktual,
             'path_file': r.path_file,
