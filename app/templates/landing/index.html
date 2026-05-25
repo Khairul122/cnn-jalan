@@ -535,24 +535,30 @@ tailwind.config = {
 </main>
 
 <!-- ─── FOOTER ────────────────────────────────────── -->
-<footer class="w-full py-xl px-lg grid grid-cols-1 md:grid-cols-2 gap-md items-center
-               bg-surface-container-high border-t border-outline-variant">
-  <div>
-    <div class="font-headline-md text-headline-md font-bold text-primary mb-xs">
-      CNN-Jalan · Lhokseumawe GIS
+<footer class="w-full py-xl px-lg bg-surface-container-high border-t border-outline-variant">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-md">
+    <div>
+      <div class="flex items-center gap-xs mb-xs">
+        <img src="{{ url_for('static', filename='logo/logo.png') }}"
+             alt="Logo"
+             style="height:2.5rem;width:auto;object-fit:contain;flex-shrink:0;">
+      </div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant max-w-xl">
+        Sistem Informasi Geografis Pemetaan Kerusakan Jalan di Kota Lhokseumawe
+        Menggunakan Metode Convolutional Neural Network (CNN)
+      </p>
     </div>
-    <p class="font-body-sm text-body-sm text-on-surface mb-md">
-      Sistem Informasi Geografis Pemetaan Kerusakan Jalan di Kota Lhokseumawe
-      Menggunakan Metode Convolutional Neural Network (CNN) — Skripsi © 2026
-    </p>
-    <div class="flex gap-md">
-      <a href="{{ url_for('auth.login') }}" class="text-on-secondary-fixed-variant hover:text-primary transition-colors font-body-sm text-body-sm underline">Masuk ke Sistem</a>
+    <div class="flex flex-col md:items-end gap-xs">
+      <div class="flex gap-md mb-xs flex-wrap">
+        <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Dashboard</a>
+        <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#map-section">Peta GIS</a>
+        <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#analytics">Prediksi</a>
+        <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="{{ url_for('auth.login') }}">Masuk ke Sistem</a>
+      </div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        &copy; 2026 CNN-Jalan Lhokseumawe. All rights reserved.
+      </p>
     </div>
-  </div>
-  <div class="flex flex-col md:items-end gap-xs">
-    <p class="font-label-md text-label-md text-on-surface-variant">Universitas Malikussaleh</p>
-    <p class="font-body-sm text-body-sm">NIM 210170072</p>
-    <p class="font-body-sm text-body-sm text-on-surface-variant">Kota Lhokseumawe, Aceh, Indonesia</p>
   </div>
 </footer>
 
