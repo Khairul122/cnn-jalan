@@ -397,7 +397,7 @@ tailwind.config = {
     </div>
 
     <!-- Stats bar -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-md mb-md">
+    <div class="grid grid-cols-3 gap-md mb-md">
       <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md text-center shadow-sm">
         <span id="stat-total" class="block font-headline-md text-headline-md text-on-surface">—</span>
         <span class="font-label-sm text-label-sm text-on-surface-variant mt-xs block">Total Foto</span>
@@ -409,10 +409,6 @@ tailwind.config = {
       <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md text-center shadow-sm">
         <span id="stat-salah" class="block font-headline-md text-headline-md text-error">—</span>
         <span class="font-label-sm text-label-sm text-on-surface-variant mt-xs block">Prediksi Salah</span>
-      </div>
-      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md text-center shadow-sm">
-        <span id="stat-akurasi" class="block font-headline-md text-headline-md text-primary">—</span>
-        <span class="font-label-sm text-label-sm text-on-surface-variant mt-xs block">Akurasi Peta</span>
       </div>
     </div>
 
@@ -765,11 +761,9 @@ function updateStats(features) {
   const total  = features.length;
   const benar  = features.filter(f => f.properties.benar).length;
   const salah  = total - benar;
-  const akurasi = total > 0 ? ((benar / total) * 100).toFixed(1) : '—';
   document.getElementById('stat-total').textContent   = total;
   document.getElementById('stat-benar').textContent   = benar;
   document.getElementById('stat-salah').textContent   = salah;
-  document.getElementById('stat-akurasi').textContent = total > 0 ? akurasi + '%' : '—';
 }
 
 // ── load GIS data
