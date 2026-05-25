@@ -120,7 +120,7 @@ tailwind.config = {
          alt="Logo"
          style="height:3.5rem;width:auto;object-fit:contain;flex-shrink:0;">
   </div>
-  <nav class="hidden md:flex gap-lg items-center">
+  <nav class="hidden md:flex gap-lg items-center" id="desktop-nav">
     <a class="text-primary border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Dashboard</a>
     <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#map-section">Peta GIS</a>
     <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#analytics">Prediksi</a>
@@ -144,10 +144,11 @@ tailwind.config = {
 
 <!-- mobile menu -->
 <div id="mobile-menu" class="hidden md:hidden bg-surface-container-lowest border-b border-outline-variant shadow-md">
-  <nav class="flex flex-col px-lg py-md gap-md">
-    <a href="#map-section" class="font-label-md text-label-md text-on-surface-variant">Peta GIS</a>
-    <a href="#analytics"   class="font-label-md text-label-md text-on-surface-variant">Prediksi</a>
-    <a href="#about-cnn"   class="font-label-md text-label-md text-on-surface-variant">Metodologi</a>
+  <nav class="flex flex-col px-lg py-md gap-md" id="mobile-nav">
+    <a href="#"            class="font-label-md text-label-md text-primary" data-mobile-nav>Dashboard</a>
+    <a href="#map-section" class="font-label-md text-label-md text-on-surface-variant" data-mobile-nav>Peta GIS</a>
+    <a href="#analytics"   class="font-label-md text-label-md text-on-surface-variant" data-mobile-nav>Prediksi</a>
+    <a href="#about-cnn"   class="font-label-md text-label-md text-on-surface-variant" data-mobile-nav>Metodologi</a>
     <a href="{{ url_for('auth.login') }}"
        class="bg-primary text-on-primary text-center py-xs rounded-lg font-label-md text-label-md">
        Masuk ke Sistem
@@ -606,17 +607,74 @@ tailwind.config = {
 <!-- ─── SCRIPTS ───────────────────────────────────── -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ── navbar shadow on scroll
+// ── navbar shadow & scrollspy on scroll
+const sections = [
+  { id: '#', name: 'Dashboard' },
+  { id: '#map-section', name: 'Peta GIS' },
+  { id: '#analytics', name: 'Prediksi' },
+  { id: '#about-cnn', name: 'Metodologi' }
+];
+
+const desktopLinks = document.querySelectorAll('#desktop-nav a');
+const mobileLinks = document.querySelectorAll('#mobile-nav [data-mobile-nav]');
+
 window.addEventListener('scroll', () => {
+  // shadow
   document.getElementById('navbar').style.boxShadow =
     window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,.08)' : '';
+
+  // scrollspy active state
+  let activeId = '#';
+  const scrollPos = window.scrollY + 140; // offset for sticky header
+
+  sections.forEach(sec => {
+    if (sec.id !== '#') {
+      const el = document.querySelector(sec.id);
+      if (el && scrollPos >= el.offsetTop) {
+        activeId = sec.id;
+      }
+    }
+  });
+
+  // update desktop styling
+  desktopLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (href === activeId || (href === '#' && activeId === '#')) {
+      link.className = "text-primary border-b-2 border-primary pb-1 font-label-md text-label-md";
+    } else {
+      link.className = "text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md";
+    }
+  });
+
+  // update mobile styling
+  mobileLinks.forEach(link => {
+    const href = link.getAttribute('href');
+    if (href === activeId || (href === '#' && activeId === '#')) {
+      link.className = "font-label-md text-label-md text-primary";
+    } else {
+      link.className = "font-label-md text-label-md text-on-surface-variant";
+    }
+  });
 }, { passive: true });
 
-// ── smooth scroll
+// ── smooth scroll & mobile menu close
 document.querySelectorAll('a[href^="#"]').forEach(a => {
   a.addEventListener('click', e => {
-    const t = document.querySelector(a.getAttribute('href'));
-    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+    const href = a.getAttribute('href');
+    
+    // close mobile menu
+    document.getElementById('mobile-menu').classList.add('hidden');
+
+    if (href === '#') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const t = document.querySelector(href);
+      if (t) {
+        e.preventDefault();
+        window.scrollTo({ top: t.offsetTop - 80, behavior: 'smooth' });
+      }
+    }
   });
 });
 
