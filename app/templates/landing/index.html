@@ -822,6 +822,7 @@ function renderMarkers(filter) {
       opacity:     0.95,
     });
 
+    const confidenceVal = (typeof p.confidence === 'number' ? p.confidence : parseFloat(p.confidence || 0)).toFixed(2);
     marker.bindPopup(
       (imgUrl ? `<img src="${imgUrl}" class="popup-img" onerror="this.style.display='none'">` : '') +
       `<div class="popup-body">
@@ -831,14 +832,18 @@ function renderMarkers(filter) {
                         word-break:break-word;">${p.nama_citra || '—'}</span>
          </div>
          <div class="popup-row">
-           <span class="popup-label">Prediksi CNN</span>
+           <span class="popup-label">Prediksi</span>
            <span class="popup-chip" style="background:${clr}22;color:${clr};">${p.prediksi || '—'}</span>
          </div>
          <div class="popup-row">
-           <span class="popup-label">Label Aktual</span>
+           <span class="popup-label">Aktual</span>
            <span class="popup-chip" style="background:${aktualClr}22;color:${aktualClr};">
              ${aktualStr || '—'}
            </span>
+         </div>
+         <div class="popup-row">
+           <span class="popup-label">Confidence</span>
+           <strong>${confidenceVal}%</strong>
          </div>
          <div class="popup-row">
            <span class="popup-label">Hasil</span>
