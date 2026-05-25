@@ -81,13 +81,10 @@
 
     <!-- Brand -->
     <div style="padding:.875rem 1rem;border-bottom:1px solid rgba(255,255,255,.06);
-                display:flex;align-items:center;gap:.625rem;">
+                display:flex;align-items:center;justify-content:center;width:100%;">
       <img src="{{ url_for('static', filename='logo/logo.png') }}"
            alt="Logo"
-           style="width:2rem;height:2rem;object-fit:contain;border-radius:.375rem;flex-shrink:0;">
-      <span style="font-size:.9rem;font-weight:700;color:#fff;letter-spacing:-.01em;flex:1;">
-        <span style="color:#38BDF8;">CNN</span>-Jalan
-      </span>
+           style="height:3rem;width:auto;max-width:100%;object-fit:contain;">
       <button onclick="closeSidebar()" class="lg:hidden"
               style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;
                      min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center;"

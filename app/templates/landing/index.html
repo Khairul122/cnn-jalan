@@ -114,11 +114,10 @@ tailwind.config = {
 <!-- ─── TOP NAV ──────────────────────────────────── -->
 <header class="flex justify-between items-center px-lg py-md w-full sticky top-0 z-50
                bg-surface-container-lowest border-b border-outline-variant transition-all duration-200" id="navbar">
-  <div class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-xs">
+  <div class="flex items-center">
     <img src="{{ url_for('static', filename='logo/logo.png') }}"
          alt="Logo"
-         style="width:2rem;height:2rem;object-fit:contain;border-radius:.375rem;flex-shrink:0;">
-    CNN-Jalan
+         style="height:3.5rem;width:auto;object-fit:contain;flex-shrink:0;">
   </div>
   <nav class="hidden md:flex gap-lg items-center">
     <a class="text-primary border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Dashboard</a>
