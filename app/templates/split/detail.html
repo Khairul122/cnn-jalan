@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% block title %}{{ config.nama }}{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('split.index') }}" style="color:var(--c-accent);text-decoration:none;">Split Data</a>
+<span class="sep">›</span>
+<span class="current">{{ config.nama }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-4">
+  <div>
+    {% set ph_title = config.nama %}{% include 'components/page_header.html' %}
+    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+      <span class="sd-meta-chip" style="background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.25);color:#10B981;">80:20 Holdout</span>
+      <span class="sd-meta-chip">seed={{ config.random_state }}</span>
+      <span class="sd-meta-chip">{{ config.total_data }} data</span>
+      <span style="font-size:.72rem;color:var(--c-muted);">{{ config.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+    </div>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <a href="{{ url_for('split.export', config_id=config.id) }}" class="sd-btn-export">
+      <i class="bi bi-download"></i> CSV
+    </a>
+    {% if config.total_data > 0 %}
+    <button type="button" onclick="document.getElementById('modalResetItems').style.display='flex'"
+            class="sd-btn-reset" title="Reset Items">
+      <i class="bi bi-arrow-counterclockwise"></i> Reset
+    </button>
+    {% endif %}
+    <form method="POST" action="{{ url_for('split.delete', config_id=config.id) }}"
+          onsubmit="return confirm('Hapus split ini? Semua {{ config.total_data }} item akan ikut terhapus.')">
+      <button type="submit" class="sd-btn-del" title="Hapus Split">
+        <i class="bi bi-trash-fill"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Layout: tabel + chart side by side on wide screens -->
+<div class="sd-grid">
+
+  <!-- Distribusi tabel -->
+  <div class="sd-card">
+    <p class="sd-card-title">
+      <i class="bi bi-table" style="color:#A78BFA;"></i> Distribusi Data
+    </p>
+    <div style="overflow-x:auto;">
+      <table class="table align-middle mb-0" style="font-size:.8rem;">
+        <thead>
+          <tr>
+            <th style="padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">Set</th>
+            {% for t in tingkat_list %}
+            {% set tc = {'Berat':'#DC2626','Sedang':'#F59E0B','Ringan':'#10B981'} %}
+            {% set col = tc.get(t.nama_tingkat, '#A78BFA') %}
+            <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;font-weight:600;border-bottom:1px solid var(--c-border);">
+              <span style="color:{{ col }};">{{ t.nama_tingkat }}</span>
+            </th>
+            {% endfor %}
+            <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">Total</th>
+            <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set total_dataset = config.total_data %}
+          {% set set_labels = {0: ('Train', '#10B981'), 1: ('Test', '#F59E0B')} %}
+          {% for fold_idx in [0, 1] %}
+          {% set fd = dist.get(fold_idx, {}) %}
+          {% set ft = fd.values() | sum %}
+          {% set lbl, lbl_col = set_labels[fold_idx] %}
+          <tr style="border-bottom:1px solid var(--c-border);">
+            <td style="padding:.4rem .6rem;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;
+                           padding:.15rem .6rem;border-radius:6px;font-size:.72rem;font-weight:700;
+                           background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);
+                           color:{{ lbl_col }};">{{ lbl }}</span>
+            </td>
+            {% for t in tingkat_list %}
+            <td style="text-align:center;padding:.4rem .6rem;font-variant-numeric:tabular-nums;color:var(--c-text);">
+              {{ fd.get(t.id, 0) }}
+            </td>
+            {% endfor %}
+            <td style="text-align:center;padding:.4rem .6rem;font-weight:600;color:var(--c-text);font-variant-numeric:tabular-nums;">{{ ft }}</td>
+            <td style="text-align:center;padding:.4rem .6rem;color:var(--c-muted);font-variant-numeric:tabular-nums;">
+              {% if total_dataset > 0 %}{{ '%.1f'|format(ft / total_dataset * 100) }}%{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="border-top:2px solid var(--c-border);">
+            <td style="padding:.4rem .6rem;font-weight:700;font-size:.75rem;color:var(--c-muted);">Total</td>
+            {% for t in tingkat_list %}
+            {% set ct = namespace(val=0) %}
+            {% for fi in [0, 1] %}{% set ct.val = ct.val + dist.get(fi, {}).get(t.id, 0) %}{% endfor %}
+            <td style="text-align:center;padding:.4rem .6rem;font-weight:700;font-variant-numeric:tabular-nums;">{{ ct.val }}</td>
+            {% endfor %}
+            <td style="text-align:center;padding:.4rem .6rem;font-weight:700;font-variant-numeric:tabular-nums;">{{ total_dataset }}</td>
+            <td style="text-align:center;padding:.4rem .6rem;color:var(--c-muted);">100%</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="sd-card">
+    <p class="sd-card-title">
+      <i class="bi bi-bar-chart-fill" style="color:#A78BFA;"></i> Distribusi Kelas
+    </p>
+    <div style="position:relative;height:220px;">
+      <canvas id="distChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Konfirmasi Reset Items -->
+<div id="modalResetItems"
+     style="display:none;position:fixed;inset:0;z-index:9998;
+            background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:1rem;"
+     onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--c-surface);border:1px solid var(--c-border);
+              border-radius:var(--r-card);width:100%;max-width:420px;
+              box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;">
+
+    <div style="display:flex;align-items:center;gap:.625rem;
+                padding:.875rem 1.125rem;border-bottom:1px solid var(--c-border);
+                background:rgba(245,158,11,.06);">
+      <span style="width:34px;height:34px;border-radius:50%;flex-shrink:0;
+                   background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);
+                   display:flex;align-items:center;justify-content:center;">
+        <i class="bi bi-arrow-counterclockwise" style="color:#F59E0B;font-size:.9rem;"></i>
+      </span>
+      <div>
+        <p style="font-size:.88rem;font-weight:700;color:var(--c-text);margin:0;">Reset Split Items</p>
+        <p style="font-size:.72rem;color:var(--c-muted);margin:0;">Konfigurasi split tetap tersimpan</p>
+      </div>
+    </div>
+
+    <div style="padding:1.125rem;">
+      <p style="font-size:.83rem;color:var(--c-text);margin:0 0 .75rem;">
+        Semua <strong style="color:#F59E0B;">{{ config.total_data }} item</strong> dalam split
+        <strong>"{{ config.nama }}"</strong> akan dihapus.
+        Konfigurasi split (seed={{ config.random_state }}) tetap ada dan bisa
+        digunakan untuk membuat split baru.
+      </p>
+      <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);
+                  border-radius:var(--r-input);padding:.6rem .875rem;font-size:.78rem;color:#D97706;">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Reset akan ditolak jika split ini sudah digunakan oleh konfigurasi arsitektur CNN.
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;
+                padding:.75rem 1.125rem;border-top:1px solid var(--c-border);background:var(--c-bg);">
+      <button type="button" onclick="document.getElementById('modalResetItems').style.display='none'"
+              style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
+                     background:transparent;color:var(--c-muted);border:1px solid var(--c-border);cursor:pointer;">
+        Batal
+      </button>
+      <form method="POST" action="{{ url_for('split.reset_items', config_id=config.id) }}" style="margin:0;">
+        <button type="submit"
+                style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
+                       background:#F59E0B;color:#1C1917;border:none;cursor:pointer;
+                       display:inline-flex;align-items:center;gap:.35rem;">
+          <i class="bi bi-arrow-counterclockwise"></i> Ya, Reset Items
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.sd-meta-chip {
+  padding: .15rem .55rem; border-radius: 999px;
+  background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.25);
+  font-size: .72rem; font-weight: 600; color: #A78BFA;
+}
+
+.sd-btn-export {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .38rem .75rem; border-radius: var(--r-input);
+  font-size: .78rem; font-weight: 600; text-decoration: none;
+  background: rgba(5,150,105,.2); color: #10B981;
+  border: 1px solid rgba(16,185,129,.25);
+  transition: background .15s;
+}
+.sd-btn-export:hover { background: rgba(5,150,105,.35); color: #10B981; }
+
+.sd-btn-del {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: var(--r-input);
+  background: transparent; color: #DC2626;
+  border: 1px solid rgba(220,38,38,.3); cursor: pointer;
+  font-size: .8rem; transition: background .15s;
+}
+.sd-btn-del:hover { background: rgba(220,38,38,.12); }
+
+.sd-btn-reset {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .38rem .75rem; border-radius: var(--r-input);
+  font-size: .78rem; font-weight: 600;
+  background: transparent; color: #F59E0B;
+  border: 1px solid rgba(245,158,11,.3); cursor: pointer;
+  transition: background .15s;
+}
+.sd-btn-reset:hover { background: rgba(245,158,11,.12); }
+
+.sd-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 900px) {
+  .sd-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.sd-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card); padding: 1rem 1.125rem;
+}
+.sd-card-title {
+  font-size: .78rem; font-weight: 600; color: var(--c-text);
+  margin: 0 0 .875rem; display: flex; align-items: center; gap: .35rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const labels   = ['Train (80%)', 'Test (20%)'];
+  const tingkats = [{% for t in tingkat_list %}{ id: {{ t.id }}, nama: '{{ t.nama_tingkat }}' }{% if not loop.last %},{% endif %}{% endfor %}];
+  const palette  = { 'Berat': '#EF4444', 'Sedang': '#F59E0B', 'Ringan': '#10B981' };
+  const raw      = {{ dist | tojson }};
+
+  new Chart(document.getElementById('distChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: tingkats.map(t => ({
+        label: t.nama,
+        backgroundColor: palette[t.nama] || '#A78BFA',
+        borderRadius: 3,
+        data: ['0', '1'].map(i => (raw[i] || {})[String(t.id)] || 0),
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 10, padding: 12 } },
+        tooltip: { mode: 'index', callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+        }}
+      },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: { beginAtZero: true, ticks: { color: '#64748b', font: { size: 11 }, stepSize: 1 }, grid: { color: 'rgba(255,255,255,.04)' } }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,432 @@
+{% extends 'base.html' %}
+{% block title %}Peta GIS{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<span class="current">Peta GIS</span>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+#map          { height: clamp(340px, 62vh, 620px); border-radius: var(--r-card);
+                border:1px solid var(--c-border); box-shadow:var(--shadow-card); }
+#map-skeleton { height: clamp(340px, 62vh, 620px); border-radius: var(--r-card); }
+
+/* Layer switcher tabs */
+.layer-tab {
+  display:inline-flex;align-items:center;gap:.35rem;
+  padding:.4rem .9rem;border-radius:var(--r-input);font-size:.8rem;font-weight:700;
+  cursor:pointer;border:1px solid var(--c-border);background:var(--c-surface);
+  color:var(--c-muted);transition:all .15s;
+}
+.layer-tab.active-status  { border-color:#38BDF8;color:#38BDF8;background:rgba(56,189,248,.1); }
+.layer-tab.active-cnn     { border-color:#10B981;color:#10B981;background:rgba(16,185,129,.1); }
+.layer-tab:not(.active-status):not(.active-cnn):hover { border-color:var(--c-accent);color:var(--c-text); }
+
+/* Filter pills */
+.peta-filter {
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.25rem .65rem;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;
+  background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-muted);
+  transition:all .15s;
+}
+.peta-filter:hover, .peta-filter.active {
+  border-color:var(--fc, var(--c-accent));color:var(--c-text);background:rgba(255,255,255,.06);
+}
+.peta-dot { width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0; }
+
+/* CNN legend overlay */
+.peta-legend {
+  position:absolute;bottom:2.5rem;right:1rem;z-index:1000;
+  background:var(--c-surface);border:1px solid var(--c-border);
+  border-radius:var(--r-card);padding:.75rem;min-width:168px;
+  box-shadow:var(--shadow-card);
+}
+
+/* Popup */
+.leaflet-popup-content-wrapper {
+  background:var(--c-surface) !important;border:1px solid var(--c-border) !important;
+  border-radius:10px !important;box-shadow:0 4px 20px rgba(0,0,0,.4) !important;color:var(--c-text) !important;
+}
+.leaflet-popup-tip { background:var(--c-surface) !important; }
+.leaflet-popup-content { margin:10px 14px !important;font-size:.8rem; }
+.popup-img  { width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:.5rem; }
+.popup-row  { display:flex;justify-content:space-between;align-items:center;
+              padding:.2rem 0;border-bottom:1px solid var(--c-border);font-size:.75rem; }
+.popup-row:last-child { border-bottom:none; }
+.popup-label { color:var(--c-muted); }
+.popup-chip  { padding:.1rem .4rem;border-radius:999px;font-size:.68rem;font-weight:700; }
+
+/* Stats bar */
+.peta-stat { background:var(--c-surface);border:1px solid var(--c-border);
+             border-radius:var(--r-card);padding:.5rem .75rem;text-align:center; }
+.peta-stat-val { display:block;font-size:1rem;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums; }
+.peta-stat-lbl { display:block;font-size:.65rem;color:var(--c-muted);margin-top:.1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = 'Peta GIS Kerusakan Jalan — Kota Lhokseumawe' %}
+{% include 'components/page_header.html' %}
+
+<!-- Layer switcher -->
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+  <span style="font-size:.72rem;color:var(--c-muted);font-weight:600;">Layer:</span>
+  <button id="tabStatus" class="layer-tab active-status" onclick="switchLayer('status')">
+    <i class="bi bi-layers-fill"></i> Status Pemetaan
+  </button>
+  <button id="tabCnn" class="layer-tab" onclick="switchLayer('cnn')">
+    <i class="bi bi-cpu-fill"></i> Prediksi CNN
+  </button>
+</div>
+
+<!-- === PANEL STATUS === -->
+<div id="panelStatus">
+  <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem;flex-wrap:wrap;">
+    <div style="position:relative;">
+      <i class="bi bi-funnel" style="position:absolute;left:.625rem;top:50%;
+                transform:translateY(-50%);color:var(--c-muted);font-size:.8rem;pointer-events:none;"></i>
+      <select id="filterStatus"
+              style="padding:.45rem 1.5rem .45rem 1.875rem;border:1px solid var(--c-border);
+                     border-radius:var(--r-input);font-size:.82rem;color:var(--c-text);
+                     background:var(--c-surface);outline:none;cursor:pointer;appearance:none;
+                     transition:border-color .15s,box-shadow .15s;"
+              onfocus="this.style.borderColor='var(--c-accent)'"
+              onblur="this.style.borderColor='var(--c-border)'">
+        <option value="">Semua Status</option>
+        <option value="draft">Draft</option>
+        <option value="terverifikasi">Terverifikasi</option>
+        <option value="diperbaiki">Diperbaiki</option>
+      </select>
+    </div>
+    <button id="btnFilter" class="btn-cnn-primary" style="padding:.45rem 1rem;font-size:.82rem;">
+      <i class="bi bi-search"></i> Tampilkan
+    </button>
+  </div>
+
+  <!-- Legenda status -->
+  <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;">
+    {% for label, color in [('Berat', '#E53E3E'), ('Sedang', '#F6AD55'), ('Ringan', '#68D391')] %}
+    <div style="display:inline-flex;align-items:center;gap:.375rem;padding:.3rem .625rem;
+                background:{{ color }}18;border:1px solid {{ color }}40;
+                border-radius:999px;font-size:.72rem;font-weight:600;color:{{ color }};">
+      <span style="width:.4rem;height:.4rem;border-radius:50%;background:{{ color }};flex-shrink:0;"></span>
+      {{ label }}
+    </div>
+    {% endfor %}
+    <div style="display:inline-flex;align-items:center;gap:.375rem;padding:.3rem .625rem;
+                background:#64748B18;border:1px solid #64748B40;border-radius:999px;
+                font-size:.72rem;font-weight:600;color:#64748B;">
+      <span style="width:.4rem;height:.4rem;border-radius:50%;background:#94A3B8;flex-shrink:0;"></span>
+      Belum Diklasifikasi
+    </div>
+  </div>
+</div>
+
+<!-- === PANEL CNN === -->
+<div id="panelCnn" style="display:none;">
+  {% if prediksi_configs %}
+
+  <!-- Model selector + stats -->
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <i class="bi bi-cpu" style="color:var(--c-muted);font-size:.85rem;"></i>
+    <select id="modelSelect"
+            style="padding:.4rem .875rem;border:1px solid var(--c-border);
+                   border-radius:var(--r-input);font-size:.8rem;color:var(--c-text);
+                   background:var(--c-surface);outline:none;cursor:pointer;"
+            onchange="loadCnnMarkers()">
+      {% for c in prediksi_configs %}
+      <option value="{{ c.id }}"
+              {% if c.id == best_id %}selected{% endif %}>
+        {{ c.nama }}
+        {% if c.id == best_id %}★ Terbaik{% endif %}
+        {% if evaluasi_map.get(c.id) %}— {{ evaluasi_map[c.id].akurasi }}%{% endif %}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="row g-2 mb-2" id="cnnStatsBar">
+    <div class="col-4">
+      <div class="peta-stat"><span id="cnnTotal" class="peta-stat-val">—</span><span class="peta-stat-lbl">Total Foto</span></div>
+    </div>
+    <div class="col-4">
+      <div class="peta-stat"><span id="cnnBenar" class="peta-stat-val" style="color:#10B981;">—</span><span class="peta-stat-lbl">Prediksi Benar</span></div>
+    </div>
+    <div class="col-4">
+      <div class="peta-stat"><span id="cnnSalah" class="peta-stat-val" style="color:#EF4444;">—</span><span class="peta-stat-lbl">Prediksi Salah</span></div>
+    </div>
+  </div>
+
+  <!-- Filter pills -->
+  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <span style="font-size:.72rem;color:var(--c-muted);">Filter:</span>
+    <button class="peta-filter active" data-cnn-filter="all" onclick="applyCnnFilter(this)">Semua</button>
+    <button class="peta-filter" data-cnn-filter="0" style="--fc:#E53E3E;" onclick="applyCnnFilter(this)">
+      <span class="peta-dot" style="background:#E53E3E;"></span>Berat
+    </button>
+    <button class="peta-filter" data-cnn-filter="1" style="--fc:#F59E0B;" onclick="applyCnnFilter(this)">
+      <span class="peta-dot" style="background:#F59E0B;"></span>Sedang
+    </button>
+    <button class="peta-filter" data-cnn-filter="2" style="--fc:#10B981;" onclick="applyCnnFilter(this)">
+      <span class="peta-dot" style="background:#10B981;"></span>Ringan
+    </button>
+    <button class="peta-filter" data-cnn-filter="salah" style="--fc:#94a3b8;" onclick="applyCnnFilter(this)">
+      <span class="peta-dot" style="background:#94a3b8;border:2px dashed #fff;"></span>Salah Prediksi
+    </button>
+    <span id="cnnFilterCount" style="font-size:.72rem;color:var(--c-muted);margin-left:auto;"></span>
+  </div>
+
+  {% else %}
+  <div style="padding:1.5rem;text-align:center;background:var(--c-surface);
+              border-radius:var(--r-card);border:1px dashed var(--c-border);margin-bottom:.875rem;">
+    <i class="bi bi-cpu" style="font-size:1.75rem;color:var(--c-muted);display:block;margin-bottom:.5rem;"></i>
+    <p style="font-size:.85rem;font-weight:600;color:var(--c-text);margin:0 0 .25rem;">Belum ada prediksi CNN</p>
+    <p style="font-size:.78rem;color:var(--c-muted);margin:0 0 .875rem;">
+      Latih model di halaman Arsitektur CNN, lalu jalankan prediksi dari halaman GIS model tersebut.
+    </p>
+    <a href="{{ url_for('arsitektur.index') }}" class="btn-cnn-primary" style="font-size:.8rem;padding:.4rem .9rem;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;">
+      <i class="bi bi-arrow-right"></i> Ke Arsitektur CNN
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Error state -->
+<div id="map-error" style="display:none;padding:.75rem 1rem;margin-bottom:.75rem;
+     background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.3);border-radius:var(--r-input);
+     color:#EF4444;font-size:.85rem;">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  <span id="map-error-msg">Gagal memuat data peta.</span>
+  <button onclick="reloadActive()" style="margin-left:.75rem;background:none;border:none;
+          color:var(--c-accent);cursor:pointer;font-size:.82rem;font-weight:600;padding:0;text-decoration:underline;">
+    Coba lagi
+  </button>
+</div>
+
+<!-- Skeleton -->
+<div id="map-skeleton" class="cnn-skeleton" style="border-radius:var(--r-card);"></div>
+
+<!-- Map container (relative for legend overlay) -->
+<div style="position:relative;">
+  <div id="map" style="display:none;"></div>
+
+  <!-- CNN Legend (only shown in CNN mode) -->
+  <div id="cnnLegend" class="peta-legend" style="display:none;">
+    <div style="font-size:.65rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;
+                letter-spacing:.05em;margin-bottom:.5rem;">Legenda Prediksi CNN</div>
+    {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span style="width:11px;height:11px;border-radius:50%;background:{{ clr }};display:inline-block;flex-shrink:0;"></span>
+      <span style="font-size:.72rem;color:var(--c-text);">{{ lbl }}</span>
+    </div>
+    {% endfor %}
+    <div style="border-top:1px solid var(--c-border);padding-top:.4rem;margin-top:.4rem;">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span style="width:11px;height:11px;border-radius:50%;background:transparent;
+                     border:2px solid #fff;display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:.68rem;color:var(--c-muted);">Benar</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span style="width:11px;height:11px;border-radius:50%;background:transparent;
+                     border:2px dashed #aaa;display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:.68rem;color:var(--c-muted);">Salah</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  /* ── Map init ─────────────────────────────────────── */
+  var map = L.map('map').setView([5.1801, 97.1499], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  var statusLayer = L.layerGroup().addTo(map);
+  var cnnLayer    = L.layerGroup();
+
+  /* ── DOM helpers ──────────────────────────────────── */
+  function showMap()  {
+    document.getElementById('map-skeleton').style.display = 'none';
+    var m = document.getElementById('map');
+    m.style.display = 'block';
+    map.invalidateSize();
+  }
+  function showErr(msg) {
+    var el = document.getElementById('map-error');
+    el.style.display = 'block';
+    document.getElementById('map-error-msg').textContent = msg || 'Gagal memuat data peta.';
+  }
+  function hideErr() { document.getElementById('map-error').style.display = 'none'; }
+
+  /* ── Active layer tracker ─────────────────────────── */
+  var activeLayer = 'status';
+
+  window.reloadActive = function () {
+    if (activeLayer === 'status') loadStatusMarkers();
+    else loadCnnMarkers();
+  };
+
+  /* ── Layer switcher ───────────────────────────────── */
+  window.switchLayer = function (layer) {
+    activeLayer = layer;
+    var tabS = document.getElementById('tabStatus');
+    var tabC = document.getElementById('tabCnn');
+    var panS = document.getElementById('panelStatus');
+    var panC = document.getElementById('panelCnn');
+    var leg  = document.getElementById('cnnLegend');
+
+    if (layer === 'status') {
+      tabS.className = 'layer-tab active-status';
+      tabC.className = 'layer-tab';
+      panS.style.display = '';
+      panC.style.display = 'none';
+      leg.style.display  = 'none';
+      cnnLayer.removeFrom(map);
+      statusLayer.addTo(map);
+      loadStatusMarkers();
+    } else {
+      tabS.className = 'layer-tab';
+      tabC.className = 'layer-tab active-cnn';
+      panS.style.display = 'none';
+      panC.style.display = '';
+      leg.style.display  = 'block';
+      statusLayer.removeFrom(map);
+      cnnLayer.addTo(map);
+      loadCnnMarkers();
+    }
+  };
+
+  /* ── STATUS layer ─────────────────────────────────── */
+  function loadStatusMarkers() {
+    hideErr();
+    var status = (document.getElementById('filterStatus') || {}).value || '';
+    var url = '/peta/geojson' + (status ? '?status=' + status : '');
+
+    fetch(url)
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (data) {
+        showMap();
+        statusLayer.clearLayers();
+        data.features.forEach(function (f) {
+          var p = f.properties;
+          var ll = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+          var m = L.circleMarker(ll, {
+            radius: 9, fillColor: p.warna, color: '#fff',
+            weight: 2, opacity: 1, fillOpacity: 0.85
+          });
+          m.bindPopup(
+            '<strong>' + p.nama_citra + '</strong><br>' +
+            'Jenis: ' + p.jenis + '<br>' +
+            'Tingkat: <span style="color:' + p.warna + ';font-weight:bold">' + p.tingkat + '</span><br>' +
+            'Status: ' + p.status + '<br>' +
+            'Prioritas: ' + p.prioritas
+          );
+          statusLayer.addLayer(m);
+        });
+      })
+      .catch(function () { showMap(); showErr('Gagal memuat data peta status.'); });
+  }
+
+  /* ── CNN layer ────────────────────────────────────── */
+  var allCnnFeatures = [];
+
+  window.loadCnnMarkers = function () {
+    hideErr();
+    var sel = document.getElementById('modelSelect');
+    if (!sel) return;
+    var arsitekturId = sel.value;
+    if (!arsitekturId) return;
+
+    fetch('/peta/prediksi-geojson?arsitektur_id=' + arsitekturId + '&filter=all')
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (data) {
+        showMap();
+        allCnnFeatures = data.features;
+
+        /* stats */
+        var total = allCnnFeatures.length;
+        var benar = allCnnFeatures.filter(function (f) { return f.properties.benar; }).length;
+        document.getElementById('cnnTotal').textContent   = total;
+        document.getElementById('cnnBenar').textContent   = benar;
+        document.getElementById('cnnSalah').textContent   = total - benar;
+
+        /* reset filter to "all" */
+        document.querySelectorAll('[data-cnn-filter]').forEach(function (b) {
+          b.classList.toggle('active', b.dataset.cnnFilter === 'all');
+        });
+        renderCnnMarkers('all');
+      })
+      .catch(function () { showMap(); showErr('Gagal memuat data prediksi CNN.'); });
+  };
+
+  window.applyCnnFilter = function (btn) {
+    document.querySelectorAll('[data-cnn-filter]').forEach(function (b) {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    renderCnnMarkers(btn.dataset.cnnFilter);
+  };
+
+  function renderCnnMarkers(filter) {
+    var WARNA = { 0: '#E53E3E', 1: '#F59E0B', 2: '#10B981' };
+    cnnLayer.clearLayers();
+    var shown = 0;
+
+    allCnnFeatures.forEach(function (f) {
+      var p = f.properties;
+      var visible = false;
+      if (filter === 'all')   visible = true;
+      else if (filter === 'salah') visible = !p.benar;
+      else visible = p.prediksi === parseInt(filter);
+      if (!visible) return;
+
+      shown++;
+      var clr = WARNA[p.prediksi] || '#999';
+      var ll  = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+      var m   = L.circleMarker(ll, {
+        radius: 8, fillColor: clr, fillOpacity: 0.85,
+        color: '#ffffff', weight: 2,
+        dashArray: p.benar ? null : '4 3',
+        opacity: 0.9,
+      });
+
+      var aktualClr = WARNA[p.aktual] || '#999';
+      m.bindPopup(
+        '<img src="/static/' + p.path_file + '" class="popup-img" onerror="this.style.display=\'none\'">' +
+        '<div class="popup-row"><span class="popup-label">Lokasi</span>' +
+          '<span style="font-weight:600;font-size:.72rem;">' + p.nama_citra + '</span></div>' +
+        '<div class="popup-row"><span class="popup-label">Prediksi</span>' +
+          '<span class="popup-chip" style="background:' + clr + '22;color:' + clr + ';">' + p.label_pred + '</span></div>' +
+        '<div class="popup-row"><span class="popup-label">Aktual</span>' +
+          '<span class="popup-chip" style="background:' + aktualClr + '22;color:' + aktualClr + ';">' + p.label_aktual + '</span></div>' +
+        '<div class="popup-row"><span class="popup-label">Confidence</span>' +
+          '<strong>' + p.confidence + '%</strong></div>' +
+        '<div class="popup-row"><span class="popup-label">Hasil</span>' +
+          '<strong style="color:' + (p.benar ? '#10B981' : '#EF4444') + ';">' +
+          (p.benar ? '✓ Benar' : '✗ Salah') + '</strong></div>',
+        { maxWidth: 220 }
+      );
+      cnnLayer.addLayer(m);
+    });
+
+    var countEl = document.getElementById('cnnFilterCount');
+    if (countEl) countEl.textContent = shown + ' foto ditampilkan';
+  }
+
+  /* ── Filter button & init ─────────────────────────── */
+  var btnFilter = document.getElementById('btnFilter');
+  if (btnFilter) btnFilter.addEventListener('click', loadStatusMarkers);
+
+  loadStatusMarkers();
+})();
+</script>
+{% endblock %}

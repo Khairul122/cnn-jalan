@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Hasil Klasifikasi{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('klasifikasi.upload') }}">Klasifikasi CNN</a>
+<span class="sep">›</span>
+<span class="current">Hasil</span>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = 'Hasil Klasifikasi CNN' %}
+{% set ph_back_url = url_for('klasifikasi.upload') %}
+{% include 'components/page_header.html' %}
+
+<div style="max-width:480px;border:1px solid var(--c-border);border-radius:var(--r-card);
+            overflow:hidden;box-shadow:var(--shadow-lg);
+            animation:fadeInUp var(--duration-slow) var(--ease-spring) both;">
+
+  <!-- Success header -->
+  <div style="background:linear-gradient(135deg,var(--c-ok) 0%,#047857 100%);
+              padding:1.25rem 1.5rem;display:flex;align-items:center;gap:.75rem;">
+    <div style="width:2.5rem;height:2.5rem;border-radius:50%;background:rgba(255,255,255,.2);
+                display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+         aria-hidden="true">
+      <i class="bi bi-check-lg" style="color:#fff;font-size:1.1rem;"></i>
+    </div>
+    <div>
+      <p style="color:#fff;font-weight:700;font-size:.95rem;margin:0;">Klasifikasi Berhasil</p>
+      <p style="color:rgba(255,255,255,.65);font-size:.75rem;margin:0;">Hasil prediksi model CNN</p>
+    </div>
+  </div>
+
+  <!-- Result rows -->
+  <ul class="list-group list-group-flush">
+
+    {% set dr_label = 'Foto' %}
+    {% set dr_value = hasil.dokumentasi.nama_file %}
+    {% include 'components/detail_row.html' %}
+
+    {% set dr_label = 'Jenis Kerusakan' %}
+    {% set dr_value = '<span class="badge bg-dark fs-6">' ~ hasil.jenis_kerusakan.kode ~ ' — ' ~ hasil.jenis_kerusakan.nama_jenis ~ '</span>' %}
+    {% set dr_raw = true %}
+    {% include 'components/detail_row.html' %}
+    {% set dr_raw = false %}
+
+    {% set dr_label = 'Tingkat Kerusakan' %}
+    {% set dr_value = '<span class="badge fs-6" style="background-color:' ~ hasil.tingkat_kerusakan.warna_peta ~ '">' ~ hasil.tingkat_kerusakan.nama_tingkat ~ '</span>' %}
+    {% set dr_raw = true %}
+    {% include 'components/detail_row.html' %}
+    {% set dr_raw = false %}
+
+    <!-- Confidence Score dengan progress bar -->
+    <li class="list-group-item py-2 px-3">
+      <div class="d-flex justify-content-between align-items-center gap-2">
+        <span class="text-muted small">Confidence Score</span>
+        <strong style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">
+          {{ (hasil.confidence_score * 100) | round(2) }}%
+        </strong>
+      </div>
+      <div class="cnn-confidence-track">
+        <div class="cnn-confidence-fill js-confidence-bar"
+             data-pct="{{ (hasil.confidence_score * 100) | round(2) }}"
+             style="width:0%;"></div>
+      </div>
+    </li>
+
+    {% set dr_label = 'Valid' %}
+    {% if hasil.is_valid %}
+      {% set dr_value = '<span class="badge bg-success">Valid</span>' %}
+    {% else %}
+      {% set dr_value = '<span class="badge bg-danger">Perlu Ulang</span>' %}
+    {% endif %}
+    {% set dr_raw = true %}
+    {% include 'components/detail_row.html' %}
+    {% set dr_raw = false %}
+
+  </ul>
+
+  <!-- Action buttons -->
+  <div style="padding:1.25rem 1.5rem;border-top:1px solid var(--c-border-sub);
+              display:flex;gap:.625rem;flex-wrap:wrap;">
+    <a href="{{ url_for('peta.index') }}" class="cnn-qa-link"
+       style="background:var(--c-warn-bg);border-color:rgba(217,119,6,.3);flex:1;">
+      <i class="bi bi-map" style="color:var(--c-warn);font-size:1rem;flex-shrink:0;" aria-hidden="true"></i>
+      <span style="font-size:.85rem;font-weight:500;color:var(--c-warn);">Lihat Peta</span>
+    </a>
+    <a href="{{ url_for('klasifikasi.upload') }}" class="btn-cnn-primary"
+       style="flex:1;font-size:.82rem;text-decoration:none;justify-content:center;">
+      <i class="bi bi-cpu" aria-hidden="true"></i>Klasifikasi Lagi
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.js-confidence-bar').forEach(function(bar) {
+    var pct = parseFloat(bar.getAttribute('data-pct')) || 0;
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        bar.style.width = pct + '%';
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Arsitektur CNN{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<span class="current">Arsitektur CNN</span>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+  <div>
+    {% set ph_title = 'Arsitektur CNN' %}{% include 'components/page_header.html' %}
+    <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
+      Transfer learning MobileNetV2 & EfficientNetB0 untuk klasifikasi tingkat kerusakan
+    </p>
+  </div>
+  <a href="{{ url_for('arsitektur.new') }}" class="btn-cnn-primary">
+    <i class="bi bi-plus-lg"></i> Buat Konfigurasi
+  </a>
+</div>
+
+<!-- Stats -->
+<div class="row g-2 mb-4">
+  {% for lbl, val, color, icon in [
+      ('Total Konfigurasi', configs|length,  '#A78BFA', 'bi-cpu-fill'),
+      ('Selesai Training',  total_selesai,   '#10B981', 'bi-check-circle-fill'),
+      ('Draft / Gagal',     total_draft,     '#64748B', 'bi-hourglass-split'),
+  ] %}
+  <div class="col">
+    <div class="cnn-stat-card">
+      <i class="bi {{ icon }}" style="color:{{ color }};font-size:1rem;"></i>
+      <div>
+        <div class="cnn-stat-val">{{ val }}</div>
+        <div class="cnn-stat-lbl">{{ lbl }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if configs %}
+<div class="cnn-table-wrap">
+  <table class="table table-hover align-middle mb-0 cnn-table">
+    <thead>
+      <tr>
+        <th style="width:36px;">#</th>
+        <th>Nama</th>
+        <th style="text-align:center;">Model</th>
+        <th style="text-align:center;width:72px;">Epoch</th>
+        <th>Split</th>
+        <th style="text-align:center;width:72px;">Fold Val</th>
+        <th style="text-align:center;width:90px;">Status</th>
+        <th style="text-align:center;width:90px;">Akurasi</th>
+        <th style="text-align:center;width:110px;">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cfg in configs %}
+      {% set is_best = (cfg.id == best_id) %}
+      {% set ev = evaluasi_map.get(cfg.id) %}
+      <tr {% if is_best %}class="row-best"{% endif %}>
+        <td style="font-size:.75rem;color:var(--c-muted);">{{ loop.index }}</td>
+        <td>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span style="font-weight:600;font-size:.85rem;color:var(--c-text);">{{ cfg.nama }}</span>
+            {% if is_best %}
+            <span class="badge-best"><i class="bi bi-trophy-fill"></i> Terbaik</span>
+            {% endif %}
+          </div>
+          <div style="font-size:.7rem;color:var(--c-muted);">{{ cfg.created_at.strftime('%d %b %Y') }}</div>
+        </td>
+        <td style="text-align:center;">
+          <span class="model-badge model-badge--{{ cfg.model_type }}">
+            {{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}
+          </span>
+        </td>
+        <td style="text-align:center;font-size:.83rem;color:var(--c-text);font-variant-numeric:tabular-nums;">
+          {{ cfg.epochs }}
+        </td>
+        <td style="font-size:.78rem;color:var(--c-muted);">
+          {{ cfg.split_config.nama if cfg.split_config else '—' }}
+        </td>
+        <td style="text-align:center;font-size:.8rem;color:var(--c-muted);">
+          Fold {{ cfg.fold_val + 1 }}
+        </td>
+        <td style="text-align:center;">
+          <span class="status-badge status-badge--{{ cfg.status }}">
+            {% if cfg.status == 'draft' %}Draft
+            {% elif cfg.status == 'training' %}Training…
+            {% elif cfg.status == 'selesai' %}Selesai
+            {% else %}Gagal{% endif %}
+          </span>
+        </td>
+        <td style="text-align:center;font-variant-numeric:tabular-nums;">
+          {% if ev %}
+          <span style="font-weight:700;font-size:.85rem;color:{% if is_best %}#F59E0B{% else %}#10B981{% endif %};">
+            {{ ev.akurasi }}%
+          </span>
+          {% else %}
+          <span style="color:var(--c-muted);font-size:.78rem;">—</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center;">
+          <div class="d-flex align-items-center justify-content-center gap-1">
+            <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat">
+              <i class="bi bi-eye-fill"></i> Lihat
+            </a>
+            <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"
+                  onsubmit="return confirm('Hapus konfigurasi &quot;{{ cfg.nama }}&quot;?')">
+              <button type="submit" class="btn-action-del" title="Hapus">
+                <i class="bi bi-trash-fill"></i>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="cnn-empty">
+  <i class="bi bi-cpu" style="font-size:2rem;color:var(--c-muted);display:block;margin-bottom:.625rem;"></i>
+  <p style="font-size:.88rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada konfigurasi</p>
+  <p style="font-size:.75rem;color:var(--c-muted);margin:0 0 1rem;max-width:340px;">
+    Buat konfigurasi CNN untuk melatih model MobileNetV2 atau EfficientNetB0
+  </p>
+  <a href="{{ url_for('arsitektur.new') }}" class="btn-cnn-primary">
+    <i class="bi bi-plus-lg"></i> Buat Konfigurasi Pertama
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.btn-cnn-primary {
+  display: inline-flex; align-items: center; gap: .375rem;
+  padding: .45rem .9rem; border-radius: var(--r-input);
+  font-size: .8rem; font-weight: 700; text-decoration: none;
+  background: linear-gradient(135deg, #0369A1, #0EA5E9); color: #fff;
+  box-shadow: 0 2px 8px rgba(3,105,161,.25);
+  transition: opacity .15s, transform .15s; cursor: pointer;
+}
+.btn-cnn-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+
+.cnn-stat-card {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .625rem .875rem;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+}
+.cnn-stat-val { font-size: 1.1rem; font-weight: 700; color: var(--c-text); margin: 0; font-variant-numeric: tabular-nums; }
+.cnn-stat-lbl { font-size: .68rem; color: var(--c-muted); margin: 0; }
+
+.cnn-table-wrap { border-radius: var(--r-card); overflow: hidden; box-shadow: var(--shadow-card); border: 1px solid var(--c-border); }
+
+.model-badge {
+  display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+  font-size: .72rem; font-weight: 700;
+}
+.model-badge--mobilenetv2   { background: rgba(3,105,161,.18); border: 1px solid rgba(14,165,233,.3); color: #38BDF8; }
+.model-badge--efficientnetb0 { background: rgba(124,58,237,.15); border: 1px solid rgba(167,139,250,.3); color: #A78BFA; }
+
+.status-badge {
+  display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+  font-size: .72rem; font-weight: 600;
+}
+.status-badge--draft    { background: rgba(100,116,139,.15); border: 1px solid rgba(100,116,139,.3); color: #94a3b8; }
+.status-badge--training { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.3); color: #F59E0B; }
+.status-badge--selesai  { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); color: #10B981; }
+.status-badge--gagal    { background: rgba(220,38,38,.12); border: 1px solid rgba(220,38,38,.25); color: #EF4444; }
+
+.btn-action-view {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .28rem .6rem; border-radius: var(--r-input);
+  font-size: .73rem; font-weight: 600; text-decoration: none;
+  background: rgba(3,105,161,.2); color: #38BDF8;
+  border: 1px solid rgba(56,189,248,.25); transition: background .15s;
+}
+.btn-action-view:hover { background: rgba(3,105,161,.35); color: #38BDF8; }
+
+.btn-action-del {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: var(--r-input);
+  background: transparent; color: #DC2626;
+  border: 1px solid rgba(220,38,38,.3); cursor: pointer;
+  font-size: .78rem; transition: background .15s;
+}
+.btn-action-del:hover { background: rgba(220,38,38,.12); }
+
+.cnn-empty {
+  text-align: center; padding: 2.5rem 1rem;
+  background: var(--c-surface); border-radius: var(--r-card);
+  border: 1px solid var(--c-border);
+}
+
+.badge-best {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .15rem .5rem; border-radius: 999px; font-size: .68rem; font-weight: 700;
+  background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.35); color: #F59E0B;
+}
+.row-best td:first-child {
+  border-left: 3px solid #F59E0B;
+}
+</style>
+{% endblock %}

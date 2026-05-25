@@ -1,0 +1,564 @@
+{% extends 'base.html' %}
+{% block title %}Hasil Preprocessing{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('preprocessing.index') }}" style="color:var(--c-accent);text-decoration:none;">Preprocessing</a>
+<span class="sep">›</span>
+<span class="current">Hasil</span>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div>{% set ph_title = 'Hasil Preprocessing' %}{% include 'components/page_header.html' %}</div>
+  <div class="d-flex gap-2">
+    {% if total > 0 %}
+    <button type="button" onclick="document.getElementById('modalResetPrep').style.display='flex'"
+            style="display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;
+                   border-radius:var(--r-input);font-size:.8rem;font-weight:600;cursor:pointer;
+                   background:transparent;color:#DC2626;border:1px solid #DC262650;transition:all .15s;"
+            onmouseover="this.style.background='#FEF2F2';this.style.borderColor='#DC2626'"
+            onmouseout="this.style.background='transparent';this.style.borderColor='#DC262650'">
+      <i class="bi bi-trash-fill"></i> Reset Semua
+    </button>
+    {% endif %}
+    <a href="{{ url_for('preprocessing.index') }}"
+       style="display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;
+              border-radius:var(--r-input);font-size:.8rem;font-weight:600;text-decoration:none;
+              background:transparent;color:var(--c-muted);border:1px solid var(--c-border);">
+      <i class="bi bi-arrow-left"></i> Kembali
+    </a>
+  </div>
+</div>
+
+<!-- Filter + total counter -->
+<div style="background:var(--c-surface);border:1px solid var(--c-border);
+            border-radius:var(--r-card);padding:.75rem 1rem;margin-bottom:1rem;">
+  <form method="GET" class="d-flex align-items-center gap-2 flex-wrap">
+    <label style="font-size:.8rem;font-weight:600;color:var(--c-text);white-space:nowrap;">
+      <i class="bi bi-funnel" style="color:var(--c-accent);"></i> Filter:
+    </label>
+    <select name="config_id" onchange="this.form.submit()"
+            style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--r-input);
+                   color:var(--c-text);font-size:.8rem;padding:.35rem .75rem;min-width:200px;">
+      <option value="">Semua Konfigurasi</option>
+      {% for cfg in config_list %}
+      <option value="{{ cfg.id }}" {{ 'selected' if config_id == cfg.id }}>{{ cfg.nama_config }}</option>
+      {% endfor %}
+    </select>
+    {% if config_id %}
+    <a href="{{ url_for('preprocessing.hasil') }}"
+       style="font-size:.78rem;color:var(--c-muted);text-decoration:none;">
+      <i class="bi bi-x-circle"></i> Reset
+    </a>
+    {% endif %}
+    <!-- Spacer + total -->
+    <div style="margin-left:auto;font-size:.8rem;color:var(--c-muted);">
+      Total:
+      <strong style="color:var(--c-text);font-variant-numeric:tabular-nums;">{{ total }}</strong> hasil
+    </div>
+  </form>
+</div>
+
+{% if total > 0 %}
+
+<!-- Stats strip -->
+{% set selesai_count = hasil_list | selectattr('status', 'equalto', 'selesai') | list | length %}
+{% set gagal_count   = hasil_list | selectattr('status', 'equalto', 'gagal')   | list | length %}
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  {% for lbl, val, color, icon in [
+      ('Total Semua',  total,          '#38BDF8', 'bi-images'),
+      ('Halaman ini',  hasil_list|length, '#A78BFA', 'bi-grid-fill'),
+      ('Selesai',      selesai_count,  '#10B981', 'bi-check-circle-fill'),
+      ('Gagal',        gagal_count,    '#E53E3E', 'bi-x-circle-fill'),
+  ] %}
+  <div style="flex:1;min-width:100px;background:var(--c-surface);border:1px solid var(--c-border);
+              border-radius:var(--r-card);padding:.55rem .75rem;
+              display:flex;align-items:center;gap:.4rem;">
+    <i class="bi {{ icon }}" style="color:{{ color }};font-size:.9rem;flex-shrink:0;"></i>
+    <div>
+      <p style="font-size:1.1rem;font-weight:700;color:var(--c-text);margin:0;font-variant-numeric:tabular-nums;">{{ val }}</p>
+      <p style="font-size:.68rem;color:var(--c-muted);margin:0;">{{ lbl }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Info halaman -->
+<div class="d-flex align-items-center justify-content-between mb-2">
+  <p style="font-size:.78rem;color:var(--c-muted);margin:0;">
+    Menampilkan
+    <strong style="color:var(--c-text);">{{ (page-1)*per_page + 1 }}–{{ [(page-1)*per_page + hasil_list|length, total]|min }}</strong>
+    dari <strong style="color:var(--c-text);">{{ total }}</strong> hasil
+    (halaman {{ page }} / {{ total_pages }})
+  </p>
+</div>
+
+<!-- Grid hasil -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.875rem;margin-bottom:1.25rem;">
+  {% for h in hasil_list %}
+  <div style="background:var(--c-surface);border:1px solid var(--c-border);
+              border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card);">
+
+    <!-- Gambar hasil -->
+    <div style="height:150px;background:var(--c-bg);overflow:hidden;position:relative;
+                display:flex;align-items:center;justify-content:center;cursor:pointer;"
+         {% if h.status == 'selesai' and h.path_output %}
+         onclick="openModal('{{ url_for('static', filename=h.path_output) }}','{{ h.dokumentasi.nama_file if h.dokumentasi else '' }}','{{ h.config.nama_config if h.config else '' }}','{{ h.ukuran_kb_hasil ~ ' KB' if h.ukuran_kb_hasil else '-' }}','{{ h.durasi_ms ~ ' ms' if h.durasi_ms else '-' }}')"
+         title="Klik untuk perbesar"
+         {% endif %}>
+      {% if h.status == 'selesai' and h.path_output %}
+        <img src="{{ url_for('static', filename=h.path_output) }}"
+             alt="Hasil preprocessing"
+             style="width:100%;height:100%;object-fit:cover;transition:transform .2s;"
+             onmouseover="this.style.transform='scale(1.04)'"
+             onmouseout="this.style.transform='scale(1)'"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div style="display:none;flex-direction:column;align-items:center;justify-content:center;
+                    height:100%;color:var(--c-muted);font-size:.72rem;">
+          <i class="bi bi-image" style="font-size:1.5rem;margin-bottom:.3rem;"></i>
+          File tidak ditemukan
+        </div>
+        <!-- Zoom hint overlay -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                    background:rgba(0,0,0,0);transition:background .2s;"
+             onmouseover="this.style.background='rgba(0,0,0,.25)';this.querySelector('i').style.opacity='1'"
+             onmouseout="this.style.background='rgba(0,0,0,0)';this.querySelector('i').style.opacity='0'">
+          <i class="bi bi-zoom-in" style="color:#fff;font-size:1.6rem;opacity:0;transition:opacity .2s;
+                                          filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));"></i>
+        </div>
+      {% else %}
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                    height:100%;color:#DC2626;font-size:.72rem;">
+          <i class="bi bi-x-circle-fill" style="font-size:1.5rem;margin-bottom:.3rem;"></i>
+          Gagal
+        </div>
+      {% endif %}
+
+      <!-- Status badge -->
+      <div style="position:absolute;top:.4rem;right:.4rem;">
+        {% if h.status == 'selesai' %}
+        <span style="display:inline-flex;align-items:center;gap:.2rem;padding:.18rem .45rem;
+                     border-radius:999px;font-size:.68rem;font-weight:600;
+                     background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#10B981;
+                     backdrop-filter:blur(4px);">
+          <i class="bi bi-check-circle-fill" style="font-size:.6rem;"></i> OK
+        </span>
+        {% else %}
+        <span style="display:inline-flex;align-items:center;gap:.2rem;padding:.18rem .45rem;
+                     border-radius:999px;font-size:.68rem;font-weight:600;
+                     background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.4);color:#DC2626;
+                     backdrop-filter:blur(4px);">
+          <i class="bi bi-x-circle-fill" style="font-size:.6rem;"></i> Gagal
+        </span>
+        {% endif %}
+      </div>
+
+      <!-- Nomor urut -->
+      <div style="position:absolute;top:.4rem;left:.4rem;
+                  background:rgba(0,0,0,.55);border-radius:.3rem;
+                  padding:.15rem .4rem;font-size:.65rem;color:rgba(255,255,255,.8);
+                  font-variant-numeric:tabular-nums;backdrop-filter:blur(4px);">
+        #{{ (page-1)*per_page + loop.index }}
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div style="padding:.65rem .75rem;">
+      <p style="font-size:.78rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+         title="{{ h.dokumentasi.nama_file if h.dokumentasi else '' }}">
+        {{ h.dokumentasi.nama_file if h.dokumentasi else 'Foto #' ~ h.dokumentasi_id }}
+      </p>
+
+      <div style="display:grid;grid-template-columns:auto 1fr;column-gap:.5rem;row-gap:.15rem;
+                  font-size:.7rem;margin-bottom:.4rem;">
+        <span style="color:var(--c-muted);">Konfigurasi</span>
+        <span style="color:var(--c-text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          {{ h.config.nama_config if h.config else '-' }}
+        </span>
+
+        <span style="color:var(--c-muted);">Ukuran</span>
+        <span style="color:var(--c-text);font-variant-numeric:tabular-nums;">
+          {{ h.ukuran_kb_asal ~ ' KB' if h.ukuran_kb_asal else '—' }}
+          {% if h.ukuran_kb_hasil %} → {{ h.ukuran_kb_hasil }} KB{% endif %}
+        </span>
+
+        <span style="color:var(--c-muted);">Durasi</span>
+        <span style="color:var(--c-text);font-variant-numeric:tabular-nums;">
+          {{ h.durasi_ms ~ ' ms' if h.durasi_ms else '—' }}
+        </span>
+      </div>
+
+      {% if h.status == 'gagal' and h.catatan %}
+      <div style="background:#FEF2F220;border:1px solid #DC262630;border-radius:var(--r-input);
+                  padding:.3rem .45rem;font-size:.68rem;color:#DC2626;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ h.catatan }}
+      </div>
+      {% endif %}
+
+      <div style="font-size:.65rem;color:var(--c-muted);margin-top:.3rem;">
+        {{ h.created_at.strftime('%d %b %Y %H:%M') if h.created_at else '' }}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Paginasi -->
+{% if total_pages > 1 %}
+<nav style="display:flex;align-items:center;justify-content:center;gap:.375rem;flex-wrap:wrap;padding:.5rem 0;">
+
+  <!-- Prev -->
+  {% if page > 1 %}
+  <a href="{{ url_for('preprocessing.hasil', page=page-1, config_id=config_id or '') }}"
+     style="display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .8rem;
+            border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
+            background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">
+    <i class="bi bi-chevron-left"></i> Prev
+  </a>
+  {% else %}
+  <span style="display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .8rem;
+               border-radius:var(--r-input);font-size:.8rem;
+               background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-muted);opacity:.5;">
+    <i class="bi bi-chevron-left"></i> Prev
+  </span>
+  {% endif %}
+
+  <!-- Nomor halaman -->
+  {% set start_p = [1, page-2] | max %}
+  {% set end_p   = [total_pages, page+2] | min %}
+  {% if start_p > 1 %}
+    <a href="{{ url_for('preprocessing.hasil', page=1, config_id=config_id or '') }}"
+       style="padding:.4rem .7rem;border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
+              background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">1</a>
+    {% if start_p > 2 %}<span style="color:var(--c-muted);padding:0 .25rem;">…</span>{% endif %}
+  {% endif %}
+
+  {% for p in range(start_p, end_p+1) %}
+  <a href="{{ url_for('preprocessing.hasil', page=p, config_id=config_id or '') }}"
+     style="padding:.4rem .7rem;border-radius:var(--r-input);font-size:.8rem;font-weight:{% if p==page %}700{% else %}400{% endif %};
+            text-decoration:none;
+            background:{% if p==page %}var(--c-accent){% else %}var(--c-surface){% endif %};
+            border:1px solid {% if p==page %}var(--c-accent){% else %}var(--c-border){% endif %};
+            color:{% if p==page %}#0F172A{% else %}var(--c-text){% endif %};">
+    {{ p }}
+  </a>
+  {% endfor %}
+
+  {% if end_p < total_pages %}
+    {% if end_p < total_pages-1 %}<span style="color:var(--c-muted);padding:0 .25rem;">…</span>{% endif %}
+    <a href="{{ url_for('preprocessing.hasil', page=total_pages, config_id=config_id or '') }}"
+       style="padding:.4rem .7rem;border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
+              background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">
+      {{ total_pages }}
+    </a>
+  {% endif %}
+
+  <!-- Next -->
+  {% if page < total_pages %}
+  <a href="{{ url_for('preprocessing.hasil', page=page+1, config_id=config_id or '') }}"
+     style="display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .8rem;
+            border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
+            background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">
+    Next <i class="bi bi-chevron-right"></i>
+  </a>
+  {% else %}
+  <span style="display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .8rem;
+               border-radius:var(--r-input);font-size:.8rem;
+               background:var(--c-bg);border:1px solid var(--c-border);color:var(--c-muted);opacity:.5;">
+    Next <i class="bi bi-chevron-right"></i>
+  </span>
+  {% endif %}
+
+</nav>
+{% endif %}
+
+{% else %}
+<!-- Empty state -->
+<div style="text-align:center;padding:3.5rem 1rem;background:var(--c-surface);
+            border-radius:var(--r-card);border:1px solid var(--c-border);">
+  <i class="bi bi-images" style="font-size:2.5rem;color:var(--c-muted);display:block;margin-bottom:.75rem;"></i>
+  <p style="font-size:.9rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada hasil preprocessing</p>
+  <p style="font-size:.78rem;color:var(--c-muted);margin:0 0 1rem;">
+    Pilih konfigurasi di halaman Preprocessing lalu klik tombol "Jalankan"
+  </p>
+  <a href="{{ url_for('preprocessing.index') }}"
+     style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;
+            border-radius:var(--r-input);font-size:.82rem;font-weight:700;text-decoration:none;
+            background:linear-gradient(135deg,#059669,#10B981);color:#fff;">
+    <i class="bi bi-play-fill"></i> Ke Halaman Preprocessing
+  </a>
+</div>
+{% endif %}
+
+<!-- Modal Konfirmasi Reset Semua Preprocessing -->
+<div id="modalResetPrep"
+     style="display:none;position:fixed;inset:0;z-index:9998;
+            background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:1rem;"
+     onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--c-surface);border:1px solid var(--c-border);
+              border-radius:var(--r-card);width:100%;max-width:420px;
+              box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:.625rem;
+                padding:.875rem 1.125rem;border-bottom:1px solid var(--c-border);
+                background:rgba(220,38,38,.06);">
+      <span style="width:34px;height:34px;border-radius:50%;flex-shrink:0;
+                   background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);
+                   display:flex;align-items:center;justify-content:center;">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#DC2626;font-size:.9rem;"></i>
+      </span>
+      <div>
+        <p style="font-size:.88rem;font-weight:700;color:var(--c-text);margin:0;">Reset Semua Hasil</p>
+        <p style="font-size:.72rem;color:var(--c-muted);margin:0;">Tindakan ini tidak bisa dibatalkan</p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:1.125rem;">
+      <p style="font-size:.83rem;color:var(--c-text);margin:0 0 .75rem;">
+        Anda akan menghapus <strong style="color:#DC2626;">{{ total }} record</strong> hasil preprocessing beserta
+        <strong style="color:#DC2626;">semua file gambar</strong> yang tersimpan di folder
+        <code style="font-size:.75rem;background:var(--c-bg);padding:.1rem .35rem;border-radius:.25rem;
+                     border:1px solid var(--c-border);">uploads/preprocessed/</code>.
+      </p>
+      <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);
+                  border-radius:var(--r-input);padding:.6rem .875rem;font-size:.78rem;color:#DC2626;">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Setelah reset, jalankan ulang preprocessing dengan konfigurasi yang sudah diperbaiki agar gambar tidak cacat.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;
+                padding:.75rem 1.125rem;border-top:1px solid var(--c-border);background:var(--c-bg);">
+      <button type="button" onclick="document.getElementById('modalResetPrep').style.display='none'"
+              style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
+                     background:transparent;color:var(--c-muted);border:1px solid var(--c-border);cursor:pointer;">
+        Batal
+      </button>
+      <form method="POST" action="{{ url_for('preprocessing.hasil_reset') }}" style="margin:0;">
+        <button type="submit"
+                style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
+                       background:#DC2626;color:#fff;border:none;cursor:pointer;
+                       display:inline-flex;align-items:center;gap:.35rem;">
+          <i class="bi bi-trash-fill"></i> Ya, Reset Semua
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Data semua gambar di halaman ini untuk navigasi -->
+<script id="galleryData" type="application/json">
+[{% for h in hasil_list %}{% if h.status == 'selesai' and h.path_output %}
+  {"src":"{{ url_for('static', filename=h.path_output) }}",
+   "nama":"{{ h.dokumentasi.nama_file | replace('"','') if h.dokumentasi else 'Foto #'~h.dokumentasi_id }}",
+   "config":"{{ h.config.nama_config | replace('"','') if h.config else '-' }}",
+   "ukuran":"{{ h.ukuran_kb_hasil ~ ' KB' if h.ukuran_kb_hasil else '-' }}",
+   "durasi":"{{ h.durasi_ms ~ ' ms' if h.durasi_ms else '-' }}"}{% if not loop.last %},{% endif %}
+{% endif %}{% endfor %}]
+</script>
+
+<!-- Modal preview gambar -->
+<div id="imgModal"
+     style="display:none;position:fixed;inset:0;z-index:9999;
+            background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:1rem;"
+     onclick="if(event.target===this)closeModal()">
+
+  <!-- Tombol Prev (kiri) -->
+  <button id="btnPrev" onclick="navigate(-1)"
+          style="position:fixed;left:1rem;top:50%;transform:translateY(-50%);
+                 width:44px;height:44px;border-radius:50%;cursor:pointer;
+                 background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+                 color:#fff;display:flex;align-items:center;justify-content:center;
+                 font-size:1.2rem;transition:all .15s;z-index:10000;"
+          onmouseover="this.style.background='rgba(255,255,255,.25)'"
+          onmouseout="this.style.background='rgba(255,255,255,.12)'">
+    <i class="bi bi-chevron-left"></i>
+  </button>
+
+  <!-- Tombol Next (kanan) -->
+  <button id="btnNext" onclick="navigate(1)"
+          style="position:fixed;right:1rem;top:50%;transform:translateY(-50%);
+                 width:44px;height:44px;border-radius:50%;cursor:pointer;
+                 background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+                 color:#fff;display:flex;align-items:center;justify-content:center;
+                 font-size:1.2rem;transition:all .15s;z-index:10000;"
+          onmouseover="this.style.background='rgba(255,255,255,.25)'"
+          onmouseout="this.style.background='rgba(255,255,255,.12)'">
+    <i class="bi bi-chevron-right"></i>
+  </button>
+
+  <div style="position:relative;max-width:900px;width:100%;
+              background:var(--c-surface);border-radius:var(--r-card);
+              border:1px solid var(--c-border);overflow:hidden;
+              box-shadow:0 25px 70px rgba(0,0,0,.6);">
+
+    <!-- Header modal -->
+    <div style="display:flex;align-items:center;gap:.625rem;
+                padding:.75rem 1rem;border-bottom:1px solid var(--c-border);
+                background:var(--c-bg);">
+      <i class="bi bi-image" style="color:var(--c-accent);font-size:1rem;flex-shrink:0;"></i>
+      <div style="flex:1;min-width:0;">
+        <p id="modalTitle" style="font-size:.85rem;font-weight:700;color:var(--c-text);
+                                   margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></p>
+        <p id="modalSub" style="font-size:.7rem;color:var(--c-muted);margin:0;"></p>
+      </div>
+      <!-- Counter -->
+      <span id="modalCounter"
+            style="font-size:.75rem;font-weight:600;color:var(--c-muted);
+                   background:var(--c-bg);border:1px solid var(--c-border);
+                   border-radius:999px;padding:.2rem .65rem;flex-shrink:0;
+                   font-variant-numeric:tabular-nums;"></span>
+      <!-- Download -->
+      <a id="modalDownload" href="#" download
+         style="display:inline-flex;align-items:center;gap:.3rem;padding:.35rem .7rem;
+                border-radius:var(--r-input);font-size:.75rem;font-weight:600;text-decoration:none;
+                background:#0369A1;color:#fff;flex-shrink:0;">
+        <i class="bi bi-download"></i> Unduh
+      </a>
+      <!-- Tutup -->
+      <button onclick="closeModal()"
+              style="width:32px;height:32px;border-radius:.375rem;border:1px solid var(--c-border);
+                     background:transparent;color:var(--c-muted);cursor:pointer;
+                     display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                     transition:all .15s;"
+              onmouseover="this.style.background='var(--c-bg)';this.style.color='var(--c-text)'"
+              onmouseout="this.style.background='transparent';this.style.color='var(--c-muted)'">
+        <i class="bi bi-x" style="font-size:1.1rem;"></i>
+      </button>
+    </div>
+
+    <!-- Gambar -->
+    <div style="background:#000;display:flex;align-items:center;justify-content:center;
+                min-height:300px;max-height:70vh;overflow:hidden;position:relative;">
+      <img id="modalImg" src="" alt="Preview"
+           style="max-width:100%;max-height:70vh;object-fit:contain;display:block;
+                  transition:opacity .15s;">
+      <!-- Loading spinner -->
+      <div id="modalSpinner"
+           style="display:none;position:absolute;inset:0;align-items:center;
+                  justify-content:center;background:rgba(0,0,0,.5);">
+        <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,.2);
+                    border-top-color:#38BDF8;border-radius:50%;animation:spin .7s linear infinite;"></div>
+      </div>
+    </div>
+
+    <!-- Footer info -->
+    <div style="display:flex;align-items:center;gap:1.25rem;
+                padding:.625rem 1rem;border-top:1px solid var(--c-border);
+                background:var(--c-bg);flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--c-muted);">
+        <i class="bi bi-gear" style="color:#A78BFA;"></i>
+        <strong id="modalConfig" style="color:var(--c-text);"></strong>
+      </div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--c-muted);">
+        <i class="bi bi-hdd" style="color:#38BDF8;"></i>
+        <strong id="modalSize" style="color:var(--c-text);"></strong>
+      </div>
+      <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--c-muted);">
+        <i class="bi bi-stopwatch" style="color:#10B981;"></i>
+        <strong id="modalDurasi" style="color:var(--c-text);"></strong>
+      </div>
+      <p style="font-size:.67rem;color:var(--c-muted);margin:0 0 0 auto;">
+        <kbd style="font-size:.65rem;padding:.1rem .3rem;border-radius:.25rem;
+                    border:1px solid var(--c-border);background:var(--c-surface);">←</kbd>
+        <kbd style="font-size:.65rem;padding:.1rem .3rem;border-radius:.25rem;
+                    border:1px solid var(--c-border);background:var(--c-surface);">→</kbd>
+        navigasi &nbsp;
+        <kbd style="font-size:.65rem;padding:.1rem .3rem;border-radius:.25rem;
+                    border:1px solid var(--c-border);background:var(--c-surface);">Esc</kbd>
+        tutup
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+var gallery = [];
+try {
+  gallery = JSON.parse(document.getElementById('galleryData').textContent);
+} catch(e) {}
+
+var currentIdx = 0;
+
+function openModal(src, nama, config, ukuran, durasi) {
+  var idx = gallery.findIndex(function(g){ return g.src === src; });
+  currentIdx = idx >= 0 ? idx : 0;
+  showImage(currentIdx);
+  document.getElementById('imgModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function showImage(idx) {
+  var item = gallery[idx];
+  if (!item) return;
+
+  var imgEl     = document.getElementById('modalImg');
+  var spinner   = document.getElementById('modalSpinner');
+
+  // Fade out, load, fade in
+  imgEl.style.opacity = '0';
+  spinner.style.display = 'flex';
+
+  document.getElementById('modalTitle').textContent   = item.nama;
+  document.getElementById('modalSub').textContent     = item.src.split('/').pop();
+  document.getElementById('modalConfig').textContent  = item.config;
+  document.getElementById('modalSize').textContent    = item.ukuran;
+  document.getElementById('modalDurasi').textContent  = item.durasi;
+  document.getElementById('modalDownload').href       = item.src;
+  document.getElementById('modalDownload').setAttribute('download', item.nama);
+  document.getElementById('modalCounter').textContent = (idx + 1) + ' / ' + gallery.length;
+
+  var tmpImg = new Image();
+  tmpImg.onload = function() {
+    imgEl.src = item.src;
+    imgEl.style.opacity = '1';
+    spinner.style.display = 'none';
+  };
+  tmpImg.onerror = function() {
+    imgEl.src = item.src;
+    imgEl.style.opacity = '1';
+    spinner.style.display = 'none';
+  };
+  tmpImg.src = item.src;
+
+  // Update tombol prev/next
+  document.getElementById('btnPrev').style.opacity = idx === 0 ? '.3' : '1';
+  document.getElementById('btnNext').style.opacity = idx === gallery.length - 1 ? '.3' : '1';
+}
+
+function navigate(dir) {
+  var next = currentIdx + dir;
+  if (next < 0 || next >= gallery.length) return;
+  currentIdx = next;
+  showImage(currentIdx);
+}
+
+function closeModal() {
+  document.getElementById('imgModal').style.display = 'none';
+  document.getElementById('modalImg').src = '';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('imgModal').style.display !== 'flex') return;
+  if (e.key === 'Escape')     closeModal();
+  if (e.key === 'ArrowLeft')  navigate(-1);
+  if (e.key === 'ArrowRight') navigate(1);
+});
+</script>
+{% endblock %}

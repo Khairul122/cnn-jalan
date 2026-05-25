@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Evaluasi Model CNN{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<span class="current">Evaluasi Model</span>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = 'Evaluasi Model CNN' %}
+{% include 'components/page_header.html' %}
+
+<!-- Form tambah (collapse) -->
+<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+            box-shadow:var(--shadow-card);margin-bottom:1.25rem;overflow:hidden;">
+  <div style="padding:.875rem 1.25rem;cursor:pointer;display:flex;align-items:center;gap:.5rem;
+              border-bottom:1px solid var(--c-border-sub);"
+       data-bs-toggle="collapse" data-bs-target="#formEvaluasi">
+    <i class="bi bi-plus-circle" style="color:var(--c-accent);font-size:.95rem;" aria-hidden="true"></i>
+    <span style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-size:.82rem;font-weight:600;color:var(--c-text);">
+      Tambah Data Evaluasi
+    </span>
+    <i class="bi bi-chevron-down ms-auto" style="color:var(--c-muted);font-size:.75rem;"></i>
+  </div>
+  <div class="collapse" id="formEvaluasi">
+    <div style="padding:1.25rem;">
+      <form method="POST" action="{{ url_for('evaluasi.create') }}">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="form-floating">
+              <input type="text" id="nama_model" name="nama_model"
+                     class="form-control" placeholder="CNN_ResNet50_v1" required>
+              <label for="nama_model">Nama Model</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <input type="text" id="versi" name="versi"
+                     class="form-control" placeholder="v1" required>
+              <label for="versi">Versi</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <input type="number" id="total_data_uji" name="total_data_uji"
+                     class="form-control" min="1" placeholder="100" required>
+              <label for="total_data_uji">Total Data Uji</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <input type="number" id="akurasi" name="akurasi"
+                     class="form-control" step="0.0001" min="0" max="1" placeholder="0.95" required>
+              <label for="akurasi">Akurasi (0–1)</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <input type="number" id="presisi" name="presisi"
+                     class="form-control" step="0.0001" min="0" max="1" placeholder="0.95" required>
+              <label for="presisi">Presisi</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <input type="number" id="recall" name="recall"
+                     class="form-control" step="0.0001" min="0" max="1" placeholder="0.95" required>
+              <label for="recall">Recall</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <input type="number" id="f1_score" name="f1_score"
+                     class="form-control" step="0.0001" min="0" max="1" placeholder="0.95" required>
+              <label for="f1_score">F1-Score</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <input type="number" id="cross_entropy_loss" name="cross_entropy_loss"
+                     class="form-control" step="0.000001" min="0" placeholder="0.05" required>
+              <label for="cross_entropy_loss">CE Loss</label>
+            </div>
+          </div>
+          <div class="col-md-1">
+            <div class="form-floating">
+              <input type="number" id="tp" name="tp" class="form-control" min="0" placeholder="0" required>
+              <label for="tp">TP</label>
+            </div>
+          </div>
+          <div class="col-md-1">
+            <div class="form-floating">
+              <input type="number" id="fp" name="fp" class="form-control" min="0" placeholder="0" required>
+              <label for="fp">FP</label>
+            </div>
+          </div>
+          <div class="col-md-1">
+            <div class="form-floating">
+              <input type="number" id="tn" name="tn" class="form-control" min="0" placeholder="0" required>
+              <label for="tn">TN</label>
+            </div>
+          </div>
+          <div class="col-md-1">
+            <div class="form-floating">
+              <input type="number" id="fn" name="fn" class="form-control" min="0" placeholder="0" required>
+              <label for="fn">FN</label>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-floating">
+              <input type="text" id="catatan" name="catatan" class="form-control" placeholder="Catatan">
+              <label for="catatan">Catatan</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn-cnn-primary" style="padding:.6rem 1.25rem;">
+              <i class="bi bi-save"></i>Simpan
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Tabel -->
+<div class="table-responsive" style="border-radius:var(--r-card);overflow:hidden;
+            box-shadow:var(--shadow-card);border:1px solid var(--c-border);">
+  <table class="table table-hover align-middle mb-0 cnn-table">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Nama Model</th>
+        <th scope="col">Versi</th>
+        <th scope="col">Data Uji</th>
+        <th scope="col">Akurasi</th>
+        <th scope="col">Presisi</th>
+        <th scope="col">Recall</th>
+        <th scope="col">F1</th>
+        <th scope="col">Loss</th>
+        <th scope="col">TP/FP/TN/FN</th>
+        <th scope="col">Tanggal</th>
+        <th scope="col">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ev in evaluasi_list %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-size:.82rem;">{{ ev.nama_model }}</td>
+        <td>{{ ev.versi }}</td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">{{ ev.total_data_uji }}</td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-weight:600;color:var(--c-ok);">
+          {{ (ev.akurasi * 100) | round(2) }}%
+        </td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">{{ (ev.presisi * 100) | round(2) }}%</td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">{{ (ev.recall * 100) | round(2) }}%</td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">{{ (ev.f1_score * 100) | round(2) }}%</td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-size:.8rem;">
+          {{ ev.cross_entropy_loss | round(6) }}
+        </td>
+        <td style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-size:.78rem;white-space:nowrap;">
+          {{ ev.tp }}/{{ ev.fp }}/{{ ev.tn }}/{{ ev.fn }}
+        </td>
+        <td style="font-size:.82rem;">{{ ev.created_at.strftime('%d-%m-%Y') }}</td>
+        <td>
+          {% set ta_delete_url = url_for('evaluasi.delete', ev_id=ev.id) %}
+          {% set ta_confirm_msg = 'Hapus data evaluasi ' ~ ev.nama_model ~ ' ' ~ ev.versi ~ '?' %}
+          {% include 'components/table_actions.html' %}
+        </td>
+      </tr>
+      {% else %}
+      {% set et_colspan = 12 %}
+      {% include 'components/empty_table_row.html' %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

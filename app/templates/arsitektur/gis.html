@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% block title %}GIS — {{ cfg.nama }}{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('arsitektur.index') }}" style="color:var(--c-accent);text-decoration:none;">Arsitektur CNN</a>
+<span class="sep">›</span>
+<a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" style="color:var(--c-accent);text-decoration:none;">{{ cfg.nama }}</a>
+<span class="sep">›</span>
+<span class="current">Visualisasi GIS</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    {% set ph_title = 'Visualisasi GIS Prediksi Model' %}{% include 'components/page_header.html' %}
+    <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+      <span class="gis-badge gis-badge--{{ cfg.model_type }}">
+        {{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}
+      </span>
+      <span style="font-size:.72rem;color:var(--c-muted);">{{ cfg.nama }}</span>
+      {% if evaluasi %}
+      <span style="font-size:.72rem;color:#10B981;font-weight:600;">Akurasi evaluasi: {{ evaluasi.akurasi }}%</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="gis-btn gis-btn-ghost">
+      <i class="bi bi-arrow-left"></i> Kembali
+    </a>
+    {% if not cv_running %}
+    <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}">
+      <button type="submit" class="gis-btn gis-btn-primary" title="Prediksi model tunggal pada semua foto berkoordinat">
+        <i class="bi bi-cpu-fill"></i>
+        {{ 'Perbarui' if total_prediksi else 'Jalankan Prediksi' }}
+      </button>
+    </form>
+    <form method="POST" action="{{ url_for('arsitektur.predict_cv_route', config_id=cfg.id) }}">
+      <button type="submit" class="gis-btn gis-btn-cv"
+              title="Tiap foto diprediksi oleh model yang dilatih tanpa fold-nya — akurasi lebih jujur"
+              onclick="return confirm('Prediksi CV akan melatih {{ split_cfg.n_splits }} model secara berurutan ({{ split_cfg.n_splits }}× waktu training). Lanjutkan?')">
+        <i class="bi bi-arrow-repeat"></i>
+        Prediksi CV K-Fold
+      </button>
+    </form>
+    {% else %}
+    <button disabled class="gis-btn gis-btn-cv" style="opacity:.6;cursor:not-allowed;">
+      <span class="gis-spinner"></span> CV sedang berjalan…
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{% if cv_running %}
+<!-- CV Progress Banner -->
+<div id="cvProgressBanner" class="mb-3"
+     style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);
+            border-radius:var(--r-card);padding:.875rem 1.125rem;">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <span class="gis-spinner" style="border-color:rgba(16,185,129,.25);border-top-color:#10B981;"></span>
+    <span style="font-size:.82rem;font-weight:700;color:#10B981;">Prediksi CV K-Fold Berjalan</span>
+    <span id="cvFoldLabel" style="font-size:.72rem;color:var(--c-muted);"></span>
+  </div>
+  <div style="background:rgba(255,255,255,.07);border-radius:999px;height:6px;overflow:hidden;">
+    <div id="cvProgressBar"
+         style="height:100%;background:linear-gradient(90deg,#059669,#10B981);
+                border-radius:999px;width:0%;transition:width .4s ease;"></div>
+  </div>
+  <p style="font-size:.7rem;color:var(--c-muted);margin:.4rem 0 0;">
+    Halaman akan otomatis di-refresh setelah selesai.
+  </p>
+</div>
+{% endif %}
+
+{% if total_prediksi %}
+
+<!-- Mode badge -->
+<div class="d-flex align-items-center gap-2 mb-2">
+  {% if cfg.pred_type == 'cv' %}
+  <span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;
+               border-radius:999px;font-size:.68rem;font-weight:700;
+               background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#10B981;">
+    <i class="bi bi-arrow-repeat"></i> CV K-Fold ({{ split_cfg.n_splits }} fold)
+  </span>
+  <span style="font-size:.68rem;color:var(--c-muted);">Akurasi dihitung dari fold yang tidak dipakai training — lebih representatif</span>
+  {% elif cfg.pred_type == 'single' %}
+  <span style="display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;
+               border-radius:999px;font-size:.68rem;font-weight:700;
+               background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.25);color:#38BDF8;">
+    <i class="bi bi-cpu-fill"></i> Single Model
+  </span>
+  <span style="font-size:.68rem;color:var(--c-muted);">Prediksi dari model utama — gunakan CV K-Fold untuk akurasi yang lebih jujur</span>
+  {% endif %}
+</div>
+
+<!-- Stats bar -->
+<div class="row g-2 mb-3" id="statsBar">
+  <div class="col-6 col-md-3">
+    <div class="gis-stat"><span id="statTotal" class="gis-stat-val">—</span><span class="gis-stat-lbl">Total Foto</span></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="gis-stat"><span id="statBenar" class="gis-stat-val" style="color:#10B981;">—</span><span class="gis-stat-lbl">Prediksi Benar</span></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="gis-stat"><span id="statSalah" class="gis-stat-val" style="color:#EF4444;">—</span><span class="gis-stat-lbl">Prediksi Salah</span></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="gis-stat">
+      <span id="statAkurasi" class="gis-stat-val" style="color:#F59E0B;">—</span>
+      <span class="gis-stat-lbl">Akurasi Peta{% if cfg.pred_type == 'cv' %} (CV){% endif %}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+  <span style="font-size:.72rem;color:var(--c-muted);">Filter:</span>
+  <button class="gis-filter active" data-filter="all">Semua</button>
+  <button class="gis-filter" data-filter="0" style="--fc:#E53E3E;">
+    <span class="gis-dot" style="background:#E53E3E;"></span>Berat
+  </button>
+  <button class="gis-filter" data-filter="1" style="--fc:#F59E0B;">
+    <span class="gis-dot" style="background:#F59E0B;"></span>Sedang
+  </button>
+  <button class="gis-filter" data-filter="2" style="--fc:#10B981;">
+    <span class="gis-dot" style="background:#10B981;"></span>Ringan
+  </button>
+  <button class="gis-filter" data-filter="salah" style="--fc:#94a3b8;">
+    <span class="gis-dot" style="background:#94a3b8;border:2px dashed #fff;"></span>Salah Prediksi
+  </button>
+  <span id="filterCount" style="font-size:.72rem;color:var(--c-muted);margin-left:auto;"></span>
+</div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Legend -->
+<div class="gis-legend">
+  <div style="font-size:.68rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;">
+    Legenda Prediksi
+  </div>
+  {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+  <div class="d-flex align-items-center gap-2 mb-1">
+    <span style="width:12px;height:12px;border-radius:50%;background:{{ clr }};display:inline-block;flex-shrink:0;"></span>
+    <span style="font-size:.72rem;color:var(--c-text);">{{ lbl }}</span>
+  </div>
+  {% endfor %}
+  <div class="d-flex align-items-center gap-2 mt-2" style="border-top:1px solid var(--c-border);padding-top:.5rem;">
+    <span style="width:12px;height:12px;border-radius:50%;background:transparent;border:2px solid #fff;display:inline-block;flex-shrink:0;"></span>
+    <span style="font-size:.72rem;color:var(--c-muted);">Lingkaran penuh = benar</span>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span style="width:12px;height:12px;border-radius:50%;background:transparent;border:2px dashed #fff;display:inline-block;flex-shrink:0;"></span>
+    <span style="font-size:.72rem;color:var(--c-muted);">Lingkaran putus = salah</span>
+  </div>
+</div>
+
+{% else %}
+<!-- Empty state -->
+<div style="text-align:center;padding:4rem 2rem;background:var(--c-surface);
+            border-radius:var(--r-card);border:1px dashed var(--c-border);">
+  <i class="bi bi-map" style="font-size:2.5rem;color:var(--c-muted);display:block;margin-bottom:.75rem;"></i>
+  <p style="font-size:.9rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada data prediksi</p>
+  <p style="font-size:.78rem;color:var(--c-muted);margin:0 0 1.25rem;">
+    Klik "Jalankan Prediksi" untuk menjalankan inferensi pada semua 280 foto.
+  </p>
+  <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}" style="display:inline;">
+    <button type="submit" class="gis-btn gis-btn-primary">
+      <i class="bi bi-cpu-fill"></i> Jalankan Prediksi
+    </button>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+#map {
+  height: 520px; border-radius: var(--r-card);
+  border: 1px solid var(--c-border); overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.gis-badge {
+  display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700;
+}
+.gis-badge--mobilenetv2    { background:rgba(3,105,161,.18);border:1px solid rgba(14,165,233,.3);color:#38BDF8; }
+.gis-badge--efficientnetb0 { background:rgba(124,58,237,.15);border:1px solid rgba(167,139,250,.3);color:#A78BFA; }
+
+.gis-btn {
+  display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .9rem;
+  border-radius:var(--r-input);font-size:.78rem;font-weight:600;cursor:pointer;
+  border:none;text-decoration:none;transition:opacity .15s;
+}
+.gis-btn-primary {
+  background:linear-gradient(135deg,#0369A1,#0EA5E9);color:#fff;
+  box-shadow:0 2px 8px rgba(3,105,161,.25);
+}
+.gis-btn-primary:hover { opacity:.88;color:#fff; }
+.gis-btn-ghost {
+  border:1px solid var(--c-border);color:var(--c-muted);background:transparent;
+}
+.gis-btn-ghost:hover { border-color:var(--c-accent);color:var(--c-text); }
+.gis-btn-cv {
+  background:rgba(16,185,129,.12);color:#10B981;
+  border:1px solid rgba(16,185,129,.3);
+}
+.gis-btn-cv:hover { background:rgba(16,185,129,.22);color:#10B981; }
+.gis-spinner {
+  display:inline-block;width:14px;height:14px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(16,185,129,.25);border-top-color:#10B981;
+  animation:gis-spin .7s linear infinite;
+}
+@keyframes gis-spin { to { transform:rotate(360deg); } }
+
+.gis-stat {
+  background:var(--c-surface);border:1px solid var(--c-border);
+  border-radius:var(--r-card);padding:.6rem .875rem;text-align:center;
+}
+.gis-stat-val { display:block;font-size:1.1rem;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums; }
+.gis-stat-lbl { display:block;font-size:.68rem;color:var(--c-muted);margin-top:.1rem; }
+
+.gis-filter {
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.25rem .65rem;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;
+  background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-muted);
+  transition:all .15s;
+}
+.gis-filter:hover, .gis-filter.active {
+  border-color:var(--fc, var(--c-accent));color:var(--c-text);
+  background:rgba(255,255,255,.06);
+}
+.gis-dot { width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0; }
+
+.gis-legend {
+  position:absolute;bottom:2.5rem;right:1rem;z-index:1000;
+  background:var(--c-surface);border:1px solid var(--c-border);
+  border-radius:var(--r-card);padding:.75rem;min-width:160px;
+  box-shadow:var(--shadow-card);
+}
+
+/* Leaflet popup dark theme */
+.leaflet-popup-content-wrapper {
+  background:var(--c-surface) !important;border:1px solid var(--c-border) !important;
+  border-radius:10px !important;box-shadow:0 4px 20px rgba(0,0,0,.4) !important;color:var(--c-text) !important;
+}
+.leaflet-popup-tip { background:var(--c-surface) !important; }
+.leaflet-popup-content { margin:10px 14px !important;font-size:.8rem; }
+.popup-img { width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:.5rem; }
+.popup-row { display:flex;justify-content:space-between;align-items:center;
+             padding:.2rem 0;border-bottom:1px solid var(--c-border);font-size:.75rem; }
+.popup-row:last-child { border-bottom:none; }
+.popup-label { color:var(--c-muted); }
+.popup-chip { padding:.1rem .4rem;border-radius:999px;font-size:.68rem;font-weight:700; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if total_prediksi %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const GJS_URL = "{{ url_for('arsitektur.gis_json', config_id=cfg.id) }}";
+
+  const map = L.map('map', { zoomControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(map);
+
+  const WARNA = { 0: '#E53E3E', 1: '#F59E0B', 2: '#10B981' };
+  const LABEL = { 0: 'Berat', 1: 'Sedang', 2: 'Ringan' };
+
+  let allFeatures = [];
+  let markers = [];
+  let currentFilter = 'all';
+
+  function makeMarker(f) {
+    const p = f.properties;
+    const clr = WARNA[p.prediksi] || '#999';
+    const benar = p.benar;
+    const circle = L.circleMarker(
+      [f.geometry.coordinates[1], f.geometry.coordinates[0]],
+      {
+        radius: 8,
+        fillColor: clr,
+        fillOpacity: 0.85,
+        color: '#ffffff',
+        weight: benar ? 2 : 2,
+        dashArray: benar ? null : '4 3',
+        opacity: 0.9,
+      }
+    );
+
+    const imgSrc = `/static/${p.path_file}`;
+    const aktualClr = WARNA[p.aktual] || '#999';
+    circle.bindPopup(`
+      <img src="${imgSrc}" class="popup-img" onerror="this.style.display='none'">
+      <div class="popup-row">
+        <span class="popup-label">Lokasi</span>
+        <span style="font-weight:600;font-size:.72rem;">${p.nama_citra}</span>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Prediksi</span>
+        <span class="popup-chip" style="background:${clr}22;color:${clr};">${p.label_pred}</span>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Aktual</span>
+        <span class="popup-chip" style="background:${aktualClr}22;color:${aktualClr};">${p.label_aktual}</span>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Confidence</span>
+        <strong>${p.confidence}%</strong>
+      </div>
+      <div class="popup-row">
+        <span class="popup-label">Hasil</span>
+        <strong style="color:${benar ? '#10B981' : '#EF4444'};">${benar ? '✓ Benar' : '✗ Salah'}</strong>
+      </div>
+    `, { maxWidth: 220 });
+
+    return { circle, feature: f };
+  }
+
+  function applyFilter(filter) {
+    currentFilter = filter;
+    let shown = 0;
+    markers.forEach(({ circle, feature }) => {
+      const p = feature.properties;
+      let visible = false;
+      if (filter === 'all')   visible = true;
+      else if (filter === 'salah') visible = !p.benar;
+      else visible = p.prediksi === parseInt(filter);
+
+      if (visible) { circle.addTo(map); shown++; }
+      else         { map.removeLayer(circle); }
+    });
+    document.getElementById('filterCount').textContent = `${shown} foto ditampilkan`;
+  }
+
+  fetch(GJS_URL)
+    .then(r => r.json())
+    .then(gj => {
+      allFeatures = gj.features;
+      markers = allFeatures.map(f => makeMarker(f));
+
+      // Fit map to bounds
+      const lats = allFeatures.map(f => f.geometry.coordinates[1]);
+      const lngs = allFeatures.map(f => f.geometry.coordinates[0]);
+      if (lats.length) {
+        map.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]], { padding: [40, 40] });
+      }
+
+      // Stats
+      const total  = allFeatures.length;
+      const benar  = allFeatures.filter(f => f.properties.benar).length;
+      const salah  = total - benar;
+      document.getElementById('statTotal').textContent   = total;
+      document.getElementById('statBenar').textContent   = benar;
+      document.getElementById('statSalah').textContent   = salah;
+      document.getElementById('statAkurasi').textContent = (benar / total * 100).toFixed(1) + '%';
+
+      applyFilter('all');
+    });
+
+  // Filter buttons
+  document.querySelectorAll('.gis-filter').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.gis-filter').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      applyFilter(this.dataset.filter);
+    });
+  });
+})();
+</script>
+{% endif %}
+
+{% if cv_running %}
+<script>
+(function () {
+  const CV_URL = "{{ url_for('arsitektur.cv_progress_route', config_id=cfg.id) }}";
+
+  function poll() {
+    fetch(CV_URL)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.running) {
+          // Done — reload to show fresh results
+          location.reload();
+          return;
+        }
+        const bar   = document.getElementById('cvProgressBar');
+        const label = document.getElementById('cvFoldLabel');
+        if (bar)   bar.style.width = (data.pct || 0) + '%';
+        if (label) {
+          const epochInfo = data.total_epochs
+            ? ` — Epoch ${data.epoch}/${data.total_epochs}`
+            : '';
+          label.textContent = `Fold ${data.fold}/${data.total_folds}${epochInfo}`;
+        }
+        setTimeout(poll, 1500);
+      })
+      .catch(() => setTimeout(poll, 3000));
+  }
+  poll();
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"D:\\\\Project Flask\\\\cnn-jalan\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(.venv\\\\Scripts\\\\python.exe -c \"from app import create_app; app = create_app\\(\\); ctx = app.app_context\\(\\); ctx.push\\(\\); print\\('App OK'\\)\")",
+      "Bash(Get-ChildItem *)",
+      "Bash(python *)",
+      "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -c \"from app import create_app; app = create_app\\(\\); print\\('OK'\\)\")",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Project Flask\\\\cnn-jalan\" -Recurse -Depth 4 | Where-Object { !$_.PSIsContainer } | Select-Object -ExpandProperty FullName)",
+      "Bash(Select-Object -First 50)",
+      "Bash(mysql *)",
+      "Skill(update-config)",
+      "Bash(claude mcp *)",
+      "PowerShell(npx --version; node --version)",
+      "PowerShell(npx -y @modelcontextprotocol/server-sequential-thinking 2>&1 | Select-Object -First 20)",
+      "PowerShell(npm list *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\USER\\\\.claude.json\")",
+      "mcp__sequential-thinking__sequentialthinking",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Project Flask\\\\cnn-jalan\\\\app\" -Depth 0 | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\) {\"Folder\"} else {\"File\"}}} | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Project Flask\\\\cnn-jalan\\\\app\\\\static\" -Recurse | Select-Object @{Name=\"Path\"; Expression={$_.FullName}} | Format-List)",
+      "Bash(grep -E \"\\\\.\\(py|txt|md\\)$\")"
+    ]
+  }
+}

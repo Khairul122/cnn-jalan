@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Data Lokasi{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<span class="current">Lokasi</span>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+  {% set ph_title = 'Data Lokasi Kerusakan' %}
+  {% include 'components/page_header.html' %}
+  <a href="{{ url_for('lokasi.create') }}" class="btn-cnn-primary flex-shrink-0"
+     style="padding:.5rem 1rem;font-size:.82rem;">
+    <i class="bi bi-plus-lg"></i>Tambah Lokasi
+  </a>
+</div>
+
+<div class="table-responsive" style="border-radius:var(--r-card);overflow:hidden;
+            box-shadow:var(--shadow-card);border:1px solid var(--c-border);">
+  <table class="table table-hover align-middle mb-0 cnn-table">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Nama Citra</th>
+        <th scope="col">Koordinat</th>
+        <th scope="col">Sumber</th>
+        <th scope="col">Foto</th>
+        <th scope="col">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lok in lokasi_list %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ lok.nama_citra }}</td>
+        <td class="small" style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-size:.78rem;">
+          {{ lok.latitude }}, {{ lok.longitude }}
+        </td>
+        <td>
+          {% set badge_value = lok.sumber_data %}
+          {% include 'components/status_badge.html' %}
+        </td>
+        <td>
+          <span style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;font-weight:600;">{{ lok.foto_list | length }}</span>
+        </td>
+        <td>
+          {% set ta_view_url = url_for('lokasi.detail', lokasi_id=lok.id) %}
+          {% set ta_delete_url = url_for('lokasi.delete', lokasi_id=lok.id) %}
+          {% set ta_confirm_msg = 'Hapus data lokasi ini?' %}
+          {% include 'components/table_actions.html' %}
+        </td>
+      </tr>
+      {% else %}
+      {% set et_colspan = 6 %}
+      {% include 'components/empty_table_row.html' %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

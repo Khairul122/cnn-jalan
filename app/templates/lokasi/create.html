@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Tambah Lokasi{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('lokasi.index') }}">Lokasi</a>
+<span class="sep">›</span>
+<span class="current">Tambah</span>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = 'Tambah Lokasi Kerusakan' %}
+{% set ph_back_url = url_for('lokasi.index') %}
+{% include 'components/page_header.html' %}
+
+<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+            box-shadow:var(--shadow-card);overflow:hidden;">
+  <div style="padding:1.5rem;">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="row g-3">
+
+        <!-- Nama Citra -->
+        <div class="col-md-6">
+          <div class="form-floating">
+            <input type="text" id="nama_citra" name="nama_citra"
+                   class="form-control" placeholder="Gambar 1" required>
+            <label for="nama_citra">Nama Citra <span style="color:var(--c-danger);">*</span></label>
+          </div>
+        </div>
+
+        <!-- Latitude -->
+        <div class="col-md-3">
+          <div class="form-floating">
+            <input type="number" id="latitude" name="latitude"
+                   class="form-control" step="any" placeholder="0" required>
+            <label for="latitude">Latitude (x) <span style="color:var(--c-danger);">*</span></label>
+          </div>
+        </div>
+
+        <!-- Longitude -->
+        <div class="col-md-3">
+          <div class="form-floating">
+            <input type="number" id="longitude" name="longitude"
+                   class="form-control" step="any" placeholder="0" required>
+            <label for="longitude">Longitude (y) <span style="color:var(--c-danger);">*</span></label>
+          </div>
+        </div>
+
+        <!-- Panjang -->
+        <div class="col-md-3">
+          <div class="form-floating">
+            <input type="text" id="panjang" name="panjang"
+                   class="form-control" placeholder="contoh: 2.5 M">
+            <label for="panjang">Panjang (P)</label>
+          </div>
+        </div>
+
+        <!-- Lebar -->
+        <div class="col-md-3">
+          <div class="form-floating">
+            <input type="text" id="lebar" name="lebar"
+                   class="form-control" placeholder="contoh: 50 CM">
+            <label for="lebar">Lebar (L)</label>
+          </div>
+        </div>
+
+        <!-- Sumber Data -->
+        <div class="col-md-6">
+          <div class="form-floating">
+            <select id="sumber_data" name="sumber_data" class="form-select">
+              <option value="primer">Primer (Foto Lapangan)</option>
+              <option value="sekunder">Sekunder (Google Maps)</option>
+            </select>
+            <label for="sumber_data">Sumber Data</label>
+          </div>
+        </div>
+
+        <!-- Upload Foto — Dropzone -->
+        <div class="col-12">
+          <label style="display:block;font-size:.8rem;font-weight:500;color:var(--c-label);margin-bottom:.5rem;">
+            Upload Foto Lapangan
+          </label>
+          <div class="cnn-dropzone" id="dropzone" role="button" aria-label="Area upload foto, klik atau seret file ke sini">
+            <input type="file" name="foto" accept="image/*" multiple id="foto-input"
+                   style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"
+                   onchange="updateDropzoneLabel(this)" aria-label="Pilih file foto">
+            <i class="bi bi-cloud-upload cnn-dropzone-icon" aria-hidden="true"></i>
+            <p class="cnn-dropzone-label">
+              <strong>Klik untuk upload</strong> atau seret foto ke sini
+            </p>
+            <p class="cnn-dropzone-sub" id="dropzone-sub">PNG, JPG, JPEG, WEBP &mdash; Maks 16 MB</p>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="col-12">
+          <button type="submit" class="btn-cnn-primary" style="padding:.65rem 1.5rem;">
+            <i class="bi bi-save me-1"></i>Simpan Lokasi
+          </button>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function updateDropzoneLabel(input) {
+    var sub = document.getElementById('dropzone-sub');
+    if (input.files && input.files.length > 0) {
+      sub.textContent = input.files.length + ' file dipilih';
+      sub.style.color  = 'var(--c-ok)';
+      sub.style.opacity = '1';
+    }
+  }
+  var dz = document.getElementById('dropzone');
+  if (dz) {
+    dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', function ()  { dz.classList.remove('drag-over'); });
+    dz.addEventListener('drop',      function ()  { dz.classList.remove('drag-over'); });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% set _map = {
+  'primer':        'bg-primary',
+  'sekunder':      'bg-secondary',
+  'draft':         'bg-secondary',
+  'terverifikasi': 'bg-success',
+  'diperbaiki':    'bg-info text-dark',
+  'berat':         'bg-danger',
+  'sedang':        'bg-warning text-dark',
+  'ringan':        'bg-success'
+} %}
+<span class="badge {{ _map[badge_value | lower] | default('bg-dark') }}">{{ badge_value }}</span>

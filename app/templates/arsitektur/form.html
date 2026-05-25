@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% block title %}Buat Konfigurasi CNN{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('arsitektur.index') }}" style="color:var(--c-accent);text-decoration:none;">Arsitektur CNN</a>
+<span class="sep">›</span>
+<span class="current">Buat Konfigurasi</span>
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  {% set ph_title = 'Konfigurasi Arsitektur CNN' %}{% include 'components/page_header.html' %}
+  <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
+    Transfer learning — base model pretrained ImageNet, frozen weights
+  </p>
+</div>
+
+{% if not split_list %}
+<div style="padding:.875rem 1.125rem;border-radius:var(--r-card);background:rgba(245,158,11,.1);
+            border:1px solid rgba(245,158,11,.25);font-size:.78rem;color:#F59E0B;margin-bottom:1.25rem;">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  Belum ada split config. <a href="{{ url_for('split.new') }}" style="color:#F59E0B;font-weight:600;">Buat split data</a> terlebih dahulu.
+</div>
+{% endif %}
+
+<form method="POST" action="{{ url_for('arsitektur.new') }}">
+  <div class="row g-3">
+
+    <!-- Kolom kiri -->
+    <div class="col-lg-6">
+
+      <div class="af-card mb-3">
+        <p class="af-section-title"><i class="bi bi-tag-fill" style="color:#38BDF8;"></i> Identitas</p>
+
+        <div class="af-field">
+          <label class="af-label">Nama Konfigurasi <span style="color:#DC2626;">*</span></label>
+          <input type="text" name="nama" required placeholder="Contoh: MobileNetV2 80:20 Adam lr1e-4"
+                 class="af-input">
+        </div>
+
+        <div class="af-field">
+          <label class="af-label">Model Arsitektur</label>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="af-radio-card" id="card-mobile">
+                <input type="radio" name="model_type" value="mobilenetv2" checked
+                       onchange="selectModel('mobilenetv2')">
+                <div class="af-radio-inner">
+                  <span style="font-size:.82rem;font-weight:700;color:#38BDF8;">MobileNetV2</span>
+                  <span style="font-size:.68rem;color:var(--c-muted);margin-top:.2rem;">Utama · Ringan · Cepat</span>
+                </div>
+              </label>
+            </div>
+            <div class="col-6">
+              <label class="af-radio-card" id="card-efficient">
+                <input type="radio" name="model_type" value="efficientnetb0"
+                       onchange="selectModel('efficientnetb0')">
+                <div class="af-radio-inner">
+                  <span style="font-size:.82rem;font-weight:700;color:#A78BFA;">EfficientNetB0</span>
+                  <span style="font-size:.68rem;color:var(--c-muted);margin-top:.2rem;">Pembanding · Akurat</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="af-card">
+        <p class="af-section-title"><i class="bi bi-sliders" style="color:#A78BFA;"></i> Hyperparameter</p>
+
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="af-field">
+              <label class="af-label">Learning Rate</label>
+              <select name="learning_rate" class="af-input">
+                <option value="0.001">0.001 ⚠ terlalu tinggi</option>
+                <option value="0.0001" selected>0.0001 (disarankan)</option>
+                <option value="0.00001">0.00001</option>
+              </select>
+              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
+                LR ≥ 0.001 berisiko konvergensi ke kelas mayoritas (class collapse).
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="af-field">
+              <label class="af-label">Batch Size</label>
+              <select name="batch_size" class="af-input">
+                <option value="8">8</option>
+                <option value="16" selected>16 (default)</option>
+                <option value="32">32</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="af-field">
+              <label class="af-label">Epochs <span style="font-weight:400;color:var(--c-muted);">(maks)</span></label>
+              <input type="number" name="epochs" value="30" min="1" max="200"
+                     class="af-input" style="font-variant-numeric:tabular-nums;">
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="af-field">
+              <label class="af-label">Early Stop Patience</label>
+              <input type="number" name="patience" value="10" min="1" max="50"
+                     class="af-input" style="font-variant-numeric:tabular-nums;">
+              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
+                Disarankan ≥ 10 untuk dataset kecil.
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="af-field">
+              <label class="af-label">Dropout Rate</label>
+              <select name="dropout_rate" class="af-input">
+                <option value="0.2">0.2</option>
+                <option value="0.3" selected>0.3 (default)</option>
+                <option value="0.5">0.5</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="af-field mb-0">
+              <label class="af-label">Optimizer</label>
+              <div class="d-flex gap-2">
+                {% for opt, lbl in [('adam','Adam'),('sgd','SGD'),('rmsprop','RMSprop')] %}
+                <label style="flex:1;display:flex;align-items:center;gap:.35rem;
+                              padding:.4rem .6rem;border-radius:var(--r-input);cursor:pointer;
+                              border:1px solid var(--c-border);font-size:.78rem;color:var(--c-muted);">
+                  <input type="radio" name="optimizer" value="{{ opt }}" {% if opt == 'adam' %}checked{% endif %}>
+                  {{ lbl }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Kolom kanan -->
+    <div class="col-lg-6">
+
+      <div class="af-card mb-3">
+        <p class="af-section-title"><i class="bi bi-diagram-3-fill" style="color:#10B981;"></i> Data & Split</p>
+
+        <div class="af-field">
+          <label class="af-label">Split Config <span style="color:#DC2626;">*</span></label>
+          <select name="split_config_id" class="af-input">
+            <option value="">— Pilih split config —</option>
+            {% for s in split_list %}
+            <option value="{{ s.id }}">
+              {{ s.nama }} (80:20, {{ s.total_data }} data)
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <input type="hidden" name="fold_val" value="1">
+      </div>
+
+      <div class="af-card">
+        <p class="af-section-title"><i class="bi bi-info-circle-fill" style="color:#64748B;"></i> Info Tetap</p>
+        <div class="d-flex flex-column gap-2">
+          <div class="af-info-row">
+            <span>Input Size</span><span style="color:var(--c-text);font-weight:600;">224 × 224 px</span>
+          </div>
+          <div class="af-info-row">
+            <span>Jumlah Kelas</span><span style="color:var(--c-text);font-weight:600;">3 (Berat / Sedang / Ringan)</span>
+          </div>
+          <div class="af-info-row">
+            <span>Base Weights</span><span style="color:var(--c-text);font-weight:600;">ImageNet (frozen)</span>
+          </div>
+          <div class="af-info-row">
+            <span>Head</span><span style="color:var(--c-text);font-weight:600;">GlobalAvgPool → Dropout → Softmax</span>
+          </div>
+          <div class="af-info-row">
+            <span>Split</span><span style="color:#10B981;font-weight:600;">80% Train · 20% Test</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="d-flex gap-2 mt-3">
+    <button type="submit" {% if not split_list %}disabled{% endif %}
+            class="btn-cnn-primary" style="border:none;padding:.55rem 1.25rem;
+              {% if not split_list %}opacity:.45;cursor:not-allowed;{% endif %}">
+      <i class="bi bi-floppy-fill"></i> Simpan Konfigurasi
+    </button>
+    <a href="{{ url_for('arsitektur.index') }}" class="btn-cnn-cancel">Batal</a>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.af-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card); padding: 1rem 1.125rem;
+}
+.af-section-title {
+  font-size: .75rem; font-weight: 700; color: var(--c-muted);
+  text-transform: uppercase; letter-spacing: .05em;
+  margin: 0 0 .875rem; display: flex; align-items: center; gap: .35rem;
+}
+.af-field { margin-bottom: .875rem; }
+.af-label { display: block; font-size: .78rem; font-weight: 600; color: var(--c-text); margin-bottom: .35rem; }
+.af-input {
+  width: 100%; padding: .45rem .7rem; border-radius: var(--r-input);
+  border: 1px solid var(--c-border); background: var(--c-bg);
+  color: var(--c-text); font-size: .83rem; outline: none;
+  transition: border-color .15s;
+}
+.af-input:focus { border-color: #0EA5E9; }
+
+.af-radio-card {
+  display: flex; cursor: pointer; border-radius: var(--r-input);
+  border: 1px solid var(--c-border); overflow: hidden; transition: border-color .15s;
+}
+.af-radio-card input[type=radio] { display: none; }
+.af-radio-card.selected { border-color: #38BDF8; }
+.af-radio-inner {
+  flex: 1; padding: .55rem .75rem; display: flex; flex-direction: column;
+  background: var(--c-bg);
+}
+
+.af-info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .75rem; color: var(--c-muted);
+  padding: .3rem 0; border-bottom: 1px solid var(--c-border);
+}
+.af-info-row:last-child { border-bottom: none; }
+
+.btn-cnn-primary {
+  display: inline-flex; align-items: center; gap: .375rem;
+  padding: .5rem .9rem; border-radius: var(--r-input);
+  font-size: .8rem; font-weight: 700; text-decoration: none;
+  background: linear-gradient(135deg, #0369A1, #0EA5E9); color: #fff;
+  box-shadow: 0 2px 8px rgba(3,105,161,.25);
+  transition: opacity .15s, transform .15s; cursor: pointer;
+}
+.btn-cnn-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+.btn-cnn-cancel {
+  padding: .5rem .9rem; border-radius: var(--r-input); text-decoration: none;
+  font-size: .8rem; font-weight: 600;
+  border: 1px solid var(--c-border); color: var(--c-muted);
+  transition: border-color .15s;
+}
+.btn-cnn-cancel:hover { border-color: var(--c-accent); color: var(--c-text); }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectModel(type) {
+  document.getElementById('card-mobile').classList.toggle('selected', type === 'mobilenetv2');
+  document.getElementById('card-efficient').classList.toggle('selected', type === 'efficientnetb0');
+}
+selectModel('mobilenetv2');
+
+</script>
+{% endblock %}

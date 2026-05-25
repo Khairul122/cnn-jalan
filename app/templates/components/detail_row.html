@@ -1,0 +1,8 @@
+<li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2">
+  <span class="text-muted small">{{ dr_label }}</span>
+  {% if dr_raw is defined and dr_raw %}
+    <span>{{ dr_value | safe }}</span>
+  {% else %}
+    <strong style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">{{ dr_value }}</strong>
+  {% endif %}
+</li>

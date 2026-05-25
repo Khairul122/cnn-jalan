@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Buat Split Baru{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('split.index') }}" style="color:var(--c-accent);text-decoration:none;">Split Data</a>
+<span class="sep">›</span>
+<span class="current">Buat Split Baru</span>
+{% endblock %}
+
+{% block content %}
+<div>
+
+  <div class="mb-3">
+    {% set ph_title = 'Buat Split Baru' %}{% include 'components/page_header.html' %}
+    <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
+      Stratified holdout — 80% training, 20% testing, proporsi kelas terjaga
+    </p>
+  </div>
+
+  <!-- Dataset info -->
+  <div class="sf-info-bar mb-3">
+    <div class="sf-info-item">
+      <i class="bi bi-images" style="color:#38BDF8;"></i>
+      <span style="color:var(--c-text);font-weight:600;">{{ total_berlabel }}</span>
+      <span style="color:var(--c-muted);">data berlabel</span>
+    </div>
+    <div class="sf-info-sep"></div>
+    {% for t in tingkat_list %}
+    {% set colors = {'Berat':'#DC2626','Sedang':'#F59E0B','Ringan':'#10B981'} %}
+    {% set col = colors.get(t.nama_tingkat, '#A78BFA') %}
+    <div class="sf-info-item">
+      <span style="width:6px;height:6px;border-radius:50%;background:{{ col }};flex-shrink:0;"></span>
+      <span style="color:var(--c-muted);">{{ t.nama_tingkat }}</span>
+      <span style="color:{{ col }};font-weight:600;">{{ kelas_count.get(t.id, 0) }}</span>
+    </div>
+    {% endfor %}
+    {% if total_berlabel == 0 %}
+    <div class="sf-info-item" style="color:#F59E0B;">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>Belum ada data berlabel</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Form card -->
+  <form method="POST" action="{{ url_for('split.new') }}">
+    <div class="sf-card mb-3">
+
+      <div class="sf-field">
+        <label class="sf-label">Nama Split <span style="color:#DC2626;">*</span></label>
+        <input type="text" name="nama" required
+               placeholder="Contoh: Split 80:20 Dataset v1"
+               class="sf-input">
+      </div>
+
+      <div class="sf-field mb-0">
+        <label class="sf-label">Random State</label>
+        <input type="number" name="random_state" value="42" min="0" max="9999"
+               class="sf-input" style="font-variant-numeric:tabular-nums;">
+        <p style="font-size:.68rem;color:var(--c-muted);margin:.3rem 0 0;">
+          Seed untuk reproduktibilitas split.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Info box -->
+    <div style="padding:.55rem .875rem;border-radius:var(--r-input);
+                background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
+                font-size:.75rem;color:#10B981;display:flex;align-items:center;gap:.4rem;
+                margin-bottom:.875rem;">
+      <i class="bi bi-info-circle-fill" style="flex-shrink:0;"></i>
+      <span id="previewText">—</span>
+    </div>
+
+    <!-- Label sumber tag -->
+    <div class="sf-tag mb-3">
+      <i class="bi bi-tags-fill" style="color:#A78BFA;"></i>
+      Label: <strong style="color:var(--c-text);">Tingkat Kerusakan SDI</strong>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-2">
+      <button type="submit" {% if total_berlabel == 0 %}disabled{% endif %}
+              class="btn-split-primary" style="flex:1;justify-content:center;border:none;
+                {% if total_berlabel == 0 %}opacity:.45;cursor:not-allowed;{% endif %}">
+        <i class="bi bi-diagram-3-fill"></i> Buat Split
+      </button>
+      <a href="{{ url_for('split.index') }}" class="btn-split-cancel">Batal</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.sf-info-bar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .75rem;
+  padding: .6rem .875rem;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card); font-size: .75rem;
+}
+.sf-info-item { display: flex; align-items: center; gap: .3rem; }
+.sf-info-sep { width: 1px; height: 14px; background: var(--c-border); flex-shrink: 0; }
+
+.sf-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card); padding: 1rem 1.125rem;
+}
+.sf-field { margin-bottom: .875rem; }
+.sf-label {
+  display: block; font-size: .78rem; font-weight: 600;
+  color: var(--c-text); margin-bottom: .35rem;
+}
+.sf-input {
+  width: 100%; padding: .45rem .7rem; border-radius: var(--r-input);
+  border: 1px solid var(--c-border); background: var(--c-bg);
+  color: var(--c-text); font-size: .83rem; outline: none;
+  transition: border-color .15s;
+}
+.sf-input:focus { border-color: #10B981; }
+
+.sf-tag {
+  display: flex; align-items: center; gap: .35rem;
+  padding: .45rem .7rem; border-radius: var(--r-input);
+  background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.2);
+  font-size: .75rem; color: var(--c-muted);
+}
+
+.btn-split-primary {
+  display: inline-flex; align-items: center; gap: .375rem;
+  padding: .5rem .9rem; border-radius: var(--r-input);
+  font-size: .8rem; font-weight: 700; text-decoration: none;
+  background: linear-gradient(135deg, #059669, #10B981); color: #fff;
+  box-shadow: 0 2px 8px rgba(5,150,105,.25);
+  transition: opacity .15s, transform .15s; cursor: pointer;
+}
+.btn-split-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+
+.btn-split-cancel {
+  padding: .5rem .9rem; border-radius: var(--r-input); text-decoration: none;
+  font-size: .8rem; font-weight: 600;
+  border: 1px solid var(--c-border); color: var(--c-muted);
+  transition: border-color .15s, color .15s;
+}
+.btn-split-cancel:hover { border-color: var(--c-accent); color: var(--c-text); }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const totalBerlabel = {{ total_berlabel }};
+(function () {
+  const el = document.getElementById('previewText');
+  if (totalBerlabel === 0) {
+    el.textContent = 'Tidak ada data berlabel.';
+    return;
+  }
+  const train = Math.round(totalBerlabel * 0.8);
+  const test  = totalBerlabel - train;
+  el.textContent = `${totalBerlabel} data  →  Train: ~${train} (80%)  ·  Test: ~${test} (20%)`;
+})();
+</script>
+{% endblock %}

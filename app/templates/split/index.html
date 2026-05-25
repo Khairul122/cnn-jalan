@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}Split Data{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<span class="current">Split Data</span>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+  <div>
+    {% set ph_title = 'Split Data' %}{% include 'components/page_header.html' %}
+    <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
+      Stratified holdout 80:20 — pembagian dataset berlabel dengan distribusi kelas seimbang
+    </p>
+  </div>
+  <a href="{{ url_for('split.new') }}" class="btn-split-primary">
+    <i class="bi bi-plus-lg"></i> Buat Split Baru
+  </a>
+</div>
+
+<!-- Stats -->
+<div class="row g-2 mb-4">
+  {% for lbl, val, color, icon in [
+      ('Konfigurasi',   configs|length,       '#A78BFA', 'bi-diagram-3-fill'),
+      ('Data Berlabel', total_berlabel,        '#38BDF8', 'bi-images'),
+      ('Kelas',         tingkat_list|length,   '#10B981', 'bi-layers-fill'),
+  ] %}
+  <div class="col">
+    <div class="split-stat-card">
+      <i class="bi {{ icon }}" style="color:{{ color }};font-size:1rem;"></i>
+      <div>
+        <div class="split-stat-val">{{ val }}</div>
+        <div class="split-stat-lbl">{{ lbl }}</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if configs %}
+<div class="split-table-wrap">
+  <table class="table table-hover align-middle mb-0 cnn-table">
+    <thead>
+      <tr>
+        <th style="width:36px;">#</th>
+        <th>Nama</th>
+        <th style="text-align:center;width:80px;">Tipe</th>
+        <th style="text-align:center;width:96px;">Seed</th>
+        <th style="text-align:center;width:80px;">Data</th>
+        <th style="width:130px;">Dibuat</th>
+        <th style="text-align:center;width:110px;">Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cfg in configs %}
+      <tr>
+        <td style="font-size:.75rem;color:var(--c-muted);">{{ loop.index }}</td>
+        <td>
+          <span style="font-weight:600;font-size:.85rem;color:var(--c-text);">{{ cfg.nama }}</span>
+        </td>
+        <td style="text-align:center;">
+          <span style="padding:.15rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;
+                       background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#10B981;">
+            80:20
+          </span>
+        </td>
+        <td style="text-align:center;font-size:.8rem;color:var(--c-muted);font-variant-numeric:tabular-nums;">
+          {{ cfg.random_state }}
+        </td>
+        <td style="text-align:center;font-size:.85rem;font-weight:600;color:var(--c-text);font-variant-numeric:tabular-nums;">
+          {{ cfg.total_data }}
+        </td>
+        <td style="font-size:.73rem;color:var(--c-muted);">
+          {{ cfg.created_at.strftime('%d %b %Y') }}
+        </td>
+        <td style="text-align:center;">
+          <div class="d-flex align-items-center justify-content-center gap-1">
+            <a href="{{ url_for('split.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat Detail">
+              <i class="bi bi-eye-fill"></i> Lihat
+            </a>
+            <form method="POST" action="{{ url_for('split.delete', config_id=cfg.id) }}"
+                  onsubmit="return confirm('Hapus split &quot;{{ cfg.nama }}&quot;?')">
+              <button type="submit" class="btn-action-del" title="Hapus">
+                <i class="bi bi-trash-fill"></i>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="split-empty">
+  <i class="bi bi-diagram-3" style="font-size:2rem;color:var(--c-muted);display:block;margin-bottom:.625rem;"></i>
+  <p style="font-size:.88rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada split</p>
+  <p style="font-size:.75rem;color:var(--c-muted);margin:0 0 1rem;max-width:320px;">
+    Buat split 80:20 untuk membagi dataset ke set training dan testing secara stratified
+  </p>
+  {% if total_berlabel == 0 %}
+  <p style="font-size:.73rem;color:#F59E0B;margin:0 0 1rem;">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    Belum ada data berlabel — tambah label SDI terlebih dahulu
+  </p>
+  {% endif %}
+  <a href="{{ url_for('split.new') }}" class="btn-split-primary">
+    <i class="bi bi-plus-lg"></i> Buat Split Pertama
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.btn-split-primary {
+  display: inline-flex; align-items: center; gap: .375rem;
+  padding: .45rem .9rem; border-radius: var(--r-input);
+  font-size: .8rem; font-weight: 700; text-decoration: none;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA); color: #fff;
+  box-shadow: 0 2px 8px rgba(124,58,237,.25);
+  transition: opacity .15s, transform .15s;
+  cursor: pointer;
+}
+.btn-split-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+
+.split-stat-card {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .625rem .875rem;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+}
+.split-stat-val { font-size: 1.1rem; font-weight: 700; color: var(--c-text); margin: 0; font-variant-numeric: tabular-nums; }
+.split-stat-lbl { font-size: .68rem; color: var(--c-muted); margin: 0; }
+
+.split-table-wrap {
+  border-radius: var(--r-card); overflow: hidden;
+  box-shadow: var(--shadow-card); border: 1px solid var(--c-border);
+}
+
+.fold-badge {
+  display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+  background: rgba(124,58,237,.15); border: 1px solid rgba(167,139,250,.3);
+  font-size: .76rem; font-weight: 700; color: #A78BFA;
+}
+
+.btn-action-view {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .28rem .6rem; border-radius: var(--r-input);
+  font-size: .73rem; font-weight: 600; text-decoration: none;
+  background: rgba(124,58,237,.2); color: #A78BFA;
+  border: 1px solid rgba(167,139,250,.25);
+  transition: background .15s;
+}
+.btn-action-view:hover { background: rgba(124,58,237,.35); color: #A78BFA; }
+
+.btn-action-del {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: var(--r-input);
+  background: transparent; color: #DC2626;
+  border: 1px solid rgba(220,38,38,.3); cursor: pointer;
+  font-size: .78rem; transition: background .15s;
+}
+.btn-action-del:hover { background: rgba(220,38,38,.12); }
+
+.split-empty {
+  text-align: center; padding: 2.5rem 1rem;
+  background: var(--c-surface); border-radius: var(--r-card);
+  border: 1px solid var(--c-border);
+}
+</style>
+{% endblock %}

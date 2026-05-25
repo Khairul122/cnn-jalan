@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% block title %}Label SDI — {{ lokasi.nama_citra }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  #mini-map { height:160px;border-radius:var(--r-input);z-index:0; }
+  .sdi-param { transition:border-color .15s,box-shadow .15s; }
+  .sdi-param:focus { border-color:var(--c-accent)!important;box-shadow:var(--focus-ring)!important;outline:none; }
+  .sdi-tier {
+    border-radius:var(--r-input);padding:.625rem .875rem;font-size:.8rem;font-weight:600;
+    border:2px solid transparent;cursor:pointer;transition:all .15s;text-align:center;
+  }
+  .sdi-tier.active { border-color:currentColor;box-shadow:0 0 0 3px currentColor20; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('label.index') }}">Labeling SDI</a>
+<span class="sep">›</span>
+<span class="current">{{ lokasi.nama_citra }}</span>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = 'Label SDI — ' + lokasi.nama_citra %}
+{% set ph_back_url = url_for('label.index') %}
+{% include 'components/page_header.html' %}
+
+<form method="POST" id="labelForm">
+<div class="row g-3">
+
+  <!-- ── Kolom kiri: foto + peta ── -->
+  <div class="col-lg-4">
+
+    <!-- Foto -->
+    <div style="background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card);margin-bottom:.875rem;">
+      <div style="background:linear-gradient(135deg,var(--c-primary),var(--c-secondary));
+                  padding:.75rem 1rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="bi bi-images" style="color:var(--c-accent);"></i>
+        <span style="font-size:.8rem;font-weight:600;color:#fff;">Foto Lapangan</span>
+      </div>
+      <div style="padding:.75rem;">
+        {% if lokasi.foto_list %}
+        {% set foto = lokasi.foto_list[0] %}
+        <img src="{{ url_for('static', filename=foto.path_file) }}"
+             style="width:100%;height:200px;object-fit:cover;border-radius:var(--r-input);display:block;"
+             alt="{{ lokasi.nama_citra }}"
+             onerror="this.src='https://placehold.co/400x200?text=Foto'">
+        {% if lokasi.foto_list | length > 1 %}
+        <p style="font-size:.72rem;color:var(--c-muted);margin:.5rem 0 0;text-align:center;">
+          +{{ lokasi.foto_list|length - 1 }} foto lainnya
+        </p>
+        {% endif %}
+        {% else %}
+        <div style="height:160px;background:var(--c-bg);border-radius:var(--r-input);
+                    display:flex;align-items:center;justify-content:center;color:var(--c-muted);font-size:.8rem;">
+          <i class="bi bi-image" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Mini map -->
+    <div style="background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card);margin-bottom:.875rem;">
+      <div style="background:linear-gradient(135deg,var(--c-primary),var(--c-secondary));
+                  padding:.75rem 1rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="bi bi-geo-alt-fill" style="color:var(--c-accent);"></i>
+        <span style="font-size:.8rem;font-weight:600;color:#fff;">Titik Lokasi</span>
+        <span style="margin-left:auto;font-size:.7rem;color:rgba(255,255,255,.45);">
+          {{ lokasi.latitude }}, {{ lokasi.longitude }}
+        </span>
+      </div>
+      <div style="padding:.625rem;">
+        <div id="mini-map"></div>
+      </div>
+    </div>
+
+    <!-- Info lokasi -->
+    <div style="background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);padding:.875rem 1rem;box-shadow:var(--shadow-card);">
+      <p style="font-size:.72rem;font-weight:600;color:var(--c-muted);text-transform:uppercase;
+                letter-spacing:.05em;margin:0 0 .5rem;">Info Lokasi</p>
+      {% for lbl_txt, val in [('Panjang (P)', lokasi.panjang or '—'), ('Lebar (L)', lokasi.lebar or '—'), ('Sumber', lokasi.sumber_data)] %}
+      <div style="display:flex;justify-content:space-between;padding:.3rem 0;
+                  border-bottom:1px solid var(--c-border);font-size:.78rem;">
+        <span style="color:var(--c-muted);">{{ lbl_txt }}</span>
+        <span style="font-weight:500;color:var(--c-text);">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- ── Kolom kanan: form SDI ── -->
+  <div class="col-lg-8">
+    <div style="background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card);">
+      <div style="background:linear-gradient(135deg,var(--c-primary),var(--c-secondary));
+                  padding:.875rem 1.25rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="bi bi-tags-fill" style="color:var(--c-accent);"></i>
+        <span style="font-size:.85rem;font-weight:600;color:#fff;">Parameter SDI</span>
+      </div>
+      <div style="padding:1.25rem;">
+
+        <!-- SDI Score Live Display -->
+        <div id="sdiDisplay"
+             style="border-radius:var(--r-card);padding:1rem 1.25rem;margin-bottom:1.25rem;
+                    background:var(--c-bg);border:2px solid var(--c-border);
+                    display:flex;align-items:center;gap:1rem;flex-wrap:wrap;transition:border-color .3s;">
+          <div style="flex:1;min-width:120px;">
+            <p style="font-size:.72rem;color:var(--c-muted);margin:0 0 .2rem;text-transform:uppercase;letter-spacing:.05em;">SDI Score</p>
+            <p id="sdiValue" style="font-size:2.5rem;font-weight:800;margin:0;
+               font-variant-numeric:tabular-nums;color:var(--c-accent);line-height:1;">0</p>
+          </div>
+          <div style="flex:1;min-width:140px;">
+            <p style="font-size:.72rem;color:var(--c-muted);margin:0 0 .4rem;text-transform:uppercase;letter-spacing:.05em;">Label Otomatis</p>
+            <span id="sdiLabel" style="display:inline-flex;align-items:center;gap:.4rem;
+                  padding:.4rem 1rem;border-radius:999px;font-size:.85rem;font-weight:700;
+                  background:#64748B18;border:1.5px solid #64748B40;color:#64748B;">
+              <span id="sdiDot" style="width:.55rem;height:.55rem;border-radius:50%;background:#64748B;flex-shrink:0;"></span>
+              <span id="sdiLabelText">—</span>
+            </span>
+          </div>
+          <div id="sdiBreakdown" style="flex:2;min-width:200px;display:none;">
+            <p style="font-size:.7rem;color:var(--c-muted);margin:0 0 .3rem;">Rincian Komponen</p>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+              <span style="font-size:.72rem;padding:.2rem .5rem;border-radius:.25rem;background:#38BDF818;color:#38BDF8;border:1px solid #38BDF830;">
+                F_retak: <strong id="bdRetak">0</strong>
+              </span>
+              <span style="font-size:.72rem;padding:.2rem .5rem;border-radius:.25rem;background:#A3E63518;color:#A3E635;border:1px solid #A3E63530;">
+                F_lubang: <strong id="bdLubang">0</strong>
+              </span>
+              <span style="font-size:.72rem;padding:.2rem .5rem;border-radius:.25rem;background:#F59E0B18;color:#F59E0B;border:1px solid #F59E0B30;">
+                F_rutting: <strong id="bdRutting">0</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Threshold guide -->
+        <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;">
+          {% for nama, range, color in [('Ringan','SDI ≤ 50','#68D391'),('Sedang','SDI 51–150','#F6AD55'),('Berat','SDI > 150','#E53E3E')] %}
+          <div style="flex:1;text-align:center;padding:.45rem .5rem;border-radius:var(--r-input);
+                      background:{{ color }}12;border:1px solid {{ color }}35;">
+            <p style="font-size:.75rem;font-weight:700;color:{{ color }};margin:0;">{{ nama }}</p>
+            <p style="font-size:.68rem;color:{{ color }}99;margin:0;">{{ range }}</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="row g-3">
+
+          <!-- Persentase Retak -->
+          <div class="col-md-6">
+            <label style="font-size:.78rem;font-weight:600;color:var(--c-label);display:block;margin-bottom:.3rem;">
+              <i class="bi bi-reception-4" style="color:#38BDF8;margin-right:.3rem;"></i>
+              Luas Retak (%)
+              <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);display:block;margin-top:.1rem;">
+                Persentase area retak terhadap total permukaan
+              </span>
+            </label>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <input type="range" id="persen_retak_slider" min="0" max="100" step="0.5"
+                     value="{{ label.persen_retak if label else 0 }}"
+                     style="flex:1;accent-color:#38BDF8;"
+                     oninput="document.getElementById('persen_retak').value=this.value;hitungSDI()">
+              <input type="number" id="persen_retak" name="persen_retak"
+                     class="form-control sdi-param" min="0" max="100" step="0.5"
+                     value="{{ label.persen_retak if label else 0 }}"
+                     style="width:75px;font-size:.82rem;border:1px solid var(--c-border);border-radius:var(--r-input);padding:.4rem .6rem;"
+                     oninput="document.getElementById('persen_retak_slider').value=this.value;hitungSDI()">
+              <span style="font-size:.78rem;color:var(--c-muted);flex-shrink:0;">%</span>
+            </div>
+          </div>
+
+          <!-- Jenis Retak -->
+          <div class="col-md-6">
+            <label style="font-size:.78rem;font-weight:600;color:var(--c-label);display:block;margin-bottom:.3rem;">
+              <i class="bi bi-distribute-horizontal" style="color:#E879F9;margin-right:.3rem;"></i>
+              Jenis Retak
+              <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);display:block;margin-top:.1rem;">
+                Halus = ×1 | Lebar/buaya = ×2 faktor retak
+              </span>
+            </label>
+            <div style="display:flex;gap:.5rem;">
+              {% for val, teks, ikon in [('halus','Retak Halus','bi-slash-lg'),('lebar','Retak Lebar','bi-slash-square')] %}
+              <label style="flex:1;cursor:pointer;">
+                <input type="radio" name="jenis_retak" value="{{ val }}" style="display:none;"
+                       {% if (label and label.jenis_retak == val) or (not label and val == 'halus') %}checked{% endif %}
+                       onchange="hitungSDI()">
+                <div class="sdi-tier" style="background:var(--c-bg);color:#E879F9;border-color:var(--c-border);"
+                     id="tier_{{ val }}">
+                  <i class="bi {{ ikon }}" style="font-size:.9rem;display:block;margin-bottom:.2rem;"></i>
+                  {{ teks }}
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Jumlah Lubang -->
+          <div class="col-md-6">
+            <label style="font-size:.78rem;font-weight:600;color:var(--c-label);display:block;margin-bottom:.3rem;">
+              <i class="bi bi-circle-square" style="color:#A3E635;margin-right:.3rem;"></i>
+              Jumlah Lubang <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);">(per 100m)</span>
+              <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);display:block;margin-top:.1rem;">
+                0=0 | 1–10=+15 | 11–50=+75 | >50=+225
+              </span>
+            </label>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <input type="range" id="jumlah_lubang_slider" min="0" max="60" step="1"
+                     value="{{ label.jumlah_lubang if label else 0 }}"
+                     style="flex:1;accent-color:#A3E635;"
+                     oninput="document.getElementById('jumlah_lubang').value=this.value;hitungSDI()">
+              <input type="number" id="jumlah_lubang" name="jumlah_lubang"
+                     class="form-control sdi-param" min="0" step="1"
+                     value="{{ label.jumlah_lubang if label else 0 }}"
+                     style="width:75px;font-size:.82rem;border:1px solid var(--c-border);border-radius:var(--r-input);padding:.4rem .6rem;"
+                     oninput="document.getElementById('jumlah_lubang_slider').value=Math.min(this.value,60);hitungSDI()">
+              <span style="font-size:.78rem;color:var(--c-muted);flex-shrink:0;">bh</span>
+            </div>
+          </div>
+
+          <!-- Kedalaman Rutting -->
+          <div class="col-md-6">
+            <label style="font-size:.78rem;font-weight:600;color:var(--c-label);display:block;margin-bottom:.3rem;">
+              <i class="bi bi-align-bottom" style="color:#F59E0B;margin-right:.3rem;"></i>
+              Kedalaman Rutting
+              <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);display:block;margin-top:.1rem;">
+                0=0 | &lt;1cm=+5 | 1–3cm=+20 | >3cm=+40
+              </span>
+            </label>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <input type="range" id="kedalaman_rutting_slider" min="0" max="6" step="0.1"
+                     value="{{ label.kedalaman_rutting if label else 0 }}"
+                     style="flex:1;accent-color:#F59E0B;"
+                     oninput="document.getElementById('kedalaman_rutting').value=parseFloat(this.value).toFixed(1);hitungSDI()">
+              <input type="number" id="kedalaman_rutting" name="kedalaman_rutting"
+                     class="form-control sdi-param" min="0" step="0.1"
+                     value="{{ label.kedalaman_rutting if label else 0 }}"
+                     style="width:75px;font-size:.82rem;border:1px solid var(--c-border);border-radius:var(--r-input);padding:.4rem .6rem;"
+                     oninput="document.getElementById('kedalaman_rutting_slider').value=Math.min(this.value,6);hitungSDI()">
+              <span style="font-size:.78rem;color:var(--c-muted);flex-shrink:0;">cm</span>
+            </div>
+          </div>
+
+          <!-- Catatan -->
+          <div class="col-12">
+            <label for="catatan" style="font-size:.78rem;font-weight:600;color:var(--c-label);margin-bottom:.3rem;display:block;">
+              <i class="bi bi-chat-left-text" style="color:var(--c-accent);margin-right:.3rem;"></i>
+              Catatan (opsional)
+            </label>
+            <textarea id="catatan" name="catatan" rows="2"
+                      style="width:100%;font-size:.82rem;border:1px solid var(--c-border);
+                             border-radius:var(--r-input);padding:.5rem .75rem;resize:vertical;
+                             background:var(--c-bg);color:var(--c-text);"
+                      placeholder="Kondisi tambahan, observasi lapangan...">{{ label.catatan or '' }}</textarea>
+          </div>
+
+          <!-- Tombol simpan -->
+          <div class="col-12" style="display:flex;gap:.625rem;align-items:center;flex-wrap:wrap;">
+            <button type="submit" class="btn-cnn-primary" style="padding:.65rem 1.5rem;">
+              <i class="bi bi-save me-1"></i>Simpan Label
+            </button>
+            <a href="{{ url_for('label.index') }}"
+               style="padding:.65rem 1.25rem;border-radius:var(--r-input);font-size:.82rem;
+                      border:1px solid var(--c-border);color:var(--c-muted);text-decoration:none;
+                      transition:all .15s;"
+               onmouseover="this.style.borderColor='var(--c-text)';this.style.color='var(--c-text)'"
+               onmouseout="this.style.borderColor='var(--c-border)';this.style.color='var(--c-muted)'">
+              Batal
+            </a>
+          </div>
+
+        </div><!-- /row -->
+      </div><!-- /padding -->
+    </div>
+  </div><!-- /col-lg-8 -->
+
+</div><!-- /row -->
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Mini map ─────────────────────────────────────────────────
+var lat = {{ lokasi.latitude | float }};
+var lon = {{ lokasi.longitude | float }};
+var map = L.map('mini-map', { zoomControl: false, scrollWheelZoom: false, dragging: false })
+            .setView([lat, lon], 16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM' }).addTo(map);
+L.circleMarker([lat, lon], { radius: 8, fillColor: '#E53E3E', color: '#fff', weight: 2, fillOpacity: 0.9 })
+  .addTo(map).bindPopup('{{ lokasi.nama_citra }}').openPopup();
+
+// ── SDI Real-time ────────────────────────────────────────────
+var TIER_COLORS = { 'Ringan': '#68D391', 'Sedang': '#F6AD55', 'Berat': '#E53E3E' };
+
+function hitungSDI() {
+  var pRetak   = parseFloat(document.getElementById('persen_retak').value)   || 0;
+  var jRetak   = document.querySelector('input[name="jenis_retak"]:checked').value;
+  var nLubang  = parseInt(document.getElementById('jumlah_lubang').value)     || 0;
+  var kRutting = parseFloat(document.getElementById('kedalaman_rutting').value) || 0;
+
+  // F_retak
+  var fRetak = 0;
+  if (pRetak > 20)      fRetak = 40;
+  else if (pRetak > 10) fRetak = 20;
+  else if (pRetak > 0)  fRetak = 5;
+  if (jRetak === 'lebar') fRetak *= 2;
+
+  // F_lubang
+  var fLubang = 0;
+  if (nLubang > 50)     fLubang = 225;
+  else if (nLubang > 10) fLubang = 75;
+  else if (nLubang > 0)  fLubang = 15;
+
+  // F_rutting
+  var fRutting = 0;
+  if (kRutting > 3)      fRutting = 40;
+  else if (kRutting > 1) fRutting = 20;
+  else if (kRutting > 0) fRutting = 5;
+
+  var sdi = fRetak + fLubang + fRutting;
+
+  // Label
+  var nama, warna;
+  if (sdi <= 50)       { nama = 'Ringan'; warna = '#68D391'; }
+  else if (sdi <= 150) { nama = 'Sedang'; warna = '#F6AD55'; }
+  else                 { nama = 'Berat';  warna = '#E53E3E'; }
+
+  // Update UI
+  document.getElementById('sdiValue').textContent = sdi;
+  document.getElementById('sdiValue').style.color = warna;
+  document.getElementById('sdiLabelText').textContent = nama;
+  document.getElementById('sdiDot').style.background = warna;
+  document.getElementById('sdiLabel').style.background = warna + '18';
+  document.getElementById('sdiLabel').style.borderColor = warna + '60';
+  document.getElementById('sdiLabel').style.color = warna;
+
+  var disp = document.getElementById('sdiDisplay');
+  disp.style.borderColor = warna + '60';
+
+  document.getElementById('bdRetak').textContent  = fRetak;
+  document.getElementById('bdLubang').textContent  = fLubang;
+  document.getElementById('bdRutting').textContent = fRutting;
+  document.getElementById('sdiBreakdown').style.display = sdi > 0 ? 'block' : 'none';
+
+  // Update tier radio UI
+  ['halus','lebar'].forEach(function(v) {
+    var el = document.getElementById('tier_' + v);
+    var checked = document.querySelector('input[name="jenis_retak"][value="'+v+'"]:checked');
+    el.style.background  = checked ? '#E879F918' : 'var(--c-bg)';
+    el.style.borderColor = checked ? '#E879F9'   : 'var(--c-border)';
+  });
+}
+
+// Init saat halaman load
+document.querySelectorAll('input[name="jenis_retak"]').forEach(function(r) {
+  r.addEventListener('change', hitungSDI);
+});
+hitungSDI();
+</script>
+{% endblock %}

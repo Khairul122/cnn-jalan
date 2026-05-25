@@ -1,0 +1,15 @@
+<div class="d-flex gap-1 flex-wrap">
+  {% if ta_view_url is defined and ta_view_url %}
+  <a href="{{ ta_view_url }}" class="btn btn-sm btn-outline-primary" aria-label="Lihat detail"
+     style="min-width:36px;min-height:36px;">
+    <i class="bi bi-eye" aria-hidden="true"></i>
+  </a>
+  {% endif %}
+  <form method="POST" action="{{ ta_delete_url }}"
+        onsubmit="return confirm('{{ ta_confirm_msg if ta_confirm_msg is defined and ta_confirm_msg else 'Hapus data ini?' }}')">
+    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Hapus data ini"
+            style="min-width:36px;min-height:36px;">
+      <i class="bi bi-trash" aria-hidden="true"></i>
+    </button>
+  </form>
+</div>

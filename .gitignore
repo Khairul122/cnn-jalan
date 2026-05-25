@@ -1,0 +1,36 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Trained models (large binary files)
+*.keras
+app/static/models/
+
+# Training logs
+app/static/logs/
+
+# User uploads (photos + preprocessed images)
+app/static/uploads/foto/
+app/static/uploads/preprocessed/
+
+# Environment & secrets
+.env
+config.local.py
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dataset directory
+data/
+

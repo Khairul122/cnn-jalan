@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}Detail Lokasi — {{ lokasi.nama_citra }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  #detail-map { height: 220px; border-radius: var(--r-input); z-index: 0; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('lokasi.index') }}">Lokasi</a>
+<span class="sep">›</span>
+<span class="current">{{ lokasi.nama_citra }}</span>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = lokasi.nama_citra %}
+{% set ph_back_url = url_for('lokasi.index') %}
+{% include 'components/page_header.html' %}
+
+<div class="row g-3">
+
+  <!-- Info + Map card -->
+  <div class="col-md-5">
+    <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+                overflow:hidden;box-shadow:var(--shadow-card);">
+      <!-- Card header -->
+      <div style="background:linear-gradient(135deg,var(--c-primary) 0%,var(--c-secondary) 100%);
+                  padding:.875rem 1.25rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="bi bi-geo-alt" style="color:var(--c-accent);font-size:1rem;"></i>
+        <span style="font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;color:#fff;">
+          Informasi Lokasi
+        </span>
+      </div>
+      <ul class="list-group list-group-flush">
+
+        {% set dr_label = 'Latitude' %}
+        {% set dr_value = lokasi.latitude %}
+        {% include 'components/detail_row.html' %}
+
+        {% set dr_label = 'Longitude' %}
+        {% set dr_value = lokasi.longitude %}
+        {% include 'components/detail_row.html' %}
+
+        {% set dr_label = 'Panjang (P)' %}
+        {% set dr_value = lokasi.panjang or '-' %}
+        {% include 'components/detail_row.html' %}
+
+        {% set dr_label = 'Lebar (L)' %}
+        {% set dr_value = lokasi.lebar or '-' %}
+        {% include 'components/detail_row.html' %}
+
+        {% set dr_label = 'Sumber Data' %}
+        {% set badge_value = lokasi.sumber_data %}
+        {% set dr_value %}{% include 'components/status_badge.html' %}{% endset %}
+        {% set dr_raw = true %}
+        {% include 'components/detail_row.html' %}
+        {% set dr_raw = false %}
+
+      </ul>
+
+      <!-- Mini Map -->
+      <div style="padding:.75rem;">
+        <div style="display:flex;align-items:center;gap:.375rem;margin-bottom:.5rem;">
+          <i class="bi bi-map" style="color:var(--c-accent);font-size:.85rem;"></i>
+          <span style="font-size:.78rem;font-weight:600;color:var(--c-text);">Titik Lokasi</span>
+        </div>
+        <div id="detail-map"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Foto grid -->
+  <div class="col-md-7">
+    <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+                overflow:hidden;box-shadow:var(--shadow-card);">
+      <!-- Card header -->
+      <div style="background:linear-gradient(135deg,var(--c-primary) 0%,var(--c-secondary) 100%);
+                  padding:.875rem 1.25rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="bi bi-images" style="color:var(--c-accent);font-size:1rem;"></i>
+        <span style="font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;color:#fff;">
+          Dokumentasi Foto
+        </span>
+        <span style="margin-left:auto;font-family:'Inter',sans-serif;font-size:.78rem;
+                     color:rgba(255,255,255,.5);">
+          {{ lokasi.foto_list | length }} file
+        </span>
+      </div>
+      <div style="padding:1rem;">
+        {% if lokasi.foto_list %}
+          <div class="row g-2">
+            {% for foto in lokasi.foto_list %}
+            <div class="col-6 col-md-4">
+              <div style="border-radius:var(--r-input);overflow:hidden;
+                          border:1px solid var(--c-border);
+                          transition:box-shadow var(--duration-normal),transform var(--duration-normal);"
+                   onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'"
+                   onmouseout="this.style.boxShadow='none';this.style.transform='none'">
+                <div style="position:relative;overflow:hidden;">
+                  <img src="{{ url_for('static', filename=foto.path_file) }}"
+                       style="width:100%;height:130px;object-fit:cover;display:block;"
+                       alt="Foto kerusakan jalan: {{ foto.nama_file }}"
+                       onerror="this.src='https://placehold.co/200x130?text=Foto'" loading="lazy">
+                  {% if foto.hasil_klasifikasi %}
+                  <span style="position:absolute;bottom:.375rem;right:.375rem;
+                               background:rgba(5,150,105,.9);color:#fff;
+                               font-size:.65rem;font-weight:600;padding:.15rem .45rem;
+                               border-radius:.25rem;">
+                    {{ foto.hasil_klasifikasi.jenis_kerusakan.kode }}
+                    {{ (foto.hasil_klasifikasi.confidence_score * 100) | round(1) }}%
+                  </span>
+                  {% endif %}
+                </div>
+                <div style="padding:.5rem .625rem;">
+                  <p style="font-size:.72rem;color:var(--c-muted);margin:0;
+                             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    {{ foto.nama_file }}
+                  </p>
+                  <p style="font-size:.7rem;color:var(--c-muted);margin:.1rem 0 0;
+                             font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">
+                    {{ foto.ukuran_kb or '-' }} KB
+                  </p>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="cnn-empty-state" style="padding:2rem 1rem;">
+            <i class="bi bi-images"></i>
+            <p>Belum ada foto untuk lokasi ini.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  var lat = {{ lokasi.latitude | float }};
+  var lon = {{ lokasi.longitude | float }};
+  var nama = {{ lokasi.nama_citra | tojson }};
+
+  var map = L.map('detail-map', { zoomControl: true, scrollWheelZoom: false })
+              .setView([lat, lon], 17);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  var icon = L.divIcon({
+    className: '',
+    html: '<div style="width:14px;height:14px;border-radius:50%;background:#E53E3E;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);"></div>',
+    iconSize: [14, 14],
+    iconAnchor: [7, 7]
+  });
+
+  L.marker([lat, lon], { icon: icon })
+   .addTo(map)
+   .bindPopup('<strong>' + nama + '</strong><br>' + lat + ', ' + lon)
+   .openPopup();
+</script>
+{% endblock %}

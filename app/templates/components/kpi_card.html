@@ -1,0 +1,21 @@
+<div class="cnn-kpi-card"
+     style="--kpi-accent:{{ kpi_accent if kpi_accent is defined else 'var(--c-accent)' }};">
+  <div style="flex:1;min-width:0;">
+    <p class="cnn-kpi-label">{{ kpi_title }}</p>
+    <p class="cnn-kpi-value">{{ kpi_value }}</p>
+    {% if kpi_trend_label is defined %}
+    <span class="cnn-kpi-trend {{ kpi_trend_type if kpi_trend_type is defined else 'neutral' }}">
+      {% if kpi_trend_type == 'up' %}<i class="bi bi-arrow-up" aria-hidden="true"></i>
+      {% elif kpi_trend_type == 'down' %}<i class="bi bi-arrow-down" aria-hidden="true"></i>
+      {% else %}<i class="bi bi-dash" aria-hidden="true"></i>{% endif %}
+      {{ kpi_trend_label }}
+    </span>
+    {% endif %}
+  </div>
+  <div class="cnn-kpi-icon" style="background:{{ kpi_icon_bg }};" aria-hidden="true">
+    <svg class="w-5 h-5" style="color:{{ kpi_icon_color }};"
+         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {{ kpi_icon_path | safe }}
+    </svg>
+  </div>
+</div>

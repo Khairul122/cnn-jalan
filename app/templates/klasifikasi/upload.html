@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Upload &amp; Klasifikasi CNN{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<span class="current">Klasifikasi CNN</span>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = 'Upload Foto & Klasifikasi CNN' %}
+{% include 'components/page_header.html' %}
+
+<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+            box-shadow:var(--shadow-card);max-width:560px;overflow:hidden;">
+  <div style="padding:1.5rem;">
+    <form method="POST" enctype="multipart/form-data" id="klasifikasi-form">
+
+      <!-- Pilih Lokasi -->
+      <div class="mb-3">
+        <div class="form-floating">
+          <select name="lokasi_id" id="lokasi_id" class="form-select" required
+                  aria-label="Pilih lokasi kerusakan jalan">
+            <option value="">-- Pilih Lokasi --</option>
+            {% for lok in lokasi_list %}
+              <option value="{{ lok.id }}">{{ lok.nama_citra }} — {{ lok.kecamatan.nama_kecamatan }}</option>
+            {% endfor %}
+          </select>
+          <label for="lokasi_id">Pilih Lokasi</label>
+        </div>
+        <div class="form-text" style="margin-top:.4rem;">
+          Belum ada lokasi?
+          <a href="{{ url_for('lokasi.create') }}" style="color:var(--c-accent);">Tambah dulu.</a>
+        </div>
+      </div>
+
+      <!-- Upload Foto — Dropzone -->
+      <div class="mb-4">
+        <label style="display:block;font-size:.8rem;font-weight:500;color:var(--c-label);margin-bottom:.5rem;">
+          File Foto <span style="color:var(--c-danger);" aria-hidden="true">*</span>
+        </label>
+        <div class="cnn-dropzone" id="dropzone" role="button" aria-label="Area upload foto, klik atau seret file ke sini">
+          <input type="file" name="foto" accept="image/*" required id="foto-input"
+                 style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"
+                 onchange="handleFileSelect(this)" aria-label="Pilih foto untuk diklasifikasi">
+          <i class="bi bi-cloud-upload cnn-dropzone-icon" id="dz-icon" aria-hidden="true"></i>
+          <div id="dz-preview" style="display:none;margin-bottom:.75rem;">
+            <img id="preview-img" src="" alt="Preview foto yang dipilih"
+                 style="max-height:120px;max-width:100%;border-radius:var(--r-input);object-fit:contain;">
+          </div>
+          <p class="cnn-dropzone-label">
+            <strong>Klik untuk upload</strong> atau seret foto ke sini
+          </p>
+          <p class="cnn-dropzone-sub" id="dropzone-sub">PNG, JPG, JPEG, WEBP &mdash; Maks 16 MB</p>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn-cnn-primary w-full" id="submit-btn">
+        <i class="bi bi-cpu" aria-hidden="true"></i>
+        <span id="submit-text">Proses Klasifikasi CNN</span>
+        <span id="submit-spinner" class="spinner-border spinner-border-sm d-none"
+              role="status" aria-label="Memproses klasifikasi..."></span>
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function handleFileSelect(input) {
+    var sub     = document.getElementById('dropzone-sub');
+    var icon    = document.getElementById('dz-icon');
+    var preview = document.getElementById('dz-preview');
+    var img     = document.getElementById('preview-img');
+
+    if (input.files && input.files.length > 0) {
+      var file = input.files[0];
+      sub.textContent  = file.name;
+      sub.style.color  = 'var(--c-ok)';
+      sub.style.opacity = '1';
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        img.src = e.target.result;
+        icon.style.display    = 'none';
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  var dz = document.getElementById('dropzone');
+  if (dz) {
+    dz.addEventListener('dragover',  function (e) { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', function ()  { dz.classList.remove('drag-over'); });
+    dz.addEventListener('drop',      function ()  { dz.classList.remove('drag-over'); });
+  }
+
+  document.getElementById('klasifikasi-form').addEventListener('submit', function() {
+    var btn  = document.getElementById('submit-btn');
+    var txt  = document.getElementById('submit-text');
+    var spin = document.getElementById('submit-spinner');
+    btn.disabled = true;
+    btn.style.opacity = '.7';
+    txt.textContent = 'Memproses…';
+    spin.classList.remove('d-none');
+  });
+</script>
+{% endblock %}

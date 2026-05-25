@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html class="light" lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SIG Pemetaan Kerusakan Jalan — Kota Lhokseumawe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "on-tertiary-fixed":          "#380d00",
+        "tertiary-fixed":             "#ffdbcf",
+        "inverse-surface":            "#2e3132",
+        "on-surface":                 "#191c1e",
+        "on-surface-variant":         "#434654",
+        "tertiary-fixed-dim":         "#ffb59b",
+        "on-error-container":         "#93000a",
+        "surface-tint":               "#0c56d0",
+        "error-container":            "#ffdad6",
+        "on-background":              "#191c1e",
+        "primary":                    "#003d9b",
+        "background":                 "#f8f9fb",
+        "on-tertiary-fixed-variant":  "#812800",
+        "on-secondary":               "#ffffff",
+        "on-secondary-fixed":         "#101c2d",
+        "tertiary-container":         "#a33500",
+        "outline":                    "#737685",
+        "on-primary":                 "#ffffff",
+        "surface-bright":             "#f8f9fb",
+        "primary-fixed-dim":          "#b2c5ff",
+        "surface-container-high":     "#e7e8ea",
+        "primary-fixed":              "#dae2ff",
+        "outline-variant":            "#c3c6d6",
+        "on-tertiary":                "#ffffff",
+        "primary-container":          "#0052cc",
+        "surface-container":          "#edeef0",
+        "on-primary-fixed":           "#001848",
+        "on-secondary-fixed-variant": "#3b475b",
+        "inverse-primary":            "#b2c5ff",
+        "surface":                    "#f8f9fb",
+        "surface-container-highest":  "#e1e2e4",
+        "on-error":                   "#ffffff",
+        "secondary-container":        "#d4e0f8",
+        "inverse-on-surface":         "#f0f1f3",
+        "on-primary-container":       "#c4d2ff",
+        "surface-dim":                "#d9dadc",
+        "error":                      "#ba1a1a",
+        "secondary-fixed-dim":        "#bbc7de",
+        "surface-variant":            "#e1e2e4",
+        "secondary":                  "#535f73",
+        "surface-container-low":      "#f3f4f6",
+        "on-secondary-container":     "#576377",
+        "tertiary":                   "#7b2600",
+        "secondary-fixed":            "#d7e3fb",
+        "surface-container-lowest":   "#ffffff",
+        "on-tertiary-container":      "#ffc6b2",
+        "on-primary-fixed-variant":   "#0040a2"
+      },
+      borderRadius: { DEFAULT:"0.25rem", lg:"0.5rem", xl:"0.75rem", full:"9999px" },
+      spacing: {
+        xl:"32px", md:"16px", lg:"24px", "map-gutter":"20px",
+        "sidebar-width":"320px", sm:"12px", base:"4px", xs:"8px"
+      },
+      fontFamily: {
+        "label-sm":    ["Inter"],
+        "body-sm":     ["Inter"],
+        "headline-xl": ["Inter"],
+        "headline-lg": ["Inter"],
+        "headline-md": ["Inter"],
+        "mono-data":   ["monospace"],
+        "body-md":     ["Inter"],
+        "label-md":    ["Inter"]
+      },
+      fontSize: {
+        "label-sm":    ["11px", {lineHeight:"14px", fontWeight:"500"}],
+        "body-sm":     ["14px", {lineHeight:"20px", fontWeight:"400"}],
+        "headline-xl": ["32px", {lineHeight:"40px", letterSpacing:"-0.02em", fontWeight:"700"}],
+        "headline-lg": ["24px", {lineHeight:"32px", letterSpacing:"-0.01em", fontWeight:"600"}],
+        "headline-md": ["20px", {lineHeight:"28px", fontWeight:"600"}],
+        "mono-data":   ["13px", {lineHeight:"18px", fontWeight:"400"}],
+        "body-md":     ["16px", {lineHeight:"24px", fontWeight:"400"}],
+        "label-md":    ["12px", {lineHeight:"16px", letterSpacing:"0.05em", fontWeight:"600"}]
+      }
+    }
+  }
+}
+</script>
+<style>
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+    vertical-align: middle;
+  }
+  .glass-panel {
+    background: rgba(255,255,255,.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  /* hide leaflet default controls — we use custom glass buttons */
+  .leaflet-control-zoom { display: none !important; }
+  .leaflet-control-attribution { font-size: 9px !important; }
+
+  /* fade-up animation */
+  [data-motion] { opacity: 0; transform: translateY(20px); }
+</style>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
+
+<!-- ─── TOP NAV ──────────────────────────────────── -->
+<header class="flex justify-between items-center px-lg py-md w-full sticky top-0 z-50
+               bg-surface-container-lowest border-b border-outline-variant transition-all duration-200" id="navbar">
+  <div class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-xs">
+    <span class="material-symbols-outlined" style="color:#003d9b;">travel_explore</span>
+    CNN-Jalan
+  </div>
+  <nav class="hidden md:flex gap-lg items-center">
+    <a class="text-primary border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Dashboard</a>
+    <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#map-section">Peta GIS</a>
+    <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#analytics">Prediksi</a>
+    <a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#about-cnn">Metodologi</a>
+  </nav>
+  <div class="flex gap-md items-center">
+    <button class="hidden md:block px-md py-xs font-label-md text-label-md text-primary hover:bg-surface-container-low transition-all rounded-lg"
+            onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+      Menu
+    </button>
+    <a href="{{ url_for('auth.login') }}"
+       class="bg-primary-container text-on-primary hover:bg-primary px-md py-xs rounded-lg font-label-md text-label-md transition-all">
+      Masuk ke Sistem
+    </a>
+    <button class="md:hidden p-xs rounded-lg border border-outline-variant"
+            onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+  </div>
+</header>
+
+<!-- mobile menu -->
+<div id="mobile-menu" class="hidden md:hidden bg-surface-container-lowest border-b border-outline-variant shadow-md">
+  <nav class="flex flex-col px-lg py-md gap-md">
+    <a href="#map-section" class="font-label-md text-label-md text-on-surface-variant">Peta GIS</a>
+    <a href="#analytics"   class="font-label-md text-label-md text-on-surface-variant">Prediksi</a>
+    <a href="#about-cnn"   class="font-label-md text-label-md text-on-surface-variant">Metodologi</a>
+    <a href="{{ url_for('auth.login') }}"
+       class="bg-primary text-on-primary text-center py-xs rounded-lg font-label-md text-label-md">
+       Masuk ke Sistem
+    </a>
+  </nav>
+</div>
+
+<main>
+
+<!-- ─── HERO ─────────────────────────────────────── -->
+<section class="relative min-h-[870px] flex items-center overflow-hidden px-md md:px-xl">
+  <!-- background image -->
+  <div class="absolute inset-0 z-0 opacity-20">
+    <img alt="Aerial urban road network"
+         class="w-full h-full object-cover"
+         src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHArWr203yJj2e_nEY9hW-glq6ABxyYSwn2xXZJUo3Bxo1SWxCW9Mz9ybFJhGNBuld2uZbbhgE5v3Lo7t3iT9b03nkUejakCeDp-Az36sVbFVHsIiK9iLF1l6DX65mK1aCAIc7mTuw3WyGwFabSOvnkssvbdKU9xTw30daqmeHM-DnLoxZ8LXkaQjNo8_yEDpMymzwbJP0Yk8cCLfSl9Yi-ciQh0yJwVpgibmkdrRLTRCrLLrUaPH75bS1UIJ3dTlEtC78yPl8l9s"/>
+    <div class="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent"></div>
+  </div>
+
+  <div class="relative z-10 max-w-4xl" data-motion>
+    <span class="inline-block py-xs px-md bg-secondary-container text-on-secondary-container rounded-full font-label-md text-label-md mb-md">
+      AI-POWERED INFRASTRUCTURE MONITORING
+    </span>
+    <h1 class="font-headline-xl text-headline-xl text-primary mb-md leading-tight">
+      SISTEM INFORMASI GEOGRAFIS<br>
+      PEMETAAN KERUSAKAN JALAN<br>
+      KOTA LHOKSEUMAWE
+    </h1>
+    <p class="font-body-md text-body-md text-on-surface-variant mb-xl max-w-2xl">
+      Mengoptimalkan pemeliharaan jalan melalui deteksi otomatis menggunakan metode
+      <strong>Convolutional Neural Network (CNN)</strong>.
+      Transformasi data citra menjadi kebijakan infrastruktur yang presisi.
+    </p>
+    <div class="flex flex-wrap gap-md">
+      <a href="#map-section"
+         class="bg-primary text-on-primary px-xl py-md rounded-lg font-headline-md text-headline-md shadow-lg flex items-center gap-xs hover:bg-primary-container transition-all">
+        <span class="material-symbols-outlined">map</span>
+        Lihat Peta Digital
+      </a>
+      <a href="{{ url_for('auth.login') }}"
+         class="border border-outline text-primary px-xl py-md rounded-lg font-headline-md text-headline-md hover:bg-surface-container-low transition-all flex items-center gap-xs">
+        <span class="material-symbols-outlined">login</span>
+        Masuk ke Sistem
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATS STRIP ───────────────────────────────── -->
+<div class="bg-primary py-lg px-md md:px-xl">
+  <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-md text-center">
+    {% set strip = [
+      ('280+',    'Foto Kerusakan',   '280',   '+', '0'),
+      ('3',       'Kategori Tingkat', '3',     '',  '0'),
+      (akurasi|string + '%' if akurasi else '—',
+                  'Akurasi Model CNN', akurasi|string if akurasi else '0', '%', '1'),
+      ('1',       'Kota Lhokseumawe', '1',    '',  '0'),
+    ] %}
+    {% for val, lbl, cnt, sfx, dec in strip %}
+    <div>
+      <div class="text-on-primary font-bold text-3xl leading-none mb-xs
+                  js-count" data-count="{{ cnt }}" data-suffix="{{ sfx }}" data-dec="{{ dec }}">
+        {{ val }}
+      </div>
+      <div class="text-primary-fixed-dim text-label-sm">{{ lbl }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ─── PREDIKSI / ANALYTICS ─────────────────────── -->
+<section class="py-xl px-md md:px-xl bg-surface-container-low" id="analytics">
+  <div class="max-w-7xl mx-auto">
+    <div class="mb-lg" data-motion>
+      <h2 class="font-headline-lg text-headline-lg text-on-surface">Data Prediksi Terkini</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        Hasil analisis model CNN terbaik pada foto kerusakan jalan Kota Lhokseumawe.
+      </p>
+    </div>
+
+    {% if total_pred and total_pred > 0 %}
+    {% set total_ct = (berat_ct or 0) + (sedang_ct or 0) + (ringan_ct or 0) %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+
+      <!-- Berat -->
+      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between" data-motion>
+        <div>
+          <span class="text-error font-headline-xl text-headline-xl js-count"
+                data-count="{{ berat_ct or 0 }}" data-suffix="" data-dec="0">{{ berat_ct or 0 }}</span>
+          <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Kerusakan Berat</p>
+        </div>
+        <div class="mt-md h-1 bg-surface-container rounded-full overflow-hidden">
+          <div class="h-full bg-error transition-all duration-1000"
+               data-bar="{{ ((berat_ct or 0) / total_ct * 100)|round(0)|int if total_ct > 0 else 0 }}"
+               style="width:0%"></div>
+        </div>
+        {% if recall_berat is not none %}
+        <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Recall: <strong>{{ recall_berat }}%</strong></p>
+        {% endif %}
+      </div>
+
+      <!-- Sedang -->
+      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between" data-motion>
+        <div>
+          <span class="text-tertiary font-headline-xl text-headline-xl js-count"
+                data-count="{{ sedang_ct or 0 }}" data-suffix="" data-dec="0">{{ sedang_ct or 0 }}</span>
+          <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Kerusakan Sedang</p>
+        </div>
+        <div class="mt-md h-1 bg-surface-container rounded-full overflow-hidden">
+          <div class="h-full bg-tertiary transition-all duration-1000"
+               data-bar="{{ ((sedang_ct or 0) / total_ct * 100)|round(0)|int if total_ct > 0 else 0 }}"
+               style="width:0%"></div>
+        </div>
+        {% if recall_sedang is not none %}
+        <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Recall: <strong>{{ recall_sedang }}%</strong></p>
+        {% endif %}
+      </div>
+
+      <!-- Akurasi overall -->
+      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between" data-motion>
+        <div>
+          {% if akurasi is not none %}
+          <span class="text-primary font-headline-xl text-headline-xl js-count"
+                data-count="{{ akurasi }}" data-suffix="%" data-dec="1">{{ akurasi }}%</span>
+          {% else %}
+          <span class="text-on-surface-variant font-headline-xl text-headline-xl">—</span>
+          {% endif %}
+          <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Akurasi Rata-rata CNN</p>
+        </div>
+        <div class="mt-md h-1 bg-surface-container rounded-full overflow-hidden">
+          <div class="h-full bg-primary transition-all duration-1000"
+               data-bar="{{ akurasi|round(0)|int if akurasi else 0 }}"
+               style="width:0%"></div>
+        </div>
+        {% if model_nama %}
+        <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">
+          Model: <strong>{{ model_nama }}</strong>
+        </p>
+        {% endif %}
+      </div>
+
+      <!-- Ringan + total table card -->
+      <div class="md:col-span-3 bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm" data-motion>
+        <div class="px-md py-sm border-b border-outline-variant flex items-center justify-between">
+          <div>
+            <h3 class="font-label-md text-label-md text-on-surface">Distribusi Klasifikasi</h3>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">Total: {{ total_pred }} prediksi</p>
+          </div>
+          <a href="{{ url_for('auth.login') }}"
+             class="text-primary font-label-md text-label-md hover:underline flex items-center gap-xs">
+            Lihat Detail <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          </a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-container text-on-surface-variant">
+                <th class="p-md font-label-md text-label-md">KATEGORI</th>
+                <th class="p-md font-label-md text-label-md">JUMLAH PREDIKSI</th>
+                <th class="p-md font-label-md text-label-md">PROPORSI</th>
+                <th class="p-md font-label-md text-label-md text-right">RECALL</th>
+              </tr>
+            </thead>
+            <tbody class="font-body-sm text-body-sm">
+              {% set rows = [
+                ('Berat',  berat_ct  or 0, recall_berat,  'text-error',   'bg-error-container text-on-error-container'),
+                ('Sedang', sedang_ct or 0, recall_sedang, 'text-tertiary', 'bg-tertiary-fixed text-on-tertiary-fixed-variant'),
+                ('Ringan', ringan_ct or 0, recall_ringan, 'text-primary',  'bg-secondary-container text-on-secondary-container'),
+              ] %}
+              {% for lbl, ct, rc, clr, badge in rows %}
+              <tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
+                <td class="p-md font-medium">
+                  <span class="inline-block px-xs py-1 rounded {{ badge }}">{{ lbl }}</span>
+                </td>
+                <td class="p-md font-mono-data text-mono-data {{ clr }}">{{ ct }}</td>
+                <td class="p-md">
+                  <div class="flex items-center gap-xs">
+                    <div class="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden max-w-[120px]">
+                      <div class="{{ 'bg-error' if lbl=='Berat' else ('bg-tertiary' if lbl=='Sedang' else 'bg-primary') }} h-full"
+                           style="width:{{ ((ct / total_ct * 100)|round(0)|int if total_ct > 0 else 0) }}%"></div>
+                    </div>
+                    <span class="font-mono-data text-mono-data text-on-surface-variant">
+                      {{ ((ct / total_ct * 100)|round(1) if total_ct > 0 else 0) }}%
+                    </span>
+                  </div>
+                </td>
+                <td class="p-md text-right font-mono-data text-mono-data {{ clr }}">
+                  {% if rc is not none %}{{ rc }}%{% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /grid -->
+
+    {% else %}
+    <!-- no data state -->
+    <div class="bg-surface-container-lowest rounded-xl border border-dashed border-outline-variant p-xl text-center" data-motion>
+      <span class="material-symbols-outlined text-4xl text-outline mb-md block">bar_chart</span>
+      <h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Belum ada data prediksi</h3>
+      <p class="font-body-sm text-body-sm text-on-surface-variant max-w-md mx-auto mb-lg">
+        Jalankan training model CNN dan prediksi melalui menu Arsitektur CNN di dalam sistem.
+      </p>
+      <a href="{{ url_for('auth.login') }}"
+         class="inline-flex items-center gap-xs bg-primary text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md hover:bg-primary-container transition-all">
+        <span class="material-symbols-outlined">login</span> Masuk ke Sistem
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ─── INTERACTIVE MAP ───────────────────────────── -->
+<section class="relative w-full overflow-hidden" id="map-section" style="height:700px;">
+
+  <!-- Leaflet map (base layer) -->
+  <div id="landing-map" class="absolute inset-0 z-0"></div>
+
+  <!-- skeleton loader -->
+  <div id="map-skeleton" class="absolute inset-0 z-10 bg-surface-dim flex flex-col items-center justify-center gap-sm">
+    <span class="material-symbols-outlined text-4xl text-outline">map</span>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Memuat peta interaktif...</p>
+  </div>
+
+  <!-- floating zoom controls -->
+  <div class="absolute top-map-gutter left-map-gutter flex flex-col gap-xs z-20">
+    <div class="glass-panel p-xs rounded-xl shadow-lg border border-white flex flex-col gap-xs">
+      <button onclick="lmap.zoomIn()"
+              class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest hover:bg-surface-variant rounded-lg transition-all">
+        <span class="material-symbols-outlined">add</span>
+      </button>
+      <button onclick="lmap.zoomOut()"
+              class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest hover:bg-surface-variant rounded-lg transition-all">
+        <span class="material-symbols-outlined">remove</span>
+      </button>
+      <div class="h-[1px] bg-outline-variant mx-1"></div>
+      <button onclick="lmap.setView([5.1801,97.1499],13)"
+              class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest hover:bg-surface-variant rounded-lg transition-all">
+        <span class="material-symbols-outlined">my_location</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- filter pills / search top center -->
+  <div class="absolute top-map-gutter left-1/2 -translate-x-1/2 z-20 flex gap-xs">
+    <button data-filter="all"
+            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-primary transition-all">
+      Semua
+    </button>
+    <button data-filter="berat"
+            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-on-surface-variant transition-all">
+      Berat
+    </button>
+    <button data-filter="sedang"
+            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-on-surface-variant transition-all">
+      Sedang
+    </button>
+    <button data-filter="ringan"
+            class="map-filter-btn glass-panel px-md py-xs rounded-full shadow border border-white font-label-md text-label-md text-on-surface-variant transition-all">
+      Ringan
+    </button>
+  </div>
+
+  <!-- legend bottom right -->
+  <div class="absolute bottom-map-gutter right-map-gutter z-20">
+    <div class="glass-panel p-md rounded-xl shadow-lg border border-white w-56">
+      <h3 class="font-label-md text-label-md text-on-surface-variant mb-md uppercase tracking-widest">Legenda</h3>
+      <div class="flex flex-col gap-sm">
+        <div class="flex items-center gap-md">
+          <span class="w-3 h-3 rounded-full bg-error ring-4 ring-error/20 flex-shrink-0"></span>
+          <span class="font-body-sm text-body-sm">Kerusakan Berat</span>
+        </div>
+        <div class="flex items-center gap-md">
+          <span class="w-3 h-3 rounded-full bg-tertiary ring-4 ring-tertiary/20 flex-shrink-0"></span>
+          <span class="font-body-sm text-body-sm">Kerusakan Sedang</span>
+        </div>
+        <div class="flex items-center gap-md">
+          <span class="w-3 h-3 rounded-full bg-primary ring-4 ring-primary/20 flex-shrink-0"></span>
+          <span class="font-body-sm text-body-sm">Kerusakan Ringan</span>
+        </div>
+      </div>
+      <div class="mt-md pt-sm border-t border-outline-variant">
+        <p class="font-label-sm text-label-sm text-on-surface-variant" id="marker-count">Memuat...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- info sidebar right -->
+  <div class="absolute top-map-gutter right-map-gutter bottom-map-gutter hidden lg:block z-20 pointer-events-none"
+       style="right:calc(14rem + 40px);">
+    <div class="pointer-events-auto h-full w-[280px] glass-panel rounded-xl shadow-xl border border-white p-lg flex flex-col gap-lg">
+      <div>
+        <h4 class="font-headline-md text-headline-md text-primary">Sebaran Prediksi</h4>
+        <p class="font-label-sm text-label-sm text-on-surface-variant">Kota Lhokseumawe</p>
+      </div>
+      {% if total_pred and total_pred > 0 %}
+      {% set total_ct = (berat_ct or 0) + (sedang_ct or 0) + (ringan_ct or 0) %}
+      <div class="flex flex-col gap-sm">
+        {% for lbl, ct, clr in [('Berat', berat_ct or 0, 'bg-error'), ('Sedang', sedang_ct or 0, 'bg-tertiary'), ('Ringan', ringan_ct or 0, 'bg-primary')] %}
+        <div>
+          <div class="flex justify-between items-center mb-xs">
+            <span class="font-label-sm text-label-sm text-on-surface-variant">{{ lbl }}</span>
+            <span class="font-mono-data text-mono-data text-on-surface">{{ ct }}</span>
+          </div>
+          <div class="h-1.5 bg-surface-container rounded-full overflow-hidden">
+            <div class="{{ clr }} h-full"
+                 style="width:{{ ((ct / total_ct * 100)|round(0)|int if total_ct > 0 else 0) }}%"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-auto p-sm bg-surface-container rounded-lg">
+        <p class="font-label-sm text-label-sm text-on-surface-variant">Total Titik Terpetakan</p>
+        <p class="font-headline-md text-headline-md text-primary">{{ total_pred }}</p>
+      </div>
+      {% else %}
+      <div class="flex-1 bg-surface-container-low rounded-lg border border-dashed border-outline-variant
+                  flex flex-col items-center justify-center text-center p-md">
+        <span class="material-symbols-outlined text-outline text-4xl mb-md">touch_app</span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">
+          Jalankan prediksi model untuk melihat sebaran data di peta.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</section>
+
+<!-- ─── TENTANG CNN ───────────────────────────────── -->
+<section class="py-xl px-md md:px-xl" id="about-cnn">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-xl items-center">
+    <div class="flex-1" data-motion>
+      <h2 class="font-headline-lg text-headline-lg text-primary mb-md">Bagaimana CNN Bekerja?</h2>
+      <p class="font-body-md text-body-md text-on-surface-variant mb-lg">
+        Convolutional Neural Network (CNN) adalah arsitektur deep learning yang mensimulasikan
+        cara kerja korteks visual manusia. Dalam sistem ini, ribuan citra jalan diproses melalui
+        lapisan-lapisan konvolusi untuk mengenali pola kerusakan secara otomatis.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-md">
+        <div class="p-md bg-surface-container rounded-lg">
+          <h4 class="font-label-md text-label-md text-primary mb-xs">TRANSFER LEARNING</h4>
+          <p class="font-body-sm text-body-sm">MobileNetV2 &amp; EfficientNetB0 pretrained ImageNet dengan frozen base weights untuk akurasi optimal pada dataset kecil.</p>
+        </div>
+        <div class="p-md bg-surface-container rounded-lg">
+          <h4 class="font-label-md text-label-md text-primary mb-xs">KLASIFIKASI 3 KELAS</h4>
+          <p class="font-body-sm text-body-sm">Mengelompokkan jenis kerusakan (Berat / Sedang / Ringan) berdasarkan standar SDI Bina Marga secara otomatis.</p>
+        </div>
+        <div class="p-md bg-surface-container rounded-lg">
+          <h4 class="font-label-md text-label-md text-primary mb-xs">SPLIT 80:20</h4>
+          <p class="font-body-sm text-body-sm">Stratified holdout split memastikan distribusi kelas yang seimbang pada data training dan validasi.</p>
+        </div>
+        <div class="p-md bg-surface-container rounded-lg">
+          <h4 class="font-label-md text-label-md text-primary mb-xs">GIS PEMETAAN</h4>
+          <p class="font-body-sm text-body-sm">Hasil prediksi divisualisasikan pada peta interaktif Leaflet.js dengan koordinat GPS akurat.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 relative" data-motion>
+      <div class="aspect-video rounded-2xl overflow-hidden shadow-2xl">
+        <img alt="CNN Neural Network Visualization"
+             class="w-full h-full object-cover"
+             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaJPjEYhi58mE1GMLisnl6dqcxRVewo9OnRbEzMHE72Myhba3cYowld9gI42Ez37f3SxN5hhXS_R-XSWhbttGGvx-iGWK2QPU_-_Sah_4_QBucn7hX_1BSES3lkj21t8dqjthVcR82Vk7I5KZgQnmTPpX1drRDZPljM82C9y4CHFKjAWo65dufgmsauLiAu_Eo-PPMlzgbAPF6j0dn_wQiBKcZQHZY-A1Zqlj5KPUcP5P9XhkSNv_brtHQZvzdVZTxAR9TNRbTE98"/>
+      </div>
+      <div class="absolute -bottom-xs -right-xs glass-panel p-md rounded-lg shadow-lg border border-primary/20">
+        <div class="flex items-center gap-md">
+          <div class="w-10 h-10 bg-primary-container rounded-full flex items-center justify-center">
+            <span class="material-symbols-outlined text-on-primary">psychology</span>
+          </div>
+          <div>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">Model Aktif</p>
+            <p class="font-body-sm font-bold text-on-surface">
+              {{ model_nama or 'MobileNetV2' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ─── FOOTER ────────────────────────────────────── -->
+<footer class="w-full py-xl px-lg grid grid-cols-1 md:grid-cols-2 gap-md items-center
+               bg-surface-container-high border-t border-outline-variant">
+  <div>
+    <div class="font-headline-md text-headline-md font-bold text-primary mb-xs">
+      CNN-Jalan · Lhokseumawe GIS
+    </div>
+    <p class="font-body-sm text-body-sm text-on-surface mb-md">
+      Sistem Informasi Geografis Pemetaan Kerusakan Jalan di Kota Lhokseumawe
+      Menggunakan Metode Convolutional Neural Network (CNN) — Skripsi © 2026
+    </p>
+    <div class="flex gap-md">
+      <a href="{{ url_for('auth.login') }}" class="text-on-secondary-fixed-variant hover:text-primary transition-colors font-body-sm text-body-sm underline">Masuk ke Sistem</a>
+    </div>
+  </div>
+  <div class="flex flex-col md:items-end gap-xs">
+    <p class="font-label-md text-label-md text-on-surface-variant">Universitas Malikussaleh</p>
+    <p class="font-body-sm text-body-sm">NIM 210170072</p>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Kota Lhokseumawe, Aceh, Indonesia</p>
+  </div>
+</footer>
+
+<!-- ─── SCRIPTS ───────────────────────────────────── -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── navbar shadow on scroll
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').style.boxShadow =
+    window.scrollY > 10 ? '0 1px 8px rgba(0,0,0,.08)' : '';
+}, { passive: true });
+
+// ── smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+
+// ── Leaflet map (global so buttons can access)
+const lmap = L.map('landing-map', { zoomControl: false, attributionControl: true })
+               .setView([5.1801, 97.1499], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(lmap);
+
+let markerLayer = L.layerGroup().addTo(lmap);
+let allFeatures = [];
+
+async function loadGIS() {
+  try {
+    const res  = await fetch('/api/landing/gis');
+    const data = await res.json();
+    allFeatures = data.features || [];
+    renderMarkers('all');
+    document.getElementById('map-skeleton').style.display = 'none';
+  } catch {
+    document.getElementById('map-skeleton').innerHTML =
+      '<span class="material-symbols-outlined text-3xl text-outline">warning</span>' +
+      '<p class="font-body-sm text-on-surface-variant">Gagal memuat data peta</p>';
+  }
+}
+
+const WARNA = { berat:'#ba1a1a', sedang:'#7b2600', ringan:'#003d9b' };
+
+function renderMarkers(filter) {
+  markerLayer.clearLayers();
+  const filtered = filter === 'all'
+    ? allFeatures
+    : allFeatures.filter(f => (f.properties.prediksi||'').toLowerCase() === filter);
+
+  filtered.forEach(f => {
+    const [lng, lat] = f.geometry.coordinates;
+    const p = f.properties;
+    L.circleMarker([lat, lng], {
+      radius: 8, fillColor: p.warna, color: '#fff',
+      weight: 1.5, fillOpacity: .85,
+    })
+    .bindPopup(`<div style="font-family:Inter,sans-serif;font-size:12px;min-width:90px;">
+      <strong style="color:${p.warna}">${p.prediksi}</strong><br>
+      <span style="color:#64748B;font-size:11px;">Prediksi CNN</span>
+    </div>`)
+    .addTo(markerLayer);
+  });
+
+  document.getElementById('marker-count').textContent =
+    `${filtered.length} titik${filter !== 'all' ? ' — ' + filter : ''}`;
+}
+
+// filter buttons
+document.querySelectorAll('.map-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.map-filter-btn').forEach(b => {
+      b.classList.remove('text-primary', 'border-primary');
+      b.classList.add('text-on-surface-variant');
+    });
+    btn.classList.add('text-primary', 'border-primary');
+    btn.classList.remove('text-on-surface-variant');
+    renderMarkers(btn.dataset.filter);
+  });
+});
+
+loadGIS();
+</script>
+
+<script>
+(function () {
+  // ease-out-cubic
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function countUp(el, target, suffix, decimals, duration) {
+    const start = performance.now();
+    function tick(now) {
+      const p = Math.min((now - start) / duration, 1);
+      el.textContent = (easeOut(p) * target).toFixed(decimals) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // fade-up
+  const fadeObs = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (!entry.isIntersecting) return;
+      const el    = entry.target;
+      const delay = (parseInt(el.dataset.motionDelay || 0)) * 90;
+      el.style.transition =
+        `opacity .55s ${delay}ms cubic-bezier(.25,1,.5,1),` +
+        `transform .55s ${delay}ms cubic-bezier(.25,1,.5,1)`;
+      el.style.opacity   = '1';
+      el.style.transform = 'translateY(0)';
+      fadeObs.unobserve(el);
+    });
+  }, { rootMargin: '-50px 0px', threshold: 0.08 });
+
+  document.querySelectorAll('[data-motion]').forEach((el, i) => {
+    el.dataset.motionDelay = i % 3;
+    fadeObs.observe(el);
+  });
+
+  // stats strip count-up
+  const statObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el  = entry.target;
+      countUp(el, parseFloat(el.dataset.count || 0),
+              el.dataset.suffix || '', parseInt(el.dataset.dec || 0, 10), 1600);
+      statObs.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.js-count[data-count]').forEach(el => statObs.observe(el));
+
+  // progress bars
+  const barObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.querySelectorAll('[data-bar]').forEach(bar => {
+        setTimeout(() => { bar.style.width = bar.dataset.bar + '%'; }, 200);
+      });
+      barObs.unobserve(entry.target);
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('#analytics .grid').forEach(el => barObs.observe(el));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1085 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════
+   DASHBOARD — Design tokens override & page styles
+   ═══════════════════════════════════════════════════ */
+
+/* ── Page wrapper ─────────────────────────────────── */
+.db-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: dbFadeIn .4s ease both;
+}
+@keyframes dbFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Page header ──────────────────────────────────── */
+.db-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.db-header-left {}
+.db-greeting {
+  font-size: .8rem;
+  color: var(--c-muted);
+  margin: 0 0 .2rem;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.db-greeting .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--c-ok);
+  animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(1.4); }
+}
+.db-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+  letter-spacing: -.025em;
+}
+.db-subtitle { font-size: .82rem; color: var(--c-muted); margin: .2rem 0 0; }
+
+.db-header-right {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  flex-shrink: 0;
+}
+.db-time-chip {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .45rem .875rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 2rem;
+  font-size: .78rem;
+  color: var(--c-muted);
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+}
+.db-time-chip i { color: var(--c-accent); font-size: .82rem; }
+#db-clock { font-weight: 600; color: var(--c-text); letter-spacing: .03em; }
+
+.db-refresh-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: .5rem;
+  color: var(--c-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  box-shadow: var(--shadow-card);
+}
+.db-refresh-btn:hover { color: var(--c-accent); border-color: var(--c-accent); background: var(--c-accent-light); }
+.db-refresh-btn:focus-visible { outline: var(--focus-ring); }
+.db-refresh-btn.spinning i { animation: spinOnce .5s ease; }
+@keyframes spinOnce { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ── KPI grid ─────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px)  { .kpi-grid { grid-template-columns: 1fr; } }
+
+.kpi-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  padding: 1.125rem 1.25rem 1rem;
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  transition: box-shadow var(--duration-normal), transform var(--duration-normal), border-color var(--duration-normal);
+  animation: kpiIn .4s ease both;
+}
+.kpi-card:nth-child(1) { animation-delay: .05s; }
+.kpi-card:nth-child(2) { animation-delay: .10s; }
+.kpi-card:nth-child(3) { animation-delay: .15s; }
+.kpi-card:nth-child(4) { animation-delay: .20s; }
+
+@keyframes kpiIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+  border-color: var(--kpi-color, var(--c-accent));
+}
+
+/* Accent bottom bar */
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kpi-color, var(--c-accent));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-normal) ease;
+}
+.kpi-card:hover::after { transform: scaleX(1); }
+
+/* Glow blob */
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--kpi-color, var(--c-accent));
+  opacity: .06;
+  transition: opacity var(--duration-normal);
+}
+.kpi-card:hover::before { opacity: .12; }
+
+.kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: .625rem;
+}
+.kpi-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--c-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 0;
+}
+.kpi-ico {
+  width: 36px; height: 36px;
+  border-radius: .5rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  background: var(--kpi-bg, var(--c-info-bg));
+}
+.kpi-ico svg { width: 18px; height: 18px; }
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: -.04em;
+  margin: 0 0 .25rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.kpi-meta {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  font-size: .75rem;
+  color: var(--c-muted);
+}
+.kpi-meta i { font-size: .7rem; }
+
+/* Sparkline bars */
+.kpi-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 28px;
+  margin-top: .625rem;
+}
+.kpi-sparkline .bar {
+  flex: 1;
+  background: var(--kpi-color, var(--c-accent));
+  border-radius: 2px 2px 0 0;
+  opacity: .25;
+  transition: opacity var(--duration-fast);
+  min-width: 0;
+}
+.kpi-sparkline .bar.active { opacity: .6; }
+.kpi-card:hover .kpi-sparkline .bar { opacity: .35; }
+.kpi-card:hover .kpi-sparkline .bar.active { opacity: .8; }
+
+/* ── Bottom row grid ──────────────────────────────── */
+.db-row {
+  display: grid;
+  gap: 1rem;
+}
+.db-row-2 { grid-template-columns: 1fr 1fr; }
+.db-row-3 { grid-template-columns: 1.2fr 1fr 1fr; }
+
+@media (max-width: 1024px) {
+  .db-row-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .db-row-2, .db-row-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Card base ────────────────────────────────────── */
+.db-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  animation: kpiIn .4s ease both;
+}
+.db-card:nth-child(1) { animation-delay: .25s; }
+.db-card:nth-child(2) { animation-delay: .30s; }
+.db-card:nth-child(3) { animation-delay: .35s; }
+
+.db-card-head {
+  padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--c-border-sub);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.db-card-title {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--c-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.db-card-title i { color: var(--c-accent); font-size: .85rem; }
+.db-card-badge {
+  font-size: .7rem;
+  font-weight: 600;
+  padding: .15rem .55rem;
+  border-radius: 2rem;
+  background: var(--c-info-bg);
+  color: var(--c-info);
+  font-variant-numeric: tabular-nums;
+}
+.db-card-body { padding: 1.125rem 1.25rem; }
+
+/* ── Donut chart (SVG) ────────────────────────────── */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+.donut-svg-wrap {
+  flex-shrink: 0;
+  position: relative;
+  width: 100px; height: 100px;
+}
+.donut-svg-wrap svg { overflow: visible; }
+.donut-track {
+  fill: none;
+  stroke: var(--c-border);
+  stroke-width: 12;
+}
+.donut-seg {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), opacity var(--duration-fast);
+}
+.donut-seg:hover { opacity: .8; }
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.donut-center-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.donut-center-lbl {
+  font-size: .62rem;
+  color: var(--c-muted);
+  margin-top: .1rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.donut-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .625rem; }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .375rem .625rem;
+  border-radius: .375rem;
+  cursor: default;
+  transition: background var(--duration-fast);
+}
+.legend-item:hover { background: var(--c-bg); }
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.legend-label { font-size: .8rem; color: var(--c-label); flex: 1; }
+.legend-val {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+.legend-pct {
+  font-size: .72rem;
+  color: var(--c-muted);
+  margin-left: .25rem;
+}
+
+/* ── Progress bar rows ────────────────────────────── */
+.status-row {
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+  margin-top: .875rem;
+}
+.status-item {}
+.status-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .3rem;
+}
+.status-item-label {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .8rem;
+  color: var(--c-label);
+}
+.status-item-label i { font-size: .45rem; }
+.status-item-right {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+}
+.status-item-val {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+.status-item-pct {
+  font-size: .72rem;
+  color: var(--c-muted);
+}
+.prog-track {
+  height: 6px;
+  background: var(--c-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  border-radius: 3px;
+  width: 0;
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Damage types card ────────────────────────────── */
+.dmg-list { display: flex; flex-direction: column; gap: .5rem; }
+.dmg-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .625rem .75rem;
+  border-radius: .5rem;
+  border: 1px solid var(--c-border);
+  cursor: default;
+  transition: all var(--duration-fast);
+  position: relative;
+  overflow: hidden;
+}
+.dmg-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--dmg-color);
+  border-radius: 0 2px 2px 0;
+}
+.dmg-item:hover { border-color: var(--dmg-color); background: var(--c-bg); transform: translateX(2px); }
+.dmg-ico {
+  width: 32px; height: 32px;
+  border-radius: .375rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  background: var(--dmg-bg);
+}
+.dmg-ico i { color: var(--dmg-color); font-size: .85rem; }
+.dmg-info { flex: 1; min-width: 0; }
+.dmg-name { font-size: .82rem; font-weight: 600; color: var(--c-text); margin: 0 0 .1rem; }
+.dmg-desc { font-size: .72rem; color: var(--c-muted); margin: 0; }
+.dmg-badge {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .2rem .5rem;
+  border-radius: 2rem;
+  background: var(--dmg-bg);
+  color: var(--dmg-color);
+}
+
+/* ── Quick actions ────────────────────────────────── */
+.qa-list { display: flex; flex-direction: column; gap: .5rem; }
+.qa-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .7rem .875rem;
+  border-radius: .5rem;
+  border: 1px solid transparent;
+  text-decoration: none;
+  background: var(--c-bg);
+  transition: all var(--duration-fast);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.qa-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--qa-color);
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+}
+.qa-item:hover {
+  border-color: var(--qa-color);
+  background: var(--c-surface);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transform: translateX(2px);
+}
+.qa-item:hover .qa-label { color: var(--qa-color); }
+.qa-item:focus-visible { outline: var(--focus-ring); }
+.qa-ico {
+  width: 34px; height: 34px;
+  border-radius: .4rem;
+  background: var(--qa-bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--duration-fast), transform var(--duration-fast);
+}
+.qa-item:hover .qa-ico { background: var(--qa-color); transform: scale(1.08); }
+.qa-ico svg { width: 16px; height: 16px; color: var(--qa-color); transition: color var(--duration-fast); }
+.qa-item:hover .qa-ico svg { color: #fff; }
+.qa-label {
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--c-label);
+  flex: 1;
+  transition: color var(--duration-fast);
+}
+.qa-arrow {
+  color: var(--c-muted);
+  font-size: .8rem;
+  transition: transform var(--duration-fast), color var(--duration-fast);
+  flex-shrink: 0;
+}
+.qa-item:hover .qa-arrow { transform: translateX(3px); color: var(--qa-color); }
+
+/* ── System info card ─────────────────────────────── */
+.sysinfo-list { display: flex; flex-direction: column; gap: 0; }
+.sysinfo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .55rem 0;
+  border-bottom: 1px solid var(--c-border-sub);
+}
+.sysinfo-row:last-child { border-bottom: none; }
+.sysinfo-key {
+  font-size: .78rem;
+  color: var(--c-muted);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.sysinfo-key i { color: var(--c-accent); font-size: .78rem; }
+.sysinfo-val {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.sysinfo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .7rem;
+  font-weight: 600;
+  padding: .15rem .5rem;
+  border-radius: 2rem;
+}
+.sysinfo-badge.ok { background: var(--c-ok-bg); color: var(--c-ok); }
+.sysinfo-badge.warn { background: var(--c-warn-bg); color: var(--c-warn); }
+.sysinfo-badge i { font-size: .6rem; }
+
+/* ── Responsive tweaks ────────────────────────────── */
+@media (max-width: 640px) {
+  .db-title { font-size: 1.15rem; }
+  .kpi-value { font-size: 1.6rem; }
+  .db-header-right { display: none; }
+  .donut-wrap { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+{% set total_status = (stats.draft + stats.terverifikasi + stats.diperbaiki) if (stats.draft + stats.terverifikasi + stats.diperbaiki) > 0 else 1 %}
+
+{# Donut chart constants: circumference = 2πr = 2×3.14159×38 ≈ 238.76 #}
+{% set circ = 238.76 %}
+{% set pct_draft       = (stats.draft        / total_status) %}
+{% set pct_verified    = (stats.terverifikasi / total_status) %}
+{% set pct_fixed       = (stats.diperbaiki   / total_status) %}
+{% set dash_draft    = (pct_draft    * circ) | round(2) %}
+{% set dash_verified = (pct_verified * circ) | round(2) %}
+{% set dash_fixed    = (pct_fixed    * circ) | round(2) %}
+{% set off_draft    = 0 %}
+{% set off_verified = circ - dash_draft %}
+{% set off_fixed    = circ - dash_draft - dash_verified %}
+
+<div class="db-page">
+
+  <!-- ══════ HEADER ══════ -->
+  <div class="db-header">
+    <div class="db-header-left">
+      <p class="db-greeting">
+        <span class="dot" aria-hidden="true"></span>
+        Sistem aktif &mdash; <span id="db-date"></span>
+      </p>
+      <h1 class="db-title">Dashboard</h1>
+      <p class="db-subtitle">Ringkasan data pemetaan kerusakan jalan Kota Lhokseumawe</p>
+    </div>
+    <div class="db-header-right">
+      <div class="db-time-chip" aria-label="Waktu sekarang">
+        <i class="bi bi-clock" aria-hidden="true"></i>
+        <span id="db-clock">--:--:--</span>
+      </div>
+      <button class="db-refresh-btn" id="db-refresh" title="Refresh halaman" aria-label="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════ KPI CARDS ══════ -->
+  <div class="kpi-grid" role="list" aria-label="Ringkasan statistik">
+
+    <!-- Total Lokasi -->
+    <div class="kpi-card" style="--kpi-color:#2563EB;--kpi-bg:#EFF6FF;" role="listitem">
+      <div class="kpi-top">
+        <p class="kpi-label">Total Lokasi</p>
+        <div class="kpi-ico" style="background:#EFF6FF;">
+          <svg fill="none" stroke="#2563EB" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+      </div>
+      <p class="kpi-value js-kpi" data-val="{{ stats.total_lokasi }}">{{ stats.total_lokasi }}</p>
+      <div class="kpi-meta">
+        <i class="bi bi-dash" aria-hidden="true"></i>
+        <span>Lokasi tercatat</span>
+      </div>
+      <div class="kpi-sparkline" aria-hidden="true">
+        <div class="bar" style="height:40%"></div>
+        <div class="bar" style="height:55%"></div>
+        <div class="bar" style="height:45%"></div>
+        <div class="bar" style="height:70%"></div>
+        <div class="bar" style="height:60%"></div>
+        <div class="bar" style="height:75%"></div>
+        <div class="bar active" style="height:85%"></div>
+      </div>
+    </div>
+
+    <!-- Klasifikasi CNN -->
+    <div class="kpi-card" style="--kpi-color:#059669;--kpi-bg:#ECFDF5;" role="listitem">
+      <div class="kpi-top">
+        <p class="kpi-label">Klasifikasi CNN</p>
+        <div class="kpi-ico" style="background:#ECFDF5;">
+          <svg fill="none" stroke="#059669" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+          </svg>
+        </div>
+      </div>
+      <p class="kpi-value js-kpi" data-val="{{ stats.total_klasifikasi }}">{{ stats.total_klasifikasi }}</p>
+      <div class="kpi-meta">
+        <i class="bi bi-dash" aria-hidden="true"></i>
+        <span>Foto terklasifikasi</span>
+      </div>
+      <div class="kpi-sparkline" aria-hidden="true">
+        <div class="bar" style="height:30%"></div>
+        <div class="bar" style="height:50%"></div>
+        <div class="bar" style="height:65%"></div>
+        <div class="bar" style="height:55%"></div>
+        <div class="bar" style="height:80%"></div>
+        <div class="bar" style="height:70%"></div>
+        <div class="bar active" style="height:90%"></div>
+      </div>
+    </div>
+
+    <!-- Layer Peta -->
+    <div class="kpi-card" style="--kpi-color:#D97706;--kpi-bg:#FFFBEB;" role="listitem">
+      <div class="kpi-top">
+        <p class="kpi-label">Layer Peta</p>
+        <div class="kpi-ico" style="background:#FFFBEB;">
+          <svg fill="none" stroke="#D97706" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+          </svg>
+        </div>
+      </div>
+      <p class="kpi-value js-kpi" data-val="{{ stats.total_peta }}">{{ stats.total_peta }}</p>
+      <div class="kpi-meta">
+        <i class="bi bi-dash" aria-hidden="true"></i>
+        <span>Titik di peta</span>
+      </div>
+      <div class="kpi-sparkline" aria-hidden="true">
+        <div class="bar" style="height:55%"></div>
+        <div class="bar" style="height:45%"></div>
+        <div class="bar" style="height:70%"></div>
+        <div class="bar" style="height:60%"></div>
+        <div class="bar" style="height:50%"></div>
+        <div class="bar" style="height:75%"></div>
+        <div class="bar active" style="height:80%"></div>
+      </div>
+    </div>
+
+    <!-- Pengguna -->
+    <div class="kpi-card" style="--kpi-color:#7C3AED;--kpi-bg:#F5F3FF;" role="listitem">
+      <div class="kpi-top">
+        <p class="kpi-label">Pengguna</p>
+        <div class="kpi-ico" style="background:#F5F3FF;">
+          <svg fill="none" stroke="#7C3AED" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+        </div>
+      </div>
+      <p class="kpi-value js-kpi" data-val="{{ stats.total_pengguna }}">{{ stats.total_pengguna }}</p>
+      <div class="kpi-meta">
+        <i class="bi bi-dash" aria-hidden="true"></i>
+        <span>Akun terdaftar</span>
+      </div>
+      <div class="kpi-sparkline" aria-hidden="true">
+        <div class="bar" style="height:60%"></div>
+        <div class="bar" style="height:70%"></div>
+        <div class="bar" style="height:65%"></div>
+        <div class="bar" style="height:80%"></div>
+        <div class="bar" style="height:75%"></div>
+        <div class="bar" style="height:85%"></div>
+        <div class="bar active" style="height:95%"></div>
+      </div>
+    </div>
+
+  </div><!-- /.kpi-grid -->
+
+  <!-- ══════ ROW 2: Status + Damage types + Quick Actions ══════ -->
+  <div class="db-row db-row-3">
+
+    <!-- Status Pemetaan — Donut + Progress -->
+    <div class="db-card">
+      <div class="db-card-head">
+        <h2 class="db-card-title">
+          <i class="bi bi-pie-chart-fill" aria-hidden="true"></i>
+          Status Pemetaan
+        </h2>
+        <span class="db-card-badge">{{ stats.draft + stats.terverifikasi + stats.diperbaiki }} total</span>
+      </div>
+      <div class="db-card-body">
+
+        <!-- Donut chart -->
+        <div class="donut-wrap">
+          <div class="donut-svg-wrap" role="img" aria-label="Donut chart status pemetaan">
+            <svg viewBox="0 0 100 100" width="100" height="100">
+              <!-- Track -->
+              <circle class="donut-track" cx="50" cy="50" r="38"/>
+              <!-- Draft segment -->
+              <circle class="donut-seg" cx="50" cy="50" r="38"
+                stroke="#94A3B8"
+                stroke-dasharray="{{ dash_draft }} {{ circ }}"
+                stroke-dashoffset="-{{ off_draft }}"
+                transform="rotate(-90 50 50)"
+                data-final-dasharray="{{ dash_draft }} {{ circ }}"
+                style="stroke-dasharray: 0 {{ circ }};">
+              </circle>
+              <!-- Terverifikasi segment -->
+              <circle class="donut-seg" cx="50" cy="50" r="38"
+                stroke="#059669"
+                stroke-dasharray="{{ dash_verified }} {{ circ }}"
+                stroke-dashoffset="-{{ off_verified }}"
+                transform="rotate(-90 50 50)"
+                data-final-dasharray="{{ dash_verified }} {{ circ }}"
+                style="stroke-dasharray: 0 {{ circ }};">
+              </circle>
+              <!-- Diperbaiki segment -->
+              <circle class="donut-seg" cx="50" cy="50" r="38"
+                stroke="#0284C7"
+                stroke-dasharray="{{ dash_fixed }} {{ circ }}"
+                stroke-dashoffset="-{{ off_fixed }}"
+                transform="rotate(-90 50 50)"
+                data-final-dasharray="{{ dash_fixed }} {{ circ }}"
+                style="stroke-dasharray: 0 {{ circ }};">
+              </circle>
+            </svg>
+            <div class="donut-center" aria-hidden="true">
+              <span class="donut-center-val js-kpi" data-val="{{ stats.draft + stats.terverifikasi + stats.diperbaiki }}">
+                {{ stats.draft + stats.terverifikasi + stats.diperbaiki }}
+              </span>
+              <span class="donut-center-lbl">Total</span>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="donut-legend" role="list">
+            <div class="legend-item" role="listitem">
+              <div class="legend-dot" style="background:#94A3B8;" aria-hidden="true"></div>
+              <span class="legend-label">Draft</span>
+              <span class="legend-val">{{ stats.draft }}</span>
+              <span class="legend-pct">({{ ((stats.draft / total_status) * 100) | round(0) | int }}%)</span>
+            </div>
+            <div class="legend-item" role="listitem">
+              <div class="legend-dot" style="background:#059669;" aria-hidden="true"></div>
+              <span class="legend-label">Terverifikasi</span>
+              <span class="legend-val">{{ stats.terverifikasi }}</span>
+              <span class="legend-pct">({{ ((stats.terverifikasi / total_status) * 100) | round(0) | int }}%)</span>
+            </div>
+            <div class="legend-item" role="listitem">
+              <div class="legend-dot" style="background:#0284C7;" aria-hidden="true"></div>
+              <span class="legend-label">Diperbaiki</span>
+              <span class="legend-val">{{ stats.diperbaiki }}</span>
+              <span class="legend-pct">({{ ((stats.diperbaiki / total_status) * 100) | round(0) | int }}%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress bars -->
+        <div class="status-row">
+          <div class="status-item">
+            <div class="status-item-top">
+              <div class="status-item-label">
+                <i class="bi bi-circle-fill" style="color:#94A3B8;" aria-hidden="true"></i>
+                Draft
+              </div>
+              <div class="status-item-right">
+                <span class="status-item-val">{{ stats.draft }}</span>
+                <span class="status-item-pct">{{ ((stats.draft / total_status) * 100) | round(1) }}%</span>
+              </div>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill js-prog" style="background:#94A3B8;"
+                   data-pct="{{ ((stats.draft / total_status) * 100) | round(1) }}"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-item-top">
+              <div class="status-item-label">
+                <i class="bi bi-circle-fill" style="color:var(--c-ok);" aria-hidden="true"></i>
+                Terverifikasi
+              </div>
+              <div class="status-item-right">
+                <span class="status-item-val">{{ stats.terverifikasi }}</span>
+                <span class="status-item-pct">{{ ((stats.terverifikasi / total_status) * 100) | round(1) }}%</span>
+              </div>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill js-prog" style="background:var(--c-ok);"
+                   data-pct="{{ ((stats.terverifikasi / total_status) * 100) | round(1) }}"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-item-top">
+              <div class="status-item-label">
+                <i class="bi bi-circle-fill" style="color:var(--c-info);" aria-hidden="true"></i>
+                Diperbaiki
+              </div>
+              <div class="status-item-right">
+                <span class="status-item-val">{{ stats.diperbaiki }}</span>
+                <span class="status-item-pct">{{ ((stats.diperbaiki / total_status) * 100) | round(1) }}%</span>
+              </div>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill js-prog" style="background:var(--c-info);"
+                   data-pct="{{ ((stats.diperbaiki / total_status) * 100) | round(1) }}"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /.db-card status -->
+
+    <!-- Jenis Kerusakan -->
+    <div class="db-card">
+      <div class="db-card-head">
+        <h2 class="db-card-title">
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+          Jenis Kerusakan
+        </h2>
+      </div>
+      <div class="db-card-body">
+        <div class="dmg-list" role="list">
+          <div class="dmg-item" style="--dmg-color:#DC2626;--dmg-bg:#FEF2F2;" role="listitem">
+            <div class="dmg-ico">
+              <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+            </div>
+            <div class="dmg-info">
+              <p class="dmg-name">Crack</p>
+              <p class="dmg-desc">Retak permukaan jalan</p>
+            </div>
+            <span class="dmg-badge">Berat</span>
+          </div>
+          <div class="dmg-item" style="--dmg-color:#D97706;--dmg-bg:#FFFBEB;" role="listitem">
+            <div class="dmg-ico">
+              <i class="bi bi-record-circle-fill" aria-hidden="true"></i>
+            </div>
+            <div class="dmg-info">
+              <p class="dmg-name">Pothole</p>
+              <p class="dmg-desc">Lubang pada jalan</p>
+            </div>
+            <span class="dmg-badge">Sedang</span>
+          </div>
+          <div class="dmg-item" style="--dmg-color:#7C3AED;--dmg-bg:#F5F3FF;" role="listitem">
+            <div class="dmg-ico">
+              <i class="bi bi-distribute-horizontal" aria-hidden="true"></i>
+            </div>
+            <div class="dmg-info">
+              <p class="dmg-name">Rutting</p>
+              <p class="dmg-desc">Alur/jalur pada jalan</p>
+            </div>
+            <span class="dmg-badge">Ringan</span>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;padding-top:.875rem;border-top:1px solid var(--c-border-sub);">
+          <a href="{{ url_for('evaluasi.index') }}"
+             style="display:flex;align-items:center;justify-content:center;gap:.4rem;
+                    font-size:.8rem;font-weight:600;color:var(--c-accent);text-decoration:none;
+                    padding:.5rem;border-radius:.375rem;transition:background var(--duration-fast);"
+             onmouseover="this.style.background='var(--c-accent-light)'"
+             onmouseout="this.style.background='transparent'">
+            <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
+            Lihat Evaluasi Model
+          </a>
+        </div>
+      </div>
+    </div><!-- /.db-card damage -->
+
+    <!-- Akses Cepat + Info Sistem -->
+    <div class="db-card">
+      <div class="db-card-head">
+        <h2 class="db-card-title">
+          <i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i>
+          Akses Cepat
+        </h2>
+      </div>
+      <div class="db-card-body" style="padding-bottom:.875rem;">
+        <div class="qa-list" role="list">
+          <a href="{{ url_for('lokasi.create') }}" class="qa-item"
+             style="--qa-color:#2563EB;--qa-bg:#EFF6FF;" role="listitem">
+            <div class="qa-ico">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+            </div>
+            <span class="qa-label">Tambah Lokasi Baru</span>
+            <i class="bi bi-arrow-right qa-arrow" aria-hidden="true"></i>
+          </a>
+
+          <a href="{{ url_for('klasifikasi.upload') }}" class="qa-item"
+             style="--qa-color:#059669;--qa-bg:#ECFDF5;" role="listitem">
+            <div class="qa-ico">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+            </div>
+            <span class="qa-label">Upload &amp; Klasifikasi CNN</span>
+            <i class="bi bi-arrow-right qa-arrow" aria-hidden="true"></i>
+          </a>
+
+          <a href="{{ url_for('peta.index') }}" class="qa-item"
+             style="--qa-color:#D97706;--qa-bg:#FFFBEB;" role="listitem">
+            <div class="qa-ico">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+              </svg>
+            </div>
+            <span class="qa-label">Lihat Peta GIS</span>
+            <i class="bi bi-arrow-right qa-arrow" aria-hidden="true"></i>
+          </a>
+        </div>
+
+        <!-- System info -->
+        <div style="margin-top:1rem;padding-top:.875rem;border-top:1px solid var(--c-border-sub);">
+          <p style="font-size:.72rem;font-weight:600;color:var(--c-muted);text-transform:uppercase;
+                    letter-spacing:.06em;margin:0 0 .625rem;">Informasi Sistem</p>
+          <div class="sysinfo-list">
+            <div class="sysinfo-row">
+              <span class="sysinfo-key"><i class="bi bi-cpu" aria-hidden="true"></i> CNN Model</span>
+              <span class="sysinfo-badge warn">
+                <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                Mock Mode
+              </span>
+            </div>
+            <div class="sysinfo-row">
+              <span class="sysinfo-key"><i class="bi bi-database" aria-hidden="true"></i> Database</span>
+              <span class="sysinfo-badge ok">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                Online
+              </span>
+            </div>
+            <div class="sysinfo-row">
+              <span class="sysinfo-key"><i class="bi bi-geo-alt" aria-hidden="true"></i> GIS Engine</span>
+              <span class="sysinfo-badge ok">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                Leaflet 1.9.4
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /.db-card quick actions -->
+
+  </div><!-- /.db-row-3 -->
+
+</div><!-- /.db-page -->
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+'use strict';
+
+/* ── Live clock ───────────────────────────────────── */
+var clockEl = document.getElementById('db-clock');
+var dateEl  = document.getElementById('db-date');
+function updateClock() {
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  var ss = String(now.getSeconds()).padStart(2,'0');
+  if (clockEl) clockEl.textContent = hh + ':' + mm + ':' + ss;
+  if (dateEl) {
+    var days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    dateEl.textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+  }
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ── KPI animated counter ─────────────────────────── */
+function animateCounter(el) {
+  var target = parseInt(el.getAttribute('data-val') || el.textContent, 10);
+  if (isNaN(target)) return;
+  el.textContent = '0';
+  var duration = 900;
+  var start = null;
+  function step(ts) {
+    if (!start) start = ts;
+    var p = Math.min((ts - start) / duration, 1);
+    var eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.floor(eased * target);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── Donut chart segments ─────────────────────────── */
+function animateDonut() {
+  document.querySelectorAll('.donut-seg').forEach(function (seg) {
+    var final = seg.getAttribute('data-final-dasharray');
+    if (!final) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        seg.style.strokeDasharray = final;
+        seg.style.transition = 'stroke-dasharray 1s cubic-bezier(.4,0,.2,1)';
+      });
+    });
+  });
+}
+
+/* ── Progress bars ────────────────────────────────── */
+function animateProgs() {
+  document.querySelectorAll('.js-prog').forEach(function (bar) {
+    var pct = parseFloat(bar.getAttribute('data-pct')) || 0;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        bar.style.width = pct + '%';
+      });
+    });
+  });
+}
+
+/* ── IntersectionObserver trigger ────────────────── */
+var observed = new Set();
+var io = new IntersectionObserver(function (entries) {
+  entries.forEach(function (e) {
+    if (!e.isIntersecting || observed.has(e.target)) return;
+    observed.add(e.target);
+    if (e.target.classList.contains('js-kpi')) animateCounter(e.target);
+  });
+}, { threshold: 0.2 });
+
+document.querySelectorAll('.js-kpi').forEach(function (el) { io.observe(el); });
+
+/* Run on load */
+animateDonut();
+animateProgs();
+
+/* ── Refresh button ───────────────────────────────── */
+var refreshBtn = document.getElementById('db-refresh');
+if (refreshBtn) {
+  refreshBtn.addEventListener('click', function () {
+    this.classList.add('spinning');
+    var btn = this;
+    setTimeout(function () {
+      btn.classList.remove('spinning');
+      window.location.reload();
+    }, 400);
+  });
+}
+
+})();
+</script>
+{% endblock %}

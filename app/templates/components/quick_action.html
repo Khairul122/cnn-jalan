@@ -1,0 +1,10 @@
+<a href="{{ qa_url }}" class="cnn-qa-link"
+   style="background:{{ qa_bg }};border-color:{{ qa_color }}40;"
+   onmouseover="this.style.background='{{ qa_color }}';this.querySelectorAll('svg,span').forEach(function(e){e.style.color='#fff';})"
+   onmouseout="this.style.background='{{ qa_bg }}';this.querySelectorAll('svg,span').forEach(function(e){e.style.color='{{ qa_color }}';})">
+  <svg class="w-4 h-4 flex-shrink-0" style="color:{{ qa_color }};"
+       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {{ qa_icon_path | safe }}
+  </svg>
+  <span style="font-size:.85rem;font-weight:500;color:{{ qa_color }};">{{ qa_label }}</span>
+</a>

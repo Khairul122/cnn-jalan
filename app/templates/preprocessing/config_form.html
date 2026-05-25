@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if action == 'edit' else 'Buat' }} Konfigurasi Preprocessing{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('preprocessing.index') }}" style="color:var(--c-accent);text-decoration:none;">Preprocessing</a>
+<span class="sep">›</span>
+<span class="current">{{ 'Edit Konfigurasi' if action == 'edit' else 'Konfigurasi Baru' }}</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.prep-section {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  margin-bottom: .875rem;
+}
+.prep-section-header {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--c-border);
+}
+.prep-section-body { padding: 1rem; }
+.prep-step-badge {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.prep-label { font-size: .8rem; font-weight: 600; color: var(--c-text); display: block; margin-bottom: .35rem; }
+.prep-sublabel { font-size: .7rem; color: var(--c-muted); display: block; margin-top: .15rem; }
+.prep-input {
+  background: var(--c-bg) !important;
+  border: 1px solid var(--c-border) !important;
+  border-radius: var(--r-input) !important;
+  color: var(--c-text) !important;
+  font-size: .82rem !important;
+  padding: .45rem .7rem !important;
+}
+.prep-input:focus { border-color: var(--c-accent) !important; outline: none !important; box-shadow: 0 0 0 3px rgba(56,189,248,.15) !important; }
+.radio-card {
+  display: flex; align-items: flex-start; gap: .5rem;
+  padding: .55rem .75rem; border-radius: var(--r-input);
+  border: 2px solid var(--c-border); cursor: pointer;
+  transition: border-color .15s;
+}
+.radio-card:has(input:checked) { border-color: var(--c-accent); }
+.range-row { display: flex; align-items: center; gap: .75rem; }
+.range-row input[type=range] { flex: 1; accent-color: var(--c-accent); }
+.range-val { min-width: 44px; text-align: right; font-size: .8rem; font-weight: 600;
+             color: var(--c-text); font-variant-numeric: tabular-nums; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    {% set ph_title = ('Edit Konfigurasi' if action == 'edit' else 'Konfigurasi Preprocessing Baru') %}
+    {% include 'components/page_header.html' %}
+  </div>
+</div>
+
+<form method="POST" id="configForm">
+<div class="row g-3">
+
+  <!-- Kolom kiri: form -->
+  <div class="col-lg-8">
+
+    <!-- Nama konfigurasi -->
+    <div class="prep-section">
+      <div class="prep-section-body">
+        <label class="prep-label" for="nama_config">Nama Konfigurasi <span style="color:#E53E3E;">*</span></label>
+        <input type="text" id="nama_config" name="nama_config" required class="prep-input form-control"
+               placeholder="misal: CNN ResNet 224px"
+               value="{{ config.nama_config if config else 'Konfigurasi Baru' }}">
+      </div>
+    </div>
+
+    <!-- Step 1: Resize -->
+    <div class="prep-section">
+      <div class="prep-section-header">
+        <div class="prep-step-badge" style="background:#38BDF8;">1</div>
+        <i class="bi bi-aspect-ratio" style="color:#38BDF8;"></i>
+        <span style="font-size:.85rem;font-weight:700;color:var(--c-text);">Resize</span>
+        <span class="prep-sublabel" style="margin:0;">Ubah dimensi gambar ke ukuran target CNN</span>
+      </div>
+      <div class="prep-section-body">
+        <div class="row g-2">
+          <div class="col-sm-4">
+            <label class="prep-label" for="target_width">Lebar (px)</label>
+            <input type="number" id="target_width" name="target_width" class="prep-input form-control"
+                   min="32" max="1024" value="{{ config.target_width if config else 224 }}"
+                   oninput="updatePreview()">
+          </div>
+          <div class="col-sm-4">
+            <label class="prep-label" for="target_height">Tinggi (px)</label>
+            <input type="number" id="target_height" name="target_height" class="prep-input form-control"
+                   min="32" max="1024" value="{{ config.target_height if config else 224 }}"
+                   oninput="updatePreview()">
+          </div>
+          <div class="col-sm-4">
+            <label class="prep-label" for="resize_method">Metode Resampling</label>
+            <select id="resize_method" name="resize_method" class="prep-input form-select" onchange="updatePreview()">
+              {% for m, desc in [('LANCZOS','Lanczos (terbaik)'),('BILINEAR','Bilinear'),('BICUBIC','Bicubic'),('NEAREST','Nearest')] %}
+              <option value="{{ m }}" {{ 'selected' if (config and config.resize_method == m) or (not config and m == 'LANCZOS') }}>{{ desc }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Center Crop -->
+    <div class="prep-section">
+      <div class="prep-section-header">
+        <div class="prep-step-badge" style="background:#6366F1;">2</div>
+        <i class="bi bi-crop" style="color:#6366F1;"></i>
+        <span style="font-size:.85rem;font-weight:700;color:var(--c-text);">Center Crop</span>
+        <span class="prep-sublabel" style="margin:0;">Pangkas area tengah gambar</span>
+        <!-- Toggle aktif/nonaktif -->
+        <label style="margin-left:auto;display:flex;align-items:center;gap:.45rem;cursor:pointer;">
+          <input type="checkbox" id="crop_enabled" name="crop_enabled" value="1"
+                 style="accent-color:#6366F1;width:15px;height:15px;"
+                 {{ 'checked' if config and config.crop_enabled }}
+                 onchange="toggleCrop();updatePreview()">
+          <span style="font-size:.75rem;color:var(--c-muted);">Aktifkan</span>
+        </label>
+      </div>
+      <div class="prep-section-body" id="cropBody"
+           style="{{ '' if (config and config.crop_enabled) else 'display:none;' }}">
+        <div class="row g-2">
+          <div class="col-sm-4">
+            <label class="prep-label" for="crop_width">Lebar Crop (px)</label>
+            <input type="number" id="crop_width" name="crop_width" class="prep-input form-control"
+                   min="16" max="1024" value="{{ config.crop_width if config else 224 }}"
+                   oninput="updatePreview()">
+            <span class="prep-sublabel">Harus ≤ lebar resize</span>
+          </div>
+          <div class="col-sm-4">
+            <label class="prep-label" for="crop_height">Tinggi Crop (px)</label>
+            <input type="number" id="crop_height" name="crop_height" class="prep-input form-control"
+                   min="16" max="1024" value="{{ config.crop_height if config else 224 }}"
+                   oninput="updatePreview()">
+            <span class="prep-sublabel">Harus ≤ tinggi resize</span>
+          </div>
+          <div class="col-sm-4 d-flex align-items-end pb-1">
+            <div style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--r-input);
+                        padding:.5rem .75rem;font-size:.72rem;color:var(--c-muted);width:100%;">
+              <i class="bi bi-info-circle" style="color:#6366F1;"></i>
+              Crop dari pusat gambar setelah resize
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Normalisasi -->
+    <div class="prep-section">
+      <div class="prep-section-header">
+        <div class="prep-step-badge" style="background:#10B981;">3</div>
+        <i class="bi bi-distribute-vertical" style="color:#10B981;"></i>
+        <span style="font-size:.85rem;font-weight:700;color:var(--c-text);">Normalisasi</span>
+        <span class="prep-sublabel" style="margin:0;">Skalakan nilai piksel</span>
+      </div>
+      <div class="prep-section-body">
+        <div class="d-flex flex-column gap-2">
+          {% for val, title, desc in [
+              ('minmax', 'Min-Max [0,1]', 'Bagi semua nilai piksel dengan 255 → rentang 0.0–1.0'),
+              ('zscore', 'Z-Score Standardisasi', 'Kurangi mean, bagi std → distribusi normal (µ=0, σ=1)'),
+              ('none',   'Tidak Ada', 'Pertahankan nilai piksel asli (0–255)'),
+          ] %}
+          <label class="radio-card" onclick="updatePreview()">
+            <input type="radio" name="norm_method" value="{{ val }}" style="accent-color:var(--c-accent);margin-top:.15rem;"
+                   {{ 'checked' if (config and config.norm_method == val) or (not config and val == 'minmax') }}>
+            <div>
+              <span style="font-size:.82rem;font-weight:600;color:var(--c-text);">{{ title }}</span>
+              <span class="prep-sublabel">{{ desc }}</span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Augmentasi -->
+    <div class="prep-section">
+      <div class="prep-section-header">
+        <div class="prep-step-badge" style="background:#F59E0B;">4</div>
+        <i class="bi bi-shuffle" style="color:#F59E0B;"></i>
+        <span style="font-size:.85rem;font-weight:700;color:var(--c-text);">Augmentasi</span>
+        <span class="prep-sublabel" style="margin:0;">Transformasi geometris &amp; warna</span>
+      </div>
+      <div class="prep-section-body">
+        <!-- Flip -->
+        <div class="row g-2 mb-3">
+          <div class="col-sm-6">
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.82rem;color:var(--c-text);">
+              <input type="checkbox" name="aug_flip_h" value="1" style="accent-color:#F59E0B;width:16px;height:16px;"
+                     {{ 'checked' if config and config.aug_flip_h }} onchange="updatePreview()">
+              <span>Flip Horizontal <span class="prep-sublabel" style="display:inline;">cermin kiri-kanan</span></span>
+            </label>
+          </div>
+          <div class="col-sm-6">
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.82rem;color:var(--c-text);">
+              <input type="checkbox" name="aug_flip_v" value="1" style="accent-color:#F59E0B;width:16px;height:16px;"
+                     {{ 'checked' if config and config.aug_flip_v }} onchange="updatePreview()">
+              <span>Flip Vertikal <span class="prep-sublabel" style="display:inline;">cermin atas-bawah</span></span>
+            </label>
+          </div>
+        </div>
+        <!-- Rotate -->
+        <div class="mb-3">
+          <label class="prep-label">Rotasi: <span id="rotateVal">{{ config.aug_rotate_deg if config else 0 }}°</span></label>
+          <div class="range-row">
+            <span style="font-size:.72rem;color:var(--c-muted);">-180°</span>
+            <input type="range" id="aug_rotate_deg" name="aug_rotate_deg"
+                   min="-180" max="180" step="1"
+                   value="{{ config.aug_rotate_deg | float | int if config else 0 }}"
+                   oninput="document.getElementById('rotateVal').textContent=this.value+'°';updatePreview()">
+            <span style="font-size:.72rem;color:var(--c-muted);">180°</span>
+          </div>
+        </div>
+        <!-- Brightness & Contrast -->
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="prep-label">Kecerahan: <span id="brightVal">{{ config.aug_brightness if config else 1.0 }}×</span></label>
+            <div class="range-row">
+              <span style="font-size:.72rem;color:var(--c-muted);">0.5</span>
+              <input type="range" id="aug_brightness" name="aug_brightness"
+                     min="0.5" max="2.0" step="0.05"
+                     value="{{ config.aug_brightness | float if config else 1.0 }}"
+                     oninput="document.getElementById('brightVal').textContent=parseFloat(this.value).toFixed(2)+'×';updatePreview()">
+              <span style="font-size:.72rem;color:var(--c-muted);">2.0</span>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <label class="prep-label">Kontras: <span id="contrastVal">{{ config.aug_contrast if config else 1.0 }}×</span></label>
+            <div class="range-row">
+              <span style="font-size:.72rem;color:var(--c-muted);">0.5</span>
+              <input type="range" id="aug_contrast" name="aug_contrast"
+                     min="0.5" max="2.0" step="0.05"
+                     value="{{ config.aug_contrast | float if config else 1.0 }}"
+                     oninput="document.getElementById('contrastVal').textContent=parseFloat(this.value).toFixed(2)+'×';updatePreview()">
+              <span style="font-size:.72rem;color:var(--c-muted);">2.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Denoise -->
+    <div class="prep-section">
+      <div class="prep-section-header">
+        <div class="prep-step-badge" style="background:#A78BFA;">5</div>
+        <i class="bi bi-eraser-fill" style="color:#A78BFA;"></i>
+        <span style="font-size:.85rem;font-weight:700;color:var(--c-text);">Denoise</span>
+        <span class="prep-sublabel" style="margin:0;">Reduksi noise menggunakan OpenCV</span>
+      </div>
+      <div class="prep-section-body">
+        <div class="d-flex flex-column gap-2 mb-3">
+          {% for val, title, desc in [
+              ('none',      'Tidak Ada',  'Lewati tahap denoise'),
+              ('gaussian',  'Gaussian',   'Blur Gaussian — reduksi noise acak/salt-pepper'),
+              ('median',    'Median',     'Filter median — efektif untuk noise impulsif'),
+              ('bilateral', 'Bilateral',  'Filter bilateral — pertahankan tepi, reduksi noise'),
+          ] %}
+          <label class="radio-card" onclick="toggleKsize()">
+            <input type="radio" name="denoise_method" value="{{ val }}" style="accent-color:#A78BFA;margin-top:.15rem;"
+                   {{ 'checked' if (config and config.denoise_method == val) or (not config and val == 'none') }}>
+            <div>
+              <span style="font-size:.82rem;font-weight:600;color:var(--c-text);">{{ title }}</span>
+              <span class="prep-sublabel">{{ desc }}</span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+        <div id="ksizeRow" style="{{ 'display:none' if not config or config.denoise_method == 'none' else '' }}">
+          <label class="prep-label">Ukuran Kernel: <span id="ksizeVal">{{ config.denoise_ksize if config else 3 }}</span></label>
+          <div class="range-row">
+            <span style="font-size:.72rem;color:var(--c-muted);">3</span>
+            <input type="range" id="denoise_ksize" name="denoise_ksize"
+                   min="3" max="15" step="2"
+                   value="{{ config.denoise_ksize if config else 3 }}"
+                   oninput="document.getElementById('ksizeVal').textContent=this.value;updatePreview()">
+            <span style="font-size:.72rem;color:var(--c-muted);">15</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Is default -->
+    <div style="background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);padding:.875rem 1rem;margin-bottom:.875rem;">
+      <label style="display:flex;align-items:center;gap:.625rem;cursor:pointer;">
+        <input type="checkbox" name="is_default" value="1" style="accent-color:#10B981;width:16px;height:16px;"
+               {{ 'checked' if config and config.is_default }}>
+        <div>
+          <span style="font-size:.82rem;font-weight:600;color:var(--c-text);">Jadikan konfigurasi default</span>
+          <span class="prep-sublabel">Ditandai pada daftar konfigurasi</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Tombol -->
+    <div class="d-flex gap-2">
+      <button type="submit"
+              style="flex:1;padding:.65rem;border-radius:var(--r-input);font-size:.85rem;font-weight:700;
+                     cursor:pointer;border:none;background:linear-gradient(135deg,#0369A1,#0EA5E9);color:#fff;">
+        <i class="bi bi-check-lg me-1"></i>
+        {{ 'Simpan Perubahan' if action == 'edit' else 'Simpan Konfigurasi' }}
+      </button>
+      <a href="{{ url_for('preprocessing.index') }}"
+         style="padding:.65rem 1.1rem;border-radius:var(--r-input);font-size:.85rem;cursor:pointer;
+                background:transparent;color:var(--c-muted);border:1px solid var(--c-border);
+                text-decoration:none;display:flex;align-items:center;">
+        Batal
+      </a>
+    </div>
+
+  </div><!-- /col-lg-8 -->
+
+  <!-- Kolom kanan: preview ringkasan -->
+  <div class="col-lg-4">
+    <div style="position:sticky;top:1rem;">
+      <div style="background:var(--c-surface);border:1px solid var(--c-border);
+                  border-radius:var(--r-card);overflow:hidden;">
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--c-border);">
+          <p style="font-size:.82rem;font-weight:700;color:var(--c-text);margin:0;">
+            <i class="bi bi-eye" style="color:var(--c-accent);margin-right:.35rem;"></i>
+            Ringkasan Konfigurasi
+          </p>
+        </div>
+        <div id="previewPanel" style="padding:.875rem 1rem;font-size:.78rem;line-height:1.8;">
+          <!-- diupdate oleh JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /row -->
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCrop() {
+  var cb   = document.getElementById('crop_enabled');
+  var body = document.getElementById('cropBody');
+  body.style.display = cb && cb.checked ? '' : 'none';
+}
+
+function toggleKsize() {
+  var method = document.querySelector('input[name="denoise_method"]:checked');
+  var row = document.getElementById('ksizeRow');
+  if (method && method.value !== 'none') {
+    row.style.display = '';
+  } else {
+    row.style.display = 'none';
+  }
+  updatePreview();
+}
+
+function updatePreview() {
+  var w    = document.getElementById('target_width').value;
+  var h    = document.getElementById('target_height').value;
+  var rm   = document.getElementById('resize_method').value;
+  var ce   = document.getElementById('crop_enabled') && document.getElementById('crop_enabled').checked;
+  var cw   = document.getElementById('crop_width') ? document.getElementById('crop_width').value : 224;
+  var ch   = document.getElementById('crop_height') ? document.getElementById('crop_height').value : 224;
+  var nm  = document.querySelector('input[name="norm_method"]:checked');
+  var dm  = document.querySelector('input[name="denoise_method"]:checked');
+  var fh  = document.querySelector('input[name="aug_flip_h"]').checked;
+  var fv  = document.querySelector('input[name="aug_flip_v"]').checked;
+  var rot = document.getElementById('aug_rotate_deg').value;
+  var br  = document.getElementById('aug_brightness').value;
+  var ct  = document.getElementById('aug_contrast').value;
+  var ks  = document.getElementById('denoise_ksize').value;
+
+  var normMap = {minmax:'Min-Max [0,1]', zscore:'Z-Score', none:'Tidak Ada'};
+  var denoiseMap = {none:'Tidak Ada', gaussian:'Gaussian', median:'Median', bilateral:'Bilateral'};
+
+  var augParts = [];
+  if (fh) augParts.push('Flip H');
+  if (fv) augParts.push('Flip V');
+  if (parseInt(rot) !== 0) augParts.push('Rotate ' + rot + '°');
+  if (parseFloat(br) !== 1.0) augParts.push('Brightness ' + parseFloat(br).toFixed(2) + '×');
+  if (parseFloat(ct) !== 1.0) augParts.push('Contrast ' + parseFloat(ct).toFixed(2) + '×');
+
+  var html = [
+    row('#38BDF8', 'bi-aspect-ratio',        'Resize',       w + '×' + h + ' px (' + rm + ')'),
+    row('#6366F1', 'bi-crop',                'Center Crop',  ce ? (cw + '×' + ch + ' px (tengah)') : 'Nonaktif'),
+    row('#10B981', 'bi-distribute-vertical', 'Normalisasi',  normMap[nm ? nm.value : 'minmax'] || '-'),
+    row('#F59E0B', 'bi-shuffle',             'Augmentasi',   augParts.length ? augParts.join(', ') : 'Tidak Ada'),
+    row('#A78BFA', 'bi-eraser-fill',         'Denoise',      (dm && dm.value !== 'none') ? (denoiseMap[dm.value] + ' k=' + ks) : 'Tidak Ada'),
+  ].join('');
+
+  document.getElementById('previewPanel').innerHTML = html;
+}
+
+function row(color, icon, label, val) {
+  return '<div style="display:flex;align-items:flex-start;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--c-border);">' +
+    '<i class="bi ' + icon + '" style="color:' + color + ';flex-shrink:0;margin-top:.15rem;"></i>' +
+    '<div>' +
+      '<span style="font-weight:600;color:var(--c-text);">' + label + '</span>' +
+      '<div style="color:var(--c-muted);font-size:.73rem;">' + val + '</div>' +
+    '</div></div>';
+}
+
+// Init
+toggleKsize();
+updatePreview();
+</script>
+{% endblock %}

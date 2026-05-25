@@ -1,0 +1,738 @@
+{% extends 'base.html' %}
+{% block title %}{{ cfg.nama }}{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('arsitektur.index') }}" style="color:var(--c-accent);text-decoration:none;">Arsitektur CNN</a>
+<span class="sep">›</span>
+<span class="current">{{ cfg.nama }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-4">
+  <div>
+    {% set ph_title = cfg.nama %}{% include 'components/page_header.html' %}
+    <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
+      <span class="model-badge model-badge--{{ cfg.model_type }}">
+        {{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}
+      </span>
+      <span class="status-badge status-badge--{{ cfg.status }}">
+        {% if cfg.status == 'draft' %}Draft
+        {% elif cfg.status == 'training' %}Training…
+        {% elif cfg.status == 'selesai' %}Selesai
+        {% else %}Gagal{% endif %}
+      </span>
+      <span class="detail-chip">{{ cfg.epochs }} epoch</span>
+      <span class="detail-chip">patience={{ cfg.patience }}</span>
+      <span class="detail-chip">batch {{ cfg.batch_size }}</span>
+      <span class="detail-chip">lr={{ cfg.learning_rate }}</span>
+      <span class="detail-chip">dropout={{ cfg.dropout_rate }}</span>
+      <span class="detail-chip">{{ cfg.optimizer }}</span>
+      {% if cfg.split_config %}
+      <span class="detail-chip">{{ cfg.split_config.nama }}</span>
+      {% endif %}
+      <span class="detail-chip">Fold {{ cfg.fold_val + 1 }} (val)</span>
+    </div>
+  </div>
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    {% if cfg.status != 'training' %}
+    <form method="POST" action="{{ url_for('arsitektur.train', config_id=cfg.id) }}">
+      <button type="submit"
+              onclick="return confirm('{% if cfg.status == 'selesai' %}Re-train akan menghapus semua hasil sebelumnya. Lanjutkan?{% else %}Mulai training sekarang?{% endif %}')"
+              class="btn-train">
+        <i class="bi bi-play-fill"></i>
+        {{ 'Re-train' if cfg.status == 'selesai' else 'Mulai Training' }}
+      </button>
+    </form>
+    {% else %}
+    <button disabled class="btn-train" style="opacity:.5;cursor:not-allowed;">
+      <i class="bi bi-hourglass-split"></i> Training…
+    </button>
+    {% endif %}
+    <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"
+          onsubmit="return confirm('Hapus konfigurasi ini?')">
+      <button type="submit" class="btn-del-sm" title="Hapus">
+        <i class="bi bi-trash-fill"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if cfg.status == 'gagal' %}
+<div style="padding:.875rem 1.125rem;border-radius:var(--r-card);
+            background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);
+            font-size:.8rem;color:#EF4444;margin-bottom:1.25rem;">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  Training gagal. Periksa data dan konfigurasi, lalu klik <strong>Re-train</strong>.
+</div>
+{% endif %}
+
+{% if cfg.status == 'training' %}
+<!-- ===== PROGRESS UI ===== -->
+<div class="train-progress-wrap" id="progressWrap">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <span class="spinner-pulse" id="spinnerDot"></span>
+    <span id="phaseLabel" style="font-size:.85rem;font-weight:600;color:var(--c-text);">Training sedang berjalan…</span>
+  </div>
+  <div class="progress-track mb-2">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <div class="d-flex justify-content-between mb-3" style="font-size:.72rem;color:var(--c-muted);">
+    <span id="epochLabel">Memulai…</span>
+    <span id="pctLabel">0%</span>
+  </div>
+  <!-- Phase steps -->
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap" style="font-size:.72rem;">
+    <span id="step1" class="phase-step active"><i class="bi bi-cpu-fill"></i> Training</span>
+    <span style="color:var(--c-border);">→</span>
+    <span id="stepFT" class="phase-step"><i class="bi bi-arrow-repeat"></i> Fine-tuning</span>
+    <span style="color:var(--c-border);">→</span>
+    <span id="step2" class="phase-step"><i class="bi bi-clipboard-data"></i> Evaluasi</span>
+    <span style="color:var(--c-border);">→</span>
+    <span id="step3" class="phase-step"><i class="bi bi-map-fill"></i> Prediksi Peta</span>
+  </div>
+  <div class="row g-2" id="metricsRow" style="opacity:0;transition:opacity .3s;">
+    {% for mid, mlabel, mcolor in [
+        ('mLoss',  'Train Loss',   '#EF4444'),
+        ('mAcc',   'Train Acc',    '#38BDF8'),
+        ('mVLoss', 'Val Loss',     '#F59E0B'),
+        ('mVAcc',  'Val Accuracy', '#10B981'),
+    ] %}
+    <div class="col-6 col-md-3">
+      <div style="padding:.5rem .75rem;background:var(--c-bg);border:1px solid var(--c-border);
+                  border-radius:var(--r-card);text-align:center;">
+        <div id="{{ mid }}" style="font-size:1rem;font-weight:700;color:{{ mcolor }};
+                                   font-variant-numeric:tabular-nums;">—</div>
+        <div style="font-size:.65rem;color:var(--c-muted);margin-top:.1rem;">{{ mlabel }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% elif cfg.status == 'draft' %}
+<div style="text-align:center;padding:2.5rem 1rem;background:var(--c-surface);
+            border-radius:var(--r-card);border:1px solid var(--c-border);">
+  <i class="bi bi-play-circle" style="font-size:2rem;color:var(--c-muted);display:block;margin-bottom:.625rem;"></i>
+  <p style="font-size:.88rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum dilatih</p>
+  <p style="font-size:.75rem;color:var(--c-muted);margin:0;">Klik <strong>Mulai Training</strong> untuk memulai proses training.</p>
+</div>
+
+{% else %}
+
+<!-- ===== TRAINING RESULTS ===== -->
+{% if best %}
+<div class="row g-2 mb-3">
+  {% for lbl, val, color in [
+      ('Best Val Accuracy', '%.2f%%'|format(best.val_accuracy * 100), '#10B981'),
+      ('Best Val Loss',     '%.4f'|format(best.val_loss),             '#38BDF8'),
+      ('Best Epoch',        best.epoch,                               '#A78BFA'),
+      ('Train Accuracy',    '%.2f%%'|format(best.accuracy * 100),    '#F59E0B'),
+  ] %}
+  <div class="col-6 col-md-3">
+    <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);text-align:center;">
+      <div style="font-size:1.05rem;font-weight:700;color:{{ color }};font-variant-numeric:tabular-nums;">{{ val }}</div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">{{ lbl }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if hasil %}
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="chart-card">
+      <p class="chart-title"><i class="bi bi-graph-down" style="color:#EF4444;"></i> Loss</p>
+      <div style="position:relative;height:220px;"><canvas id="lossChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="chart-card">
+      <p class="chart-title"><i class="bi bi-graph-up" style="color:#10B981;"></i> Accuracy</p>
+      <div style="position:relative;height:220px;"><canvas id="accChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div style="border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card);
+            border:1px solid var(--c-border);margin-bottom:1.5rem;">
+  <table class="table table-hover align-middle mb-0 cnn-table" style="font-size:.78rem;">
+    <thead>
+      <tr>
+        <th>Epoch</th>
+        <th style="text-align:center;">Loss</th>
+        <th style="text-align:center;">Accuracy</th>
+        <th style="text-align:center;">Val Loss</th>
+        <th style="text-align:center;">Val Accuracy</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in hasil %}
+      <tr {% if best and h.id == best.id %}style="background:rgba(16,185,129,.06);"{% endif %}>
+        <td style="font-variant-numeric:tabular-nums;">
+          {{ h.epoch }}
+          {% if best and h.id == best.id %}
+          <span style="font-size:.65rem;color:#10B981;font-weight:600;margin-left:.25rem;">best</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center;font-variant-numeric:tabular-nums;">{{ '%.4f'|format(h.loss) }}</td>
+        <td style="text-align:center;font-variant-numeric:tabular-nums;">{{ '%.2f%%'|format(h.accuracy * 100) }}</td>
+        <td style="text-align:center;font-variant-numeric:tabular-nums;">{{ '%.4f'|format(h.val_loss) }}</td>
+        <td style="text-align:center;font-variant-numeric:tabular-nums;font-weight:600;color:#10B981;">
+          {{ '%.2f%%'|format(h.val_accuracy * 100) }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ===== EVALUASI ===== -->
+{% if evaluasi %}
+{% set cm = evaluasi.get_cm() %}
+<div class="section-header">
+  <i class="bi bi-clipboard-data-fill" style="color:#A78BFA;"></i>
+  Hasil Evaluasi Model
+  <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);margin-left:.5rem;">
+    {{ evaluasi.created_at.strftime('%d %b %Y %H:%M') }}
+  </span>
+</div>
+
+<div class="row g-2 mb-3">
+  {% for lbl, val, color in [
+    ('Akurasi',         evaluasi.akurasi,          '#10B981'),
+    ('Macro F1',        evaluasi.macro_f1,          '#38BDF8'),
+    ('Macro Precision', evaluasi.macro_precision,   '#A78BFA'),
+    ('Macro Recall',    evaluasi.macro_recall,      '#F59E0B'),
+  ] %}
+  <div class="col-6 col-md-3">
+    <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);text-align:center;">
+      <div style="font-size:1.05rem;font-weight:700;color:{{ color }};font-variant-numeric:tabular-nums;">{{ val }}%</div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">{{ lbl }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3 mb-1">
+  <div class="col-lg-7">
+    <div class="ev-card">
+      <p class="ev-section-title"><i class="bi bi-grid-3x3-gap-fill" style="color:#38BDF8;"></i> Confusion Matrix
+        <span style="font-weight:400;color:var(--c-muted);font-size:.68rem;margin-left:.25rem;">Baris = Aktual · Kolom = Prediksi</span>
+      </p>
+      <div class="cm-grid">
+        <div class="cm-cell cm-corner"></div>
+        {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+        <div class="cm-cell cm-header" style="color:{{ clr }};">{{ lbl }}</div>
+        {% endfor %}
+        {% for row_data in [(0,'Berat','#E53E3E'),(1,'Sedang','#F59E0B'),(2,'Ringan','#10B981')] %}
+        {% set row_i = row_data[0] %}{% set row_lbl = row_data[1] %}{% set row_clr = row_data[2] %}
+        <div class="cm-cell cm-row-label" style="color:{{ row_clr }};">{{ row_lbl }}</div>
+        {% set row_total = cm[row_i][0] + cm[row_i][1] + cm[row_i][2] %}
+        {% for col_i in range(3) %}
+          {% set val = cm[row_i][col_i] %}
+          {% set opacity = (val / row_total) if row_total > 0 else 0 %}
+          <div class="cm-cell cm-data {% if row_i == col_i %}cm-diagonal{% endif %}"
+               style="--cm-opacity:{{ '%.2f'|format(opacity) }};">
+            <span class="cm-num">{{ val }}</span>
+            {% if row_total > 0 %}<span class="cm-pct">{{ (val / row_total * 100)|round(1) }}%</span>{% endif %}
+          </div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+      <div style="font-size:.7rem;color:var(--c-muted);margin-top:.75rem;text-align:right;">
+        Total data validasi: <strong style="color:var(--c-text);">{{ evaluasi.total_data_val }}</strong>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="ev-card">
+      <p class="ev-section-title"><i class="bi bi-bar-chart-fill" style="color:#A78BFA;"></i> Metrik Per Kelas</p>
+      <table class="ev-table">
+        <thead>
+          <tr><th>Kelas</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
+        </thead>
+        <tbody>
+          {% for kls, clr, p, r, f in [
+            ('Berat',  '#E53E3E', evaluasi.precision_berat,  evaluasi.recall_berat,  evaluasi.f1_berat),
+            ('Sedang', '#F59E0B', evaluasi.precision_sedang, evaluasi.recall_sedang, evaluasi.f1_sedang),
+            ('Ringan', '#10B981', evaluasi.precision_ringan, evaluasi.recall_ringan, evaluasi.f1_ringan),
+          ] %}
+          <tr>
+            <td><span class="ev-kls-badge" style="color:{{ clr }};background:{{ clr }}1a;">{{ kls }}</span></td>
+            <td>{{ p }}%</td><td>{{ r }}%</td><td><strong>{{ f }}%</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="ev-macro-row">
+            <td>Macro Avg</td>
+            <td>{{ evaluasi.macro_precision }}%</td>
+            <td>{{ evaluasi.macro_recall }}%</td>
+            <td><strong>{{ evaluasi.macro_f1 }}%</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="mt-3">
+        {% for kls, clr, f in [
+          ('Berat','#E53E3E',evaluasi.f1_berat),
+          ('Sedang','#F59E0B',evaluasi.f1_sedang),
+          ('Ringan','#10B981',evaluasi.f1_ringan),
+        ] %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span style="font-size:.71rem;color:var(--c-muted);width:42px;">{{ kls }}</span>
+          <div style="flex:1;background:var(--c-bg);border-radius:99px;height:7px;overflow:hidden;">
+            <div style="width:{{ f }}%;background:{{ clr }};height:100%;border-radius:99px;"></div>
+          </div>
+          <span style="font-size:.71rem;color:var(--c-text);width:38px;text-align:right;">{{ f }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== GIS MAP ===== -->
+{% if total_prediksi %}
+<div class="section-header" style="margin-top:1.25rem;">
+  <i class="bi bi-map-fill" style="color:#10B981;"></i>
+  Visualisasi GIS Prediksi
+  <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);margin-left:.5rem;">{{ total_prediksi }} foto</span>
+  <a href="{{ url_for('arsitektur.gis', config_id=cfg.id) }}"
+     style="margin-left:auto;font-size:.72rem;color:var(--c-accent);text-decoration:none;font-weight:600;">
+    Buka halaman GIS lengkap →
+  </a>
+</div>
+{% elif cfg.status == 'selesai' %}
+<div class="section-header" style="margin-top:1.25rem;">
+  <i class="bi bi-map" style="color:var(--c-muted);"></i>
+  Visualisasi GIS Prediksi
+</div>
+<div style="text-align:center;padding:2rem 1.5rem;background:var(--c-surface);
+            border-radius:var(--r-card);border:1px solid var(--c-border);margin-bottom:1rem;">
+  <i class="bi bi-geo-alt-fill" style="font-size:1.75rem;color:var(--c-muted);display:block;margin-bottom:.625rem;"></i>
+  <p style="font-size:.85rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Tidak ada data peta</p>
+  <p style="font-size:.75rem;color:var(--c-muted);margin:0;">
+    Foto tidak memiliki koordinat GPS atau label SDI yang valid.<br>
+    Pastikan semua lokasi memiliki latitude/longitude dan telah diberi label kerusakan.
+  </p>
+</div>
+
+<!-- Stats -->
+<div class="row g-2 mb-2">
+  <div class="col-6 col-md-3">
+    <div class="gis-stat"><span id="gTotal" class="gis-stat-val">—</span><span class="gis-stat-lbl">Total Foto</span></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="gis-stat"><span id="gBenar" class="gis-stat-val" style="color:#10B981;">—</span><span class="gis-stat-lbl">Prediksi Benar</span></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="gis-stat"><span id="gSalah" class="gis-stat-val" style="color:#EF4444;">—</span><span class="gis-stat-lbl">Prediksi Salah</span></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="gis-stat"><span id="gAkurasi" class="gis-stat-val" style="color:#F59E0B;">—</span><span class="gis-stat-lbl">Akurasi Peta</span></div>
+  </div>
+</div>
+
+<!-- Filter pills -->
+<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+  <span style="font-size:.72rem;color:var(--c-muted);">Filter:</span>
+  <button class="gis-filter active" data-filter="all">Semua</button>
+  <button class="gis-filter" data-filter="0" style="--fc:#E53E3E;">
+    <span class="gis-dot" style="background:#E53E3E;"></span>Berat
+  </button>
+  <button class="gis-filter" data-filter="1" style="--fc:#F59E0B;">
+    <span class="gis-dot" style="background:#F59E0B;"></span>Sedang
+  </button>
+  <button class="gis-filter" data-filter="2" style="--fc:#10B981;">
+    <span class="gis-dot" style="background:#10B981;"></span>Ringan
+  </button>
+  <button class="gis-filter" data-filter="salah" style="--fc:#94a3b8;">
+    <span class="gis-dot" style="background:#94a3b8;border:2px dashed #fff;"></span>Salah Prediksi
+  </button>
+  <span id="gFilterCount" style="font-size:.72rem;color:var(--c-muted);margin-left:auto;"></span>
+</div>
+
+<!-- Map + legend -->
+<div style="position:relative;">
+  <div id="detailMap"></div>
+  <div class="gis-legend">
+    <div style="font-size:.65rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;
+                letter-spacing:.05em;margin-bottom:.5rem;">Legenda</div>
+    {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <span style="width:10px;height:10px;border-radius:50%;background:{{ clr }};display:inline-block;flex-shrink:0;"></span>
+      <span style="font-size:.7rem;color:var(--c-text);">{{ lbl }}</span>
+    </div>
+    {% endfor %}
+    <div style="border-top:1px solid var(--c-border);padding-top:.4rem;margin-top:.3rem;">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span style="width:10px;height:10px;border-radius:50%;border:2px solid #fff;display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:.68rem;color:var(--c-muted);">Benar</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span style="width:10px;height:10px;border-radius:50%;border:2px dashed #aaa;display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:.68rem;color:var(--c-muted);">Salah</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{% if total_prediksi %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+{% endif %}
+<style>
+.model-badge { display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700; }
+.model-badge--mobilenetv2    { background:rgba(3,105,161,.18);border:1px solid rgba(14,165,233,.3);color:#38BDF8; }
+.model-badge--efficientnetb0 { background:rgba(124,58,237,.15);border:1px solid rgba(167,139,250,.3);color:#A78BFA; }
+.status-badge { display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600; }
+.status-badge--draft    { background:rgba(100,116,139,.15);border:1px solid rgba(100,116,139,.3);color:#94a3b8; }
+.status-badge--training { background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#F59E0B; }
+.status-badge--selesai  { background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#10B981; }
+.status-badge--gagal    { background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.25);color:#EF4444; }
+.detail-chip {
+  padding:.15rem .55rem;border-radius:999px;font-size:.72rem;
+  background:rgba(255,255,255,.05);border:1px solid var(--c-border);color:var(--c-muted);
+}
+.btn-train {
+  display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .875rem;
+  border-radius:var(--r-input);font-size:.8rem;font-weight:700;cursor:pointer;
+  background:linear-gradient(135deg,#059669,#10B981);color:#fff;border:none;
+  box-shadow:0 2px 8px rgba(5,150,105,.25);transition:opacity .15s;
+}
+.btn-train:hover { opacity:.88; }
+.btn-del-sm {
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:var(--r-input);
+  background:transparent;color:#DC2626;
+  border:1px solid rgba(220,38,38,.3);cursor:pointer;font-size:.8rem;transition:background .15s;
+}
+.btn-del-sm:hover { background:rgba(220,38,38,.12); }
+.chart-card {
+  background:var(--c-surface);border:1px solid var(--c-border);
+  border-radius:var(--r-card);padding:1rem 1.125rem;
+}
+.chart-title { font-size:.78rem;font-weight:600;color:var(--c-text);margin:0 0 .875rem;display:flex;align-items:center;gap:.35rem; }
+
+/* Section header */
+.section-header {
+  font-size:.78rem;font-weight:700;color:var(--c-text);
+  display:flex;align-items:center;gap:.4rem;
+  padding:.75rem 0;margin-bottom:.875rem;
+  border-top:1px solid var(--c-border);
+}
+
+/* Progress */
+.train-progress-wrap {
+  background:var(--c-surface);border:1px solid var(--c-border);
+  border-radius:var(--r-card);padding:1.25rem 1.375rem;margin-bottom:1rem;
+}
+.progress-track { height:10px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden; }
+.progress-fill { height:100%;border-radius:999px;background:linear-gradient(90deg,#0EA5E9,#10B981);transition:width .6s ease; }
+.spinner-pulse {
+  width:10px;height:10px;border-radius:50%;background:#10B981;flex-shrink:0;
+  animation:pulse-dot 1.2s ease-in-out infinite;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);} }
+.phase-step { color:var(--c-muted);display:inline-flex;align-items:center;gap:.25rem;transition:color .2s; }
+.phase-step.active { color:var(--c-text);font-weight:600; }
+.phase-step.done   { color:#10B981; }
+
+/* Evaluasi */
+.ev-card { background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);padding:1rem 1.125rem; }
+.ev-section-title { font-size:.72rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 .875rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap; }
+.cm-grid { display:grid;grid-template-columns:52px repeat(3,1fr);gap:4px; }
+.cm-cell { border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.5rem .25rem;font-size:.78rem; }
+.cm-corner { background:transparent; }
+.cm-header { font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--c-bg); }
+.cm-row-label { font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--c-bg); }
+.cm-data { background:rgba(14,165,233,var(--cm-opacity,.04));min-height:56px; }
+.cm-diagonal { background:rgba(14,165,233,var(--cm-opacity,.3));border:1px solid rgba(14,165,233,.3); }
+.cm-num { font-size:.95rem;font-weight:700;color:var(--c-text);line-height:1; }
+.cm-pct { font-size:.62rem;color:var(--c-muted);margin-top:.15rem; }
+.ev-table { width:100%;border-collapse:collapse;font-size:.78rem; }
+.ev-table th { font-size:.68rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.04em;padding:.4rem .5rem;border-bottom:1px solid var(--c-border);text-align:right; }
+.ev-table th:first-child { text-align:left; }
+.ev-table td { padding:.55rem .5rem;border-bottom:1px solid var(--c-border);text-align:right;color:var(--c-text); }
+.ev-table td:first-child { text-align:left; }
+.ev-table tbody tr:last-child td { border-bottom:none; }
+.ev-macro-row td { padding-top:.65rem;border-top:2px solid var(--c-border);font-size:.72rem;color:var(--c-muted);border-bottom:none; }
+.ev-kls-badge { display:inline-block;font-size:.68rem;font-weight:700;padding:.15rem .45rem;border-radius:999px; }
+
+/* GIS inline */
+#detailMap { height:460px;border-radius:var(--r-card);border:1px solid var(--c-border);box-shadow:var(--shadow-card); }
+.gis-stat { background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);padding:.5rem .75rem;text-align:center; }
+.gis-stat-val { display:block;font-size:1rem;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums; }
+.gis-stat-lbl { display:block;font-size:.65rem;color:var(--c-muted);margin-top:.1rem; }
+.gis-filter {
+  display:inline-flex;align-items:center;gap:.3rem;
+  padding:.25rem .65rem;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;
+  background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-muted);transition:all .15s;
+}
+.gis-filter:hover, .gis-filter.active { border-color:var(--fc,var(--c-accent));color:var(--c-text);background:rgba(255,255,255,.06); }
+.gis-dot { width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0; }
+.gis-legend {
+  position:absolute;bottom:2rem;right:.75rem;z-index:1000;
+  background:var(--c-surface);border:1px solid var(--c-border);
+  border-radius:var(--r-card);padding:.625rem .75rem;min-width:120px;box-shadow:var(--shadow-card);
+}
+/* Popup */
+.leaflet-popup-content-wrapper {
+  background:var(--c-surface) !important;border:1px solid var(--c-border) !important;
+  border-radius:10px !important;box-shadow:0 4px 20px rgba(0,0,0,.4) !important;color:var(--c-text) !important;
+}
+.leaflet-popup-tip { background:var(--c-surface) !important; }
+.leaflet-popup-content { margin:10px 14px !important;font-size:.8rem; }
+.popup-img { width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:.5rem; }
+.popup-row { display:flex;justify-content:space-between;align-items:center;padding:.2rem 0;border-bottom:1px solid var(--c-border);font-size:.75rem; }
+.popup-row:last-child { border-bottom:none; }
+.popup-label { color:var(--c-muted); }
+.popup-chip  { padding:.1rem .4rem;border-radius:999px;font-size:.68rem;font-weight:700; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if cfg.status == 'training' %}
+<script>
+(function () {
+  const url     = "{{ url_for('arsitektur.progress', config_id=cfg.id) }}";
+  const fillEl  = document.getElementById('progressFill');
+  const epochEl = document.getElementById('epochLabel');
+  const pctEl   = document.getElementById('pctLabel');
+  const phaseEl = document.getElementById('phaseLabel');
+  const metrics = document.getElementById('metricsRow');
+  const step1  = document.getElementById('step1');
+  const stepFT = document.getElementById('stepFT');
+  const step2  = document.getElementById('step2');
+  const step3  = document.getElementById('step3');
+
+  function setPhase(phase) {
+    [step1, stepFT, step2, step3].forEach(s => s.className = 'phase-step');
+    if (phase === 'training') {
+      step1.classList.add('active');
+    } else if (phase === 'fine_tuning') {
+      step1.classList.add('done'); stepFT.classList.add('active');
+    } else if (phase === 'evaluating') {
+      step1.classList.add('done'); stepFT.classList.add('done'); step2.classList.add('active');
+    } else if (phase === 'predicting') {
+      step1.classList.add('done'); stepFT.classList.add('done'); step2.classList.add('done'); step3.classList.add('active');
+    }
+  }
+
+  function poll() {
+    fetch(url)
+      .then(r => r.json())
+      .then(d => {
+        if (d.status !== 'training') {
+          if (d.status === 'gagal' && d.error) {
+            document.getElementById('progressWrap').innerHTML =
+              '<div style="padding:.875rem 1.125rem;border-radius:var(--r-card);' +
+              'background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);' +
+              'font-size:.82rem;color:#EF4444;margin-bottom:.75rem;">' +
+              '<i class="bi bi-exclamation-triangle-fill"></i> <strong>Training error:</strong> ' +
+              d.error.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+            setTimeout(() => window.location.reload(), 4000);
+          } else {
+            window.location.reload();
+          }
+          return;
+        }
+        if (d.interrupted) {
+          document.getElementById('progressWrap').innerHTML =
+            '<div style="padding:.875rem 1.125rem;border-radius:var(--r-card);' +
+            'background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);' +
+            'font-size:.82rem;color:#EF4444;">' +
+            '<i class="bi bi-exclamation-triangle-fill"></i> ' +
+            'Training terhenti karena server restart. Klik <strong>Re-train</strong> untuk memulai ulang.</div>';
+          return;
+        }
+        const phase = d.phase || 'training';
+        setPhase(phase);
+
+        if (phase === 'fine_tuning') {
+          const pct = d.pct || 0;
+          fillEl.style.width  = pct + '%';
+          pctEl.textContent   = pct + '%';
+          epochEl.textContent = d.current ? `Fine-tuning Epoch ${d.current} / ${d.total}` : 'Fine-tuning…';
+          phaseEl.textContent = 'Fine-tuning lapisan atas model…';
+          phaseEl.style.color = '#38BDF8';
+          if (d.current > 0) {
+            metrics.style.opacity = '1';
+            document.getElementById('mLoss').textContent  = d.loss  ?? '—';
+            document.getElementById('mAcc').textContent   = d.accuracy  != null ? d.accuracy  + '%' : '—';
+            document.getElementById('mVLoss').textContent = d.val_loss ?? '—';
+            document.getElementById('mVAcc').textContent  = d.val_accuracy != null ? d.val_accuracy + '%' : '—';
+          }
+          setTimeout(poll, 1500);
+          return;
+        }
+
+        if (phase === 'evaluating') {
+          fillEl.style.width  = '100%';
+          pctEl.textContent   = '100%';
+          epochEl.textContent = 'Menghitung evaluasi…';
+          phaseEl.textContent = 'Menghitung evaluasi…';
+          phaseEl.style.color = '#A78BFA';
+          setTimeout(poll, 1500);
+          return;
+        }
+
+        if (phase === 'predicting') {
+          fillEl.style.width  = '100%';
+          pctEl.textContent   = '100%';
+          epochEl.textContent = 'Memproses prediksi peta…';
+          phaseEl.textContent = 'Memproses prediksi peta…';
+          phaseEl.style.color = '#10B981';
+          setTimeout(poll, 1500);
+          return;
+        }
+
+        const pct = d.pct || 0;
+        fillEl.style.width  = pct + '%';
+        pctEl.textContent   = pct + '%';
+        epochEl.textContent = d.current ? `Epoch ${d.current} / ${d.total}` : 'Memuat data…';
+
+        if (d.current > 0) {
+          metrics.style.opacity = '1';
+          document.getElementById('mLoss').textContent  = d.loss  ?? '—';
+          document.getElementById('mAcc').textContent   = d.accuracy  != null ? d.accuracy  + '%' : '—';
+          document.getElementById('mVLoss').textContent = d.val_loss ?? '—';
+          document.getElementById('mVAcc').textContent  = d.val_accuracy != null ? d.val_accuracy + '%' : '—';
+        }
+        setTimeout(poll, 1500);
+      })
+      .catch(() => setTimeout(poll, 3000));
+  }
+  poll();
+})();
+</script>
+{% endif %}
+
+{% if hasil %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const epochs = [{% for h in hasil %}{{ h.epoch }}{% if not loop.last %},{% endif %}{% endfor %}];
+  const loss   = [{% for h in hasil %}{{ h.loss }}{% if not loop.last %},{% endif %}{% endfor %}];
+  const acc    = [{% for h in hasil %}{{ h.accuracy }}{% if not loop.last %},{% endif %}{% endfor %}];
+  const vLoss  = [{% for h in hasil %}{{ h.val_loss }}{% if not loop.last %},{% endif %}{% endfor %}];
+  const vAcc   = [{% for h in hasil %}{{ h.val_accuracy }}{% if not loop.last %},{% endif %}{% endfor %}];
+  const opts = (datasets) => ({
+    type: 'line',
+    data: { labels: epochs, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 10, padding: 12 } },
+        tooltip: { mode: 'index' }
+      },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' } }
+      },
+      elements: { point: { radius: 2, hoverRadius: 4 } }
+    }
+  });
+  new Chart('lossChart', opts([
+    { label:'Train Loss', data:loss,  borderColor:'#EF4444', backgroundColor:'transparent', borderWidth:2, tension:.3 },
+    { label:'Val Loss',   data:vLoss, borderColor:'#F59E0B', backgroundColor:'transparent', borderWidth:2, tension:.3, borderDash:[4,3] },
+  ]));
+  new Chart('accChart', opts([
+    { label:'Train Acc', data:acc.map(v=>v*100),  borderColor:'#38BDF8', backgroundColor:'transparent', borderWidth:2, tension:.3 },
+    { label:'Val Acc',   data:vAcc.map(v=>v*100), borderColor:'#10B981', backgroundColor:'transparent', borderWidth:2, tension:.3, borderDash:[4,3] },
+  ]));
+})();
+</script>
+{% endif %}
+
+{% if total_prediksi %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const GJS_URL = "{{ url_for('arsitektur.gis_json', config_id=cfg.id) }}";
+  const WARNA   = { 0: '#E53E3E', 1: '#F59E0B', 2: '#10B981' };
+
+  const map = L.map('detailMap', { zoomControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  }).addTo(map);
+
+  let allFeatures = [], markers = [];
+
+  function makeMarker(f) {
+    const p = f.properties;
+    const clr = WARNA[p.prediksi] || '#999';
+    const aktualClr = WARNA[p.aktual] || '#999';
+    const circle = L.circleMarker(
+      [f.geometry.coordinates[1], f.geometry.coordinates[0]],
+      { radius:8, fillColor:clr, fillOpacity:0.85, color:'#ffffff', weight:2,
+        dashArray: p.benar ? null : '4 3', opacity:0.9 }
+    );
+    circle.bindPopup(
+      `<img src="/static/${p.path_file}" class="popup-img" onerror="this.style.display='none'">
+       <div class="popup-row"><span class="popup-label">Lokasi</span><span style="font-weight:600;font-size:.72rem;">${p.nama_citra}</span></div>
+       <div class="popup-row"><span class="popup-label">Prediksi</span><span class="popup-chip" style="background:${clr}22;color:${clr};">${p.label_pred}</span></div>
+       <div class="popup-row"><span class="popup-label">Aktual</span><span class="popup-chip" style="background:${aktualClr}22;color:${aktualClr};">${p.label_aktual}</span></div>
+       <div class="popup-row"><span class="popup-label">Confidence</span><strong>${p.confidence}%</strong></div>
+       <div class="popup-row"><span class="popup-label">Hasil</span><strong style="color:${p.benar?'#10B981':'#EF4444'};">${p.benar?'✓ Benar':'✗ Salah'}</strong></div>`,
+      { maxWidth: 220 }
+    );
+    return { circle, feature: f };
+  }
+
+  function applyFilter(filter) {
+    let shown = 0;
+    markers.forEach(({ circle, feature }) => {
+      const p = feature.properties;
+      let v = filter === 'all' ? true
+            : filter === 'salah' ? !p.benar
+            : p.prediksi === parseInt(filter);
+      if (v) { circle.addTo(map); shown++; }
+      else   { map.removeLayer(circle); }
+    });
+    const el = document.getElementById('gFilterCount');
+    if (el) el.textContent = shown + ' foto ditampilkan';
+  }
+
+  fetch(GJS_URL)
+    .then(r => r.json())
+    .then(gj => {
+      allFeatures = gj.features;
+      markers = allFeatures.map(f => makeMarker(f));
+      const lats = allFeatures.map(f => f.geometry.coordinates[1]);
+      const lngs = allFeatures.map(f => f.geometry.coordinates[0]);
+      if (lats.length) {
+        map.fitBounds([[Math.min(...lats),Math.min(...lngs)],[Math.max(...lats),Math.max(...lngs)]], { padding:[40,40] });
+      }
+      const total = allFeatures.length;
+      const benar = allFeatures.filter(f => f.properties.benar).length;
+      document.getElementById('gTotal').textContent   = total;
+      document.getElementById('gBenar').textContent   = benar;
+      document.getElementById('gSalah').textContent   = total - benar;
+      document.getElementById('gAkurasi').textContent = total ? (benar/total*100).toFixed(1)+'%' : '—';
+      applyFilter('all');
+    });
+
+  document.querySelectorAll('.gis-filter').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.gis-filter').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      applyFilter(this.dataset.filter);
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

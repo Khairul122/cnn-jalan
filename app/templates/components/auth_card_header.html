@@ -1,0 +1,17 @@
+<div style="background:var(--c-primary);" class="px-8 py-7 text-center">
+  <div class="flex justify-center mb-3">
+    <div style="background:var(--c-accent);border-radius:50%;width:3rem;height:3rem;"
+         class="flex items-center justify-center" aria-hidden="true">
+      <svg class="w-6 h-6" style="color:#fff;"
+           fill="{{ ach_icon_fill if ach_icon_fill is defined else 'currentColor' }}"
+           {% if ach_icon_stroke is defined and ach_icon_stroke %}stroke="currentColor"{% endif %}
+           viewBox="0 0 24 24">
+        {{ ach_icon_path | safe }}
+      </svg>
+    </div>
+  </div>
+  <h1 style="font-family:'Inter',sans-serif;color:#fff;font-size:1.15rem;font-weight:600;margin:0;">
+    {{ ach_title }}
+  </h1>
+  <p style="color:rgba(255,255,255,.55);font-size:.8rem;margin:.25rem 0 0;">{{ ach_subtitle }}</p>
+</div>

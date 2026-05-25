@@ -1,0 +1,16 @@
+<div class="d-flex align-items-center gap-2 mb-4">
+  {% if ph_back_url is defined and ph_back_url %}
+  <a href="{{ ph_back_url }}" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+     aria-label="Kembali">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  {% endif %}
+  <div class="min-w-0">
+    <h1 class="fw-bold mb-0 fs-5" style="font-family:'Inter',sans-serif;color:var(--c-text);">
+      {{ ph_title }}
+    </h1>
+    {% if ph_subtitle is defined and ph_subtitle %}
+    <p class="mb-0 small" style="color:var(--c-muted);">{{ ph_subtitle }}</p>
+    {% endif %}
+  </div>
+</div>

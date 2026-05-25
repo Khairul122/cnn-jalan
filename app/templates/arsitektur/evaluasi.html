@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% block title %}Evaluasi — {{ cfg.nama }}{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('arsitektur.index') }}" style="color:var(--c-accent);text-decoration:none;">Arsitektur CNN</a>
+<span class="sep">›</span>
+<a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" style="color:var(--c-accent);text-decoration:none;">{{ cfg.nama }}</a>
+<span class="sep">›</span>
+<span class="current">Evaluasi</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+  <div>
+    {% set ph_title = 'Evaluasi Model' %}{% include 'components/page_header.html' %}
+    <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+      <span style="font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:999px;
+                   background:{% if cfg.model_type=='mobilenetv2' %}rgba(56,189,248,.12);color:#38BDF8;
+                   {% else %}rgba(167,139,250,.12);color:#A78BFA;{% endif %}">
+        {{ cfg.model_type|upper }}
+      </span>
+      <span style="font-size:.72rem;color:var(--c-muted);">{{ cfg.split_config.nama if cfg.split_config else '' }} · Fold {{ cfg.fold_val }}</span>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}"
+       class="ev-btn ev-btn-ghost">
+      <i class="bi bi-arrow-left"></i> Kembali
+    </a>
+    {% if cfg.status == 'selesai' %}
+    <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}">
+      <button type="submit" class="ev-btn ev-btn-primary">
+        <i class="bi bi-play-circle-fill"></i>
+        {{ 'Jalankan Ulang' if hasil else 'Jalankan Evaluasi' }}
+      </button>
+    </form>
+    {% endif %}
+    {% if hasil %}
+    <form method="POST" action="{{ url_for('arsitektur.evaluasi_delete', config_id=cfg.id) }}"
+          onsubmit="return confirm('Hapus hasil evaluasi ini?')">
+      <button type="submit" class="ev-btn ev-btn-danger">
+        <i class="bi bi-trash3-fill"></i>
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if not hasil %}
+<!-- Empty state -->
+<div style="text-align:center;padding:4rem 2rem;border-radius:var(--r-card);
+            border:1px dashed var(--c-border);background:var(--c-surface);">
+  <div style="font-size:2.5rem;margin-bottom:.75rem;">📊</div>
+  <p style="font-size:.9rem;font-weight:600;color:var(--c-text);margin:.0;">Belum ada hasil evaluasi</p>
+  <p style="font-size:.78rem;color:var(--c-muted);margin:.35rem 0 1.25rem;">
+    Klik "Jalankan Evaluasi" untuk menghitung confusion matrix dan metrik per kelas.
+  </p>
+  {% if cfg.status == 'selesai' %}
+  <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}" style="display:inline;">
+    <button type="submit" class="ev-btn ev-btn-primary">
+      <i class="bi bi-play-circle-fill"></i> Jalankan Evaluasi
+    </button>
+  </form>
+  {% else %}
+  <p style="font-size:.78rem;color:#F59E0B;">
+    <i class="bi bi-exclamation-triangle-fill"></i> Model belum selesai dilatih (status: {{ cfg.status }}).
+  </p>
+  {% endif %}
+</div>
+
+{% else %}
+
+{# Hitung max per baris untuk opacity heatmap #}
+{% set cm = hasil.get_cm() %}
+
+<!-- Stats row -->
+<div class="row g-3 mb-4">
+  {% for lbl, val, color in [
+    ('Akurasi', hasil.akurasi, '#10B981'),
+    ('Macro F1', hasil.macro_f1, '#38BDF8'),
+    ('Macro Precision', hasil.macro_precision, '#A78BFA'),
+    ('Macro Recall', hasil.macro_recall, '#F59E0B'),
+  ] %}
+  <div class="col-6 col-md-3">
+    <div class="ev-stat-card">
+      <span class="ev-stat-val" style="color:{{ color }};">{{ val }}%</span>
+      <span class="ev-stat-lbl">{{ lbl }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Main grid: confusion matrix + per-class table -->
+<div class="row g-3 mb-3">
+
+  <!-- Confusion Matrix -->
+  <div class="col-lg-7">
+    <div class="ev-card">
+      <p class="ev-section-title"><i class="bi bi-grid-3x3-gap-fill" style="color:#38BDF8;"></i> Confusion Matrix</p>
+      <p style="font-size:.71rem;color:var(--c-muted);margin:-.5rem 0 1rem;">Baris = Aktual · Kolom = Prediksi</p>
+
+      <div class="cm-grid">
+        <!-- Header row -->
+        <div class="cm-cell cm-corner"></div>
+        {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+        <div class="cm-cell cm-header" style="color:{{ clr }};">{{ lbl }}</div>
+        {% endfor %}
+
+        <!-- Data rows -->
+        {% for row_data in [
+          (0, 'Berat',  '#E53E3E'),
+          (1, 'Sedang', '#F59E0B'),
+          (2, 'Ringan', '#10B981'),
+        ] %}
+        {% set row_i = row_data[0] %}{% set row_lbl = row_data[1] %}{% set row_clr = row_data[2] %}
+        <div class="cm-cell cm-row-label" style="color:{{ row_clr }};">{{ row_lbl }}</div>
+        {% set row_total = cm[row_i][0] + cm[row_i][1] + cm[row_i][2] %}
+        {% for col_i in range(3) %}
+          {% set val = cm[row_i][col_i] %}
+          {% set opacity = (val / row_total) if row_total > 0 else 0 %}
+          <div class="cm-cell cm-data {% if row_i == col_i %}cm-diagonal{% endif %}"
+               style="--cm-opacity:{{ '%.2f'|format(opacity) }};">
+            <span class="cm-num">{{ val }}</span>
+            {% if row_total > 0 %}
+            <span class="cm-pct">{{ (val / row_total * 100)|round(1) }}%</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+
+      <div class="d-flex gap-3 mt-3 flex-wrap">
+        <span style="font-size:.72rem;color:var(--c-muted);">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                       background:rgba(14,165,233,.7);margin-right:.3rem;"></span>Benar (diagonal)
+        </span>
+        <span style="font-size:.72rem;color:var(--c-muted);">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                       background:rgba(14,165,233,.12);margin-right:.3rem;"></span>Salah prediksi
+        </span>
+        <span style="font-size:.72rem;color:var(--c-muted);margin-left:auto;">
+          Total data validasi: <strong style="color:var(--c-text);">{{ hasil.total_data_val }}</strong>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-class metrics -->
+  <div class="col-lg-5">
+    <div class="ev-card h-100">
+      <p class="ev-section-title"><i class="bi bi-bar-chart-fill" style="color:#A78BFA;"></i> Metrik Per Kelas</p>
+
+      <table class="ev-table">
+        <thead>
+          <tr>
+            <th>Kelas</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for kls, clr, p, r, f in [
+            ('Berat',  '#E53E3E', hasil.precision_berat,  hasil.recall_berat,  hasil.f1_berat),
+            ('Sedang', '#F59E0B', hasil.precision_sedang, hasil.recall_sedang, hasil.f1_sedang),
+            ('Ringan', '#10B981', hasil.precision_ringan, hasil.recall_ringan, hasil.f1_ringan),
+          ] %}
+          <tr>
+            <td><span class="ev-kls-badge" style="color:{{ clr }};background:{{ clr }}1a;">{{ kls }}</span></td>
+            <td>{{ p }}%</td>
+            <td>{{ r }}%</td>
+            <td><strong>{{ f }}%</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="ev-macro-row">
+            <td>Macro Avg</td>
+            <td>{{ hasil.macro_precision }}%</td>
+            <td>{{ hasil.macro_recall }}%</td>
+            <td><strong>{{ hasil.macro_f1 }}%</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Mini bar chart per kelas F1 -->
+      <div class="mt-3">
+        {% for kls, clr, f in [
+          ('Berat',  '#E53E3E', hasil.f1_berat),
+          ('Sedang', '#F59E0B', hasil.f1_sedang),
+          ('Ringan', '#10B981', hasil.f1_ringan),
+        ] %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span style="font-size:.71rem;color:var(--c-muted);width:42px;">{{ kls }}</span>
+          <div style="flex:1;background:var(--c-bg);border-radius:99px;height:7px;overflow:hidden;">
+            <div style="width:{{ f }}%;background:{{ clr }};height:100%;border-radius:99px;
+                        transition:width .4s ease;"></div>
+          </div>
+          <span style="font-size:.71rem;color:var(--c-text);width:38px;text-align:right;">{{ f }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <p style="font-size:.68rem;color:var(--c-muted);margin:1rem 0 0;border-top:1px solid var(--c-border);padding-top:.75rem;">
+        Dijalankan: {{ hasil.created_at.strftime('%d %b %Y %H:%M') }}
+      </p>
+    </div>
+  </div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.ev-btn {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .45rem .9rem; border-radius: var(--r-input);
+  font-size: .78rem; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none; transition: opacity .15s, transform .15s;
+}
+.ev-btn:hover { opacity: .85; transform: translateY(-1px); }
+.ev-btn-primary {
+  background: linear-gradient(135deg, #0369A1, #0EA5E9); color: #fff;
+  box-shadow: 0 2px 8px rgba(3,105,161,.25);
+}
+.ev-btn-ghost {
+  border: 1px solid var(--c-border); color: var(--c-muted);
+  background: transparent;
+}
+.ev-btn-ghost:hover { color: var(--c-text); border-color: var(--c-accent); }
+.ev-btn-danger {
+  background: rgba(229,62,62,.12); color: #E53E3E;
+  border: 1px solid rgba(229,62,62,.25);
+}
+
+.ev-stat-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card); padding: 1rem;
+  display: flex; flex-direction: column; align-items: center; gap: .25rem;
+}
+.ev-stat-val { font-size: 1.55rem; font-weight: 800; line-height: 1; }
+.ev-stat-lbl { font-size: .68rem; color: var(--c-muted); font-weight: 600;
+               text-transform: uppercase; letter-spacing: .04em; }
+
+.ev-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--r-card); padding: 1.125rem;
+}
+.ev-section-title {
+  font-size: .72rem; font-weight: 700; color: var(--c-muted);
+  text-transform: uppercase; letter-spacing: .05em;
+  margin: 0 0 .875rem; display: flex; align-items: center; gap: .35rem;
+}
+
+/* Confusion matrix */
+.cm-grid {
+  display: grid;
+  grid-template-columns: 52px repeat(3, 1fr);
+  gap: 4px;
+}
+.cm-cell {
+  border-radius: 6px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: .5rem .25rem;
+  font-size: .78rem;
+}
+.cm-corner { background: transparent; }
+.cm-header {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; background: var(--c-bg);
+}
+.cm-row-label {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; background: var(--c-bg);
+}
+.cm-data {
+  background: rgba(14,165,233, var(--cm-opacity, 0.04));
+  min-height: 60px; cursor: default; transition: filter .15s;
+}
+.cm-data:hover { filter: brightness(1.15); }
+.cm-diagonal {
+  background: rgba(14,165,233, var(--cm-opacity, 0.3));
+  border: 1px solid rgba(14,165,233,.3);
+}
+.cm-num { font-size: .95rem; font-weight: 700; color: var(--c-text); line-height: 1; }
+.cm-pct { font-size: .62rem; color: var(--c-muted); margin-top: .15rem; }
+
+/* Per-class table */
+.ev-table {
+  width: 100%; border-collapse: collapse; font-size: .78rem;
+}
+.ev-table th {
+  font-size: .68rem; font-weight: 700; color: var(--c-muted);
+  text-transform: uppercase; letter-spacing: .04em;
+  padding: .4rem .5rem; border-bottom: 1px solid var(--c-border);
+  text-align: right;
+}
+.ev-table th:first-child { text-align: left; }
+.ev-table td {
+  padding: .55rem .5rem; border-bottom: 1px solid var(--c-border);
+  text-align: right; color: var(--c-text);
+}
+.ev-table td:first-child { text-align: left; }
+.ev-table tbody tr:last-child td { border-bottom: none; }
+.ev-macro-row td {
+  padding-top: .65rem; border-top: 2px solid var(--c-border);
+  font-size: .72rem; color: var(--c-muted); border-bottom: none;
+}
+.ev-kls-badge {
+  display: inline-block; font-size: .68rem; font-weight: 700;
+  padding: .15rem .45rem; border-radius: 999px;
+}
+</style>
+{% endblock %}
