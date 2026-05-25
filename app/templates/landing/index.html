@@ -610,8 +610,8 @@ tailwind.config = {
 // ── navbar shadow & scrollspy on scroll
 const sections = [
   { id: '#', name: 'Dashboard' },
-  { id: '#map-section', name: 'Peta GIS' },
   { id: '#analytics', name: 'Prediksi' },
+  { id: '#map-section', name: 'Peta GIS' },
   { id: '#about-cnn', name: 'Metodologi' }
 ];
 
@@ -635,6 +635,11 @@ window.addEventListener('scroll', () => {
       }
     }
   });
+
+  // check scroll-to-bottom to force last section active
+  if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 50) {
+    activeId = '#about-cnn';
+  }
 
   // update desktop styling
   desktopLinks.forEach(link => {
