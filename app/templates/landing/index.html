@@ -716,14 +716,35 @@ function renderMarkers(filter) {
   filtered.forEach(f => {
     const [lng, lat] = f.geometry.coordinates;
     const p = f.properties;
+
+    const aktualClr = p.aktual === 'Berat' ? '#E53E3E' : (p.aktual === 'Sedang' ? '#F59E0B' : (p.aktual === 'Ringan' ? '#10B981' : '#94a3b8'));
+    const popupHtml = `
+      <div style="font-family:Inter,sans-serif;font-size:12px;width:180px;color:#1e293b;">
+        <img src="/static/${p.path_file}" alt="Foto Kerusakan" 
+             style="width:100%;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;"
+             onerror="this.style.display='none'">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:11px;">
+          <span style="color:#64748b;">Prediksi CNN:</span>
+          <span style="font-weight:600;color:${p.warna};">${p.prediksi}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:11px;">
+          <span style="color:#64748b;">Aktual:</span>
+          <span style="font-weight:600;color:${aktualClr};">${p.aktual}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;align-items:center;">
+          <span style="color:#64748b; margin-top:2px;">Hasil:</span>
+          <span style="font-weight:700;color:${p.benar ? '#10B981' : '#EF4444'}; margin-top:2px;">
+            ${p.benar ? '✓ Benar' : '✗ Salah'}
+          </span>
+        </div>
+      </div>
+    `;
+
     L.circleMarker([lat, lng], {
       radius: 8, fillColor: p.warna, color: '#fff',
       weight: 1.5, fillOpacity: .85,
     })
-    .bindPopup(`<div style="font-family:Inter,sans-serif;font-size:12px;min-width:90px;">
-      <strong style="color:${p.warna}">${p.prediksi}</strong><br>
-      <span style="color:#64748B;font-size:11px;">Prediksi CNN</span>
-    </div>`)
+    .bindPopup(popupHtml, { maxWidth: 220 })
     .addTo(markerLayer);
   });
 

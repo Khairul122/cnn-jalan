@@ -58,6 +58,7 @@ def landing_gis():
                 PrediksiModel.aktual,
                 LokasiKerusakan.latitude,
                 LokasiKerusakan.longitude,
+                DokumentasiFoto.path_file,
             )
             .join(DokumentasiFoto, PrediksiModel.dokumentasi_id == DokumentasiFoto.id)
             .join(LokasiKerusakan, DokumentasiFoto.lokasi_id == LokasiKerusakan.id)
@@ -69,8 +70,10 @@ def landing_gis():
         'geometry': {'type': 'Point', 'coordinates': [float(r.longitude), float(r.latitude)]},
         'properties': {
             'prediksi': LABEL.get(r.prediksi, '?'),
+            'aktual'  : LABEL.get(r.aktual, '?') if r.aktual is not None else '?',
             'warna'   : WARNA.get(r.prediksi, '#999'),
             'benar'   : r.aktual is not None and r.prediksi == r.aktual,
+            'path_file': r.path_file,
         },
     } for r in rows]
 
