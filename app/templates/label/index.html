@@ -268,13 +268,16 @@
                                    background:#0369A1;color:#fff;text-decoration:none;font-size:.8rem;">
               <i class="bi bi-pencil-fill"></i>
             </a>
-            <form method="POST" action="{{ url_for('label.delete', lokasi_id=lok.id) }}"
-                  onsubmit="return confirm('Hapus label ini?')" style="margin:0;">
-              <button type="submit" title="Hapus"
+            <form method="POST" action="{{ url_for('label.delete', lokasi_id=lok.id) }}" style="margin:0;">
+              <button type="button" title="Hapus"
                       style="display:inline-flex;align-items:center;justify-content:center;
                              width:30px;height:30px;border-radius:var(--r-input);
                              background:transparent;color:#DC2626;border:1px solid #DC262640;
-                             cursor:pointer;font-size:.8rem;">
+                             cursor:pointer;font-size:.8rem;"
+                      onclick="showConfirmForm(this,
+                        'Hapus Label SDI',
+                        'Label SDI untuk lokasi <strong>{{ lok.nama_jalan }}</strong> akan dihapus. Data split yang menggunakan label ini mungkin terpengaruh.',
+                        'danger','Ya, Hapus Label')">
                 <i class="bi bi-trash-fill"></i>
               </button>
             </form>

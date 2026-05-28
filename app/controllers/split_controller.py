@@ -10,9 +10,29 @@ from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.label_kerusakan import LabelKerusakan
 from app.models.arsitektur_config import ArsitekturConfig
 from app.models.tingkat_kerusakan import TingkatKerusakan
+from app.models.hasil_preprocessing import HasilPreprocessing
 from app.services.split_service import SplitService
 
 split_bp = Blueprint('split', __name__, url_prefix='/split')
+
+
+def _prep_coverage(doc_ids):
+    """Return set of dokumentasi_id yang sudah punya hasil step 'denoise'."""
+    if not doc_ids:
+        return set()
+    rows = (
+        HasilPreprocessing.query
+        .filter(
+            HasilPreprocessing.dokumentasi_id.in_(list(doc_ids)),
+            HasilPreprocessing.step_name == 'denoise',
+            HasilPreprocessing.status == 'selesai',
+            HasilPreprocessing.path_output != '',
+        )
+        .with_entities(HasilPreprocessing.dokumentasi_id)
+        .distinct()
+        .all()
+    )
+    return {r.dokumentasi_id for r in rows}
 
 
 def _get_labeled_items():
@@ -48,13 +68,17 @@ def _get_labeled_items():
 @split_bp.route('/')
 @login_required
 def index():
-    configs = SplitConfig.query.order_by(SplitConfig.created_at.desc()).all()
-    total_berlabel = len(_get_labeled_items())
+    configs        = SplitConfig.query.order_by(SplitConfig.created_at.desc()).all()
+    items          = _get_labeled_items()
+    total_berlabel = len(items)
+    doc_ids        = {i['dokumentasi_id'] for i in items}
+    total_prep     = len(_prep_coverage(doc_ids))
     tingkat_list   = TingkatKerusakan.query.order_by(TingkatKerusakan.id).all()
     return render_template(
         'split/index.html',
         configs=configs,
         total_berlabel=total_berlabel,
+        total_prep=total_prep,
         tingkat_list=tingkat_list,
     )
 
@@ -66,7 +90,9 @@ def new():
     items        = _get_labeled_items()
 
     from collections import Counter
-    kelas_count = Counter(i['label_id'] for i in items)
+    kelas_count  = Counter(i['label_id'] for i in items)
+    doc_ids      = {i['dokumentasi_id'] for i in items}
+    total_prep   = len(_prep_coverage(doc_ids))
 
     if request.method == 'POST':
         nama         = request.form.get('nama', '').strip()
@@ -112,6 +138,7 @@ def new():
         'split/form.html',
         tingkat_list=tingkat_list,
         total_berlabel=len(items),
+        total_prep=total_prep,
         kelas_count=kelas_count,
     )
 
@@ -125,6 +152,7 @@ def detail(config_id):
 
     items = (
         db.session.query(
+            SplitItem.dokumentasi_id,
             SplitItem.fold_index,
             SplitItem.tingkat_kerusakan_id,
             DokumentasiFoto.nama_file,
@@ -151,12 +179,26 @@ def detail(config_id):
 
     dist = SplitService.distribusi(item_dicts, label_map)
 
+    # Coverage preprocessing per fold
+    all_doc_ids   = {r.dokumentasi_id for r in items}
+    train_doc_ids = {r.dokumentasi_id for r in items if r.fold_index == 0}
+    test_doc_ids  = {r.dokumentasi_id for r in items if r.fold_index == 1}
+    prep_ids      = _prep_coverage(all_doc_ids)
+    prep_coverage = {
+        'train': len(prep_ids & train_doc_ids),
+        'test':  len(prep_ids & test_doc_ids),
+        'total': len(prep_ids),
+        'train_total': len(train_doc_ids),
+        'test_total':  len(test_doc_ids),
+    }
+
     return render_template(
         'split/detail.html',
         config=config,
         tingkat_list=tingkat_list,
         label_map=label_map,
         dist=dist,
+        prep_coverage=prep_coverage,
     )
 
 

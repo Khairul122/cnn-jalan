@@ -38,9 +38,12 @@
       </button>
     </form>
     <form method="POST" action="{{ url_for('arsitektur.predict_cv_route', config_id=cfg.id) }}">
-      <button type="submit" class="gis-btn gis-btn-cv"
+      <button type="button" class="gis-btn gis-btn-cv"
               title="Tiap foto diprediksi oleh model yang dilatih tanpa fold-nya — akurasi lebih jujur"
-              onclick="return confirm('Prediksi CV akan melatih {{ split_cfg.n_splits }} model secara berurutan ({{ split_cfg.n_splits }}× waktu training). Lanjutkan?')">
+              onclick="showConfirmForm(this,
+                'Prediksi CV K-Fold',
+                'Proses ini akan melatih <strong>{{ split_cfg.n_splits }} model</strong> secara berurutan (~{{ split_cfg.n_splits }}× waktu training normal). Tiap foto diprediksi oleh model yang tidak melihatnya saat training.',
+                'warning','Ya, Jalankan CV','Proses berjalan di background — jangan tutup server')">
         <i class="bi bi-arrow-repeat"></i>
         Prediksi CV K-Fold
       </button>

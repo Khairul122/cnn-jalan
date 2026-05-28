@@ -31,13 +31,65 @@
       <i class="bi bi-arrow-counterclockwise"></i> Reset
     </button>
     {% endif %}
-    <form method="POST" action="{{ url_for('split.delete', config_id=config.id) }}"
-          onsubmit="return confirm('Hapus split ini? Semua {{ config.total_data }} item akan ikut terhapus.')">
-      <button type="submit" class="sd-btn-del" title="Hapus Split">
+    <form method="POST" action="{{ url_for('split.delete', config_id=config.id) }}">
+      <button type="button" class="sd-btn-del" title="Hapus Split"
+              onclick="showConfirmForm(this,
+                'Hapus Split',
+                'Split <strong>{{ config.nama }}</strong> beserta semua <strong>{{ config.total_data }} item</strong> akan dihapus permanen.',
+                'danger','Ya, Hapus Split')">
         <i class="bi bi-trash-fill"></i>
       </button>
     </form>
   </div>
+</div>
+
+<!-- Coverage preprocessing -->
+{% set train_pct = (prep_coverage.train / prep_coverage.train_total * 100) | round | int if prep_coverage.train_total > 0 else 0 %}
+{% set test_pct  = (prep_coverage.test  / prep_coverage.test_total  * 100) | round | int if prep_coverage.test_total  > 0 else 0 %}
+<div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+
+  <!-- Train coverage -->
+  <div style="flex:1;min-width:200px;background:var(--c-surface);border:1px solid var(--c-border);
+              border-radius:var(--r-card);padding:.625rem .875rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
+      <span style="font-size:.72rem;font-weight:600;color:var(--c-muted);display:flex;align-items:center;gap:.3rem;">
+        <i class="bi bi-filter-circle-fill" style="color:#F472B6;"></i> Preprocessing — Train
+      </span>
+      <span style="font-size:.72rem;font-weight:700;color:{% if train_pct==100 %}#10B981{% elif train_pct>0 %}#F59E0B{% else %}#94a3b8{% endif %};">
+        {{ prep_coverage.train }}/{{ prep_coverage.train_total }}
+        ({{ train_pct }}%)
+      </span>
+    </div>
+    <div style="height:5px;background:var(--c-border);border-radius:999px;overflow:hidden;">
+      <div style="height:100%;width:{{ train_pct }}%;border-radius:999px;transition:width .4s;
+                  background:{% if train_pct==100 %}#10B981{% elif train_pct>0 %}#F59E0B{% else %}#475569{% endif %};"></div>
+    </div>
+    <p style="font-size:.67rem;color:var(--c-muted);margin:.35rem 0 0;">
+      {% if train_pct == 100 %}Training akan pakai gambar preprocessed (denoise)
+      {% elif train_pct > 0 %}{{ prep_coverage.train_total - prep_coverage.train }} foto belum diproses, akan pakai gambar asli
+      {% else %}Belum ada preprocessing — training pakai foto asli{% endif %}
+    </p>
+  </div>
+
+  <!-- Test coverage -->
+  <div style="flex:1;min-width:200px;background:var(--c-surface);border:1px solid var(--c-border);
+              border-radius:var(--r-card);padding:.625rem .875rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
+      <span style="font-size:.72rem;font-weight:600;color:var(--c-muted);display:flex;align-items:center;gap:.3rem;">
+        <i class="bi bi-shield-check" style="color:#38BDF8;"></i> Preprocessing — Test
+      </span>
+      <span style="font-size:.72rem;font-weight:700;color:#38BDF8;">
+        Foto Asli (selalu)
+      </span>
+    </div>
+    <div style="height:5px;background:rgba(56,189,248,.25);border-radius:999px;overflow:hidden;">
+      <div style="height:100%;width:100%;border-radius:999px;background:#38BDF8;"></div>
+    </div>
+    <p style="font-size:.67rem;color:var(--c-muted);margin:.35rem 0 0;">
+      Validasi selalu pakai foto asli — menghindari kontaminasi augmentasi offline
+    </p>
+  </div>
+
 </div>
 
 <!-- Layout: tabel + chart side by side on wide screens -->

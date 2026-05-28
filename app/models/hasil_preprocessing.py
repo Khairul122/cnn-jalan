@@ -8,6 +8,7 @@ class HasilPreprocessing(db.Model):
     id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
     dokumentasi_id  = db.Column(db.Integer, db.ForeignKey('dokumentasi_foto.id', ondelete='CASCADE'), nullable=False)
     config_id       = db.Column(db.Integer, db.ForeignKey('preprocessing_config.id'), nullable=False)
+    step_name       = db.Column(db.String(20), nullable=False, default='denoise')
     path_output     = db.Column(db.String(500), nullable=False)
     ukuran_kb_asal  = db.Column(db.Integer, nullable=True)
     ukuran_kb_hasil = db.Column(db.Integer, nullable=True)

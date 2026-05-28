@@ -106,9 +106,12 @@
             <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>
-            <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"
-                  onsubmit="return confirm('Hapus konfigurasi &quot;{{ cfg.nama }}&quot;?')">
-              <button type="submit" class="btn-action-del" title="Hapus">
+            <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}">
+              <button type="button" class="btn-action-del" title="Hapus"
+                      onclick="showConfirmForm(this,
+                        'Hapus Arsitektur CNN',
+                        'Konfigurasi <strong>{{ cfg.nama }}</strong> beserta semua hasil training dan evaluasi akan dihapus permanen.',
+                        'danger','Ya, Hapus')">
                 <i class="bi bi-trash-fill"></i>
               </button>
             </form>

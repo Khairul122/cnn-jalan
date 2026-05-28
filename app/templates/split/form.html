@@ -19,7 +19,7 @@
   </div>
 
   <!-- Dataset info -->
-  <div class="sf-info-bar mb-3">
+  <div class="sf-info-bar mb-2">
     <div class="sf-info-item">
       <i class="bi bi-images" style="color:#38BDF8;"></i>
       <span style="color:var(--c-text);font-weight:600;">{{ total_berlabel }}</span>
@@ -42,6 +42,34 @@
     </div>
     {% endif %}
   </div>
+
+  <!-- Status preprocessing -->
+  {% set prep_pct = (total_prep / total_berlabel * 100) | round | int if total_berlabel > 0 else 0 %}
+  {% if prep_pct == 100 %}
+  <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;margin-bottom:.75rem;
+              border-radius:var(--r-input);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
+              font-size:.75rem;color:#10B981;">
+    <i class="bi bi-check-circle-fill" style="flex-shrink:0;"></i>
+    <span>Preprocessing selesai — semua <strong>{{ total_berlabel }}</strong> foto sudah diproses (tahap Denoise).
+    Training akan menggunakan gambar preprocessed.</span>
+  </div>
+  {% elif total_prep > 0 %}
+  <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;margin-bottom:.75rem;
+              border-radius:var(--r-input);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);
+              font-size:.75rem;color:#D97706;">
+    <i class="bi bi-exclamation-triangle-fill" style="flex-shrink:0;"></i>
+    <span>Preprocessing belum lengkap — <strong>{{ total_prep }}/{{ total_berlabel }}</strong> foto sudah diproses
+    ({{ prep_pct }}%). Foto yang belum diproses akan menggunakan gambar asli saat training.</span>
+  </div>
+  {% else %}
+  <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;margin-bottom:.75rem;
+              border-radius:var(--r-input);background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.15);
+              font-size:.75rem;color:var(--c-muted);">
+    <i class="bi bi-info-circle-fill" style="flex-shrink:0;"></i>
+    <span>Preprocessing belum dijalankan. Training akan menggunakan foto asli.
+    Untuk hasil lebih baik, jalankan preprocessing terlebih dahulu.</span>
+  </div>
+  {% endif %}
 
   <!-- Form card -->
   <form method="POST" action="{{ url_for('split.new') }}">

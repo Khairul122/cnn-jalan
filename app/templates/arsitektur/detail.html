@@ -39,21 +39,35 @@
   <div class="d-flex gap-2 align-items-center flex-wrap">
     {% if cfg.status != 'training' %}
     <form method="POST" action="{{ url_for('arsitektur.train', config_id=cfg.id) }}">
-      <button type="submit"
-              onclick="return confirm('{% if cfg.status == 'selesai' %}Re-train akan menghapus semua hasil sebelumnya. Lanjutkan?{% else %}Mulai training sekarang?{% endif %}')"
-              class="btn-train">
-        <i class="bi bi-play-fill"></i>
-        {{ 'Re-train' if cfg.status == 'selesai' else 'Mulai Training' }}
+      {% if cfg.status == 'selesai' %}
+      <button type="button" class="btn-train"
+              onclick="showConfirmForm(this,
+                'Re-train Model',
+                'Semua hasil training, evaluasi, dan prediksi sebelumnya akan <strong>dihapus</strong> dan proses training diulang dari awal.',
+                'warning','Ya, Re-train','Tindakan ini menghapus semua hasil sebelumnya')">
+        <i class="bi bi-arrow-repeat"></i> Re-train
       </button>
+      {% else %}
+      <button type="button" class="btn-train"
+              onclick="showConfirmForm(this,
+                'Mulai Training CNN',
+                'Training akan berjalan di background menggunakan konfigurasi <strong>{{ cfg.nama }}</strong>. Proses ini memakan waktu beberapa menit hingga jam.',
+                'success','Ya, Mulai Training','Pastikan tidak menutup server selama training')">
+        <i class="bi bi-play-fill"></i> Mulai Training
+      </button>
+      {% endif %}
     </form>
     {% else %}
     <button disabled class="btn-train" style="opacity:.5;cursor:not-allowed;">
       <i class="bi bi-hourglass-split"></i> Training…
     </button>
     {% endif %}
-    <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"
-          onsubmit="return confirm('Hapus konfigurasi ini?')">
-      <button type="submit" class="btn-del-sm" title="Hapus">
+    <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}">
+      <button type="button" class="btn-del-sm" title="Hapus"
+              onclick="showConfirmForm(this,
+                'Hapus Konfigurasi CNN',
+                'Konfigurasi <strong>{{ cfg.nama }}</strong> beserta semua hasil training, evaluasi, dan prediksi GIS akan dihapus permanen.',
+                'danger','Ya, Hapus')">
         <i class="bi bi-trash-fill"></i>
       </button>
     </form>

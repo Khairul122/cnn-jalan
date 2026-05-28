@@ -135,13 +135,16 @@
         <td style="text-align:center;">
           <div class="d-flex align-items-center justify-content-center gap-1 flex-wrap">
             <!-- Jalankan -->
-            <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}"
-                  onsubmit="return confirm('Jalankan preprocessing pada semua foto dengan konfigurasi ini?')">
-              <button type="submit" title="Jalankan"
+            <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}">
+              <button type="button" title="Jalankan"
                       style="display:inline-flex;align-items:center;gap:.3rem;
                              padding:.35rem .7rem;border-radius:var(--r-input);
                              font-size:.75rem;font-weight:600;cursor:pointer;border:none;
-                             background:linear-gradient(135deg,#059669,#10B981);color:#fff;">
+                             background:linear-gradient(135deg,#059669,#10B981);color:#fff;"
+                      onclick="showConfirmForm(this,
+                        'Jalankan Preprocessing',
+                        'Pipeline 5 tahap akan dijalankan pada <strong>semua 280 foto</strong> menggunakan konfigurasi <strong>{{ cfg.nama_config }}</strong>. Proses menghasilkan <strong>1400 gambar</strong> baru.',
+                        'success','Ya, Jalankan','Proses ini memakan waktu beberapa menit')">
                 <i class="bi bi-play-fill"></i> Jalankan
               </button>
             </form>
@@ -154,13 +157,16 @@
               <i class="bi bi-pencil-fill"></i>
             </a>
             <!-- Hapus -->
-            <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}"
-                  onsubmit="return confirm('Hapus konfigurasi ini? Semua hasil terkait akan ikut terhapus.')">
-              <button type="submit" title="Hapus"
+            <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}">
+              <button type="button" title="Hapus"
                       style="display:inline-flex;align-items:center;justify-content:center;
                              width:30px;height:30px;border-radius:var(--r-input);
                              background:transparent;color:#DC2626;border:1px solid #DC262640;cursor:pointer;
-                             font-size:.8rem;">
+                             font-size:.8rem;"
+                      onclick="showConfirmForm(this,
+                        'Hapus Konfigurasi',
+                        'Konfigurasi <strong>{{ cfg.nama_config }}</strong> beserta semua hasil preprocessing terkait akan dihapus permanen.',
+                        'danger','Ya, Hapus')">
                 <i class="bi bi-trash-fill"></i>
               </button>
             </form>

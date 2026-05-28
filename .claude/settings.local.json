@@ -19,7 +19,9 @@
       "mcp__sequential-thinking__sequentialthinking",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Project Flask\\\\cnn-jalan\\\\app\" -Depth 0 | Select-Object Name, @{Name=\"Type\"; Expression={if\\($_.PSIsContainer\\) {\"Folder\"} else {\"File\"}}} | Format-Table -AutoSize)",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Project Flask\\\\cnn-jalan\\\\app\\\\static\" -Recurse | Select-Object @{Name=\"Path\"; Expression={$_.FullName}} | Format-List)",
-      "Bash(grep -E \"\\\\.\\(py|txt|md\\)$\")"
+      "Bash(grep -E \"\\\\.\\(py|txt|md\\)$\")",
+      "Bash(Select-Object FullName)",
+      "PowerShell(mysql *)"
     ]
   }
 }

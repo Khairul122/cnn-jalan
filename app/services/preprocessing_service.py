@@ -9,34 +9,54 @@ from PIL import Image, ImageOps, ImageEnhance
 class PreprocessingService:
 
     @staticmethod
-    def run_pipeline(img_path, config):
+    def run_pipeline_steps(img_path, config):
         """
-        Jalankan 5 tahap preprocessing: Resize → Center Crop → Normalisasi → Augmentasi → Denoise.
-        Kembalikan (PIL.Image hasil, dict meta, durasi_ms).
-        Raise Exception jika gagal.
+        Jalankan pipeline 5 tahap dan simpan hasil tiap tahap secara kumulatif.
+        Kembalikan list of (step_key, PIL.Image, durasi_ms).
+        Setiap gambar adalah hasil penerapan semua step sebelumnya + step ini.
         """
-        t0 = time.time()
+        results = []
 
         # ── Step 1: Resize ────────────────────────────────────────────
+        t0 = time.time()
         img = Image.open(img_path).convert('RGB')
         resample = getattr(Image.Resampling, str(config.resize_method), Image.Resampling.LANCZOS)
         img = img.resize((int(config.target_width), int(config.target_height)), resample)
+        results.append(('resize', img.copy(), int((time.time() - t0) * 1000)))
 
         # ── Step 2: Center Crop ───────────────────────────────────────
+        t0 = time.time()
         if config.crop_enabled:
             cw, ch = int(config.crop_width), int(config.crop_height)
             iw, ih = img.size
             left = max(0, (iw - cw) // 2)
             top  = max(0, (ih - ch) // 2)
             img  = img.crop((left, top, left + min(cw, iw), top + min(ch, ih)))
+        results.append(('crop', img.copy(), int((time.time() - t0) * 1000)))
 
-        # ── Step 3: Normalisasi ───────────────────────────────────────
-        # Normalisasi statistik (minmax/zscore) tidak disimpan ke file karena
-        # JPEG hanya bisa menyimpan uint8 [0–255]. Normalisasi untuk CNN
-        # dilakukan otomatis oleh preprocess_input() saat load_dataset().
-        # Step ini dicatat sebagai metadata konfigurasi saja.
+        # ── Step 3: Normalisasi (visual representasi, disimpan sebagai uint8) ──
+        t0 = time.time()
+        arr = np.array(img, dtype=np.float32)
+        norm = str(config.norm_method)
+        if norm == 'minmax':
+            # Per-channel min-max stretch ke rentang penuh [0, 255]
+            for c in range(arr.shape[2]):
+                ch_min, ch_max = arr[:, :, c].min(), arr[:, :, c].max()
+                if ch_max > ch_min:
+                    arr[:, :, c] = (arr[:, :, c] - ch_min) / (ch_max - ch_min) * 255
+            img = Image.fromarray(arr.astype(np.uint8))
+        elif norm == 'zscore':
+            # Z-score global lalu rescale ke [0, 255] untuk display
+            mean, std = arr.mean(), arr.std()
+            if std > 0:
+                arr = (arr - mean) / std
+                arr = np.clip((arr + 3) / 6 * 255, 0, 255)
+            img = Image.fromarray(arr.astype(np.uint8))
+        # norm == 'none': gambar tetap sama, tetap simpan sebagai checkpoint
+        results.append(('normalisasi', img.copy(), int((time.time() - t0) * 1000)))
 
         # ── Step 4: Augmentasi (random per gambar) ────────────────────
+        t0 = time.time()
         if config.aug_flip_h and random.random() < 0.5:
             img = ImageOps.mirror(img)
         if config.aug_flip_v and random.random() < 0.5:
@@ -53,12 +73,14 @@ class PreprocessingService:
         if contrast != 1.0:
             factor = random.uniform(1.0 / contrast, contrast)
             img = ImageEnhance.Contrast(img).enhance(factor)
+        results.append(('augmentasi', img.copy(), int((time.time() - t0) * 1000)))
 
         # ── Step 5: Denoise (OpenCV) ──────────────────────────────────
+        t0 = time.time()
         method = str(config.denoise_method)
         if method != 'none':
             k = int(config.denoise_ksize or 3)
-            k = k if k % 2 == 1 else k + 1   # kernel harus ganjil
+            k = k if k % 2 == 1 else k + 1
             cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
             if method == 'gaussian':
                 cv_img = cv2.GaussianBlur(cv_img, (k, k), 0)
@@ -67,14 +89,17 @@ class PreprocessingService:
             elif method == 'bilateral':
                 cv_img = cv2.bilateralFilter(cv_img, k, 75, 75)
             img = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
+        results.append(('denoise', img.copy(), int((time.time() - t0) * 1000)))
 
-        durasi_ms = int((time.time() - t0) * 1000)
-        meta = {
-            'width': img.width,
-            'height': img.height,
-            'durasi_ms': durasi_ms,
-        }
-        return img, meta
+        return results
+
+    @staticmethod
+    def run_pipeline(img_path, config):
+        """Jalankan pipeline penuh dan kembalikan hanya output akhir (backward compat)."""
+        steps = PreprocessingService.run_pipeline_steps(img_path, config)
+        final_img, durasi_ms = steps[-1][1], sum(s[2] for s in steps)
+        meta = {'width': final_img.width, 'height': final_img.height, 'durasi_ms': durasi_ms}
+        return final_img, meta
 
     @staticmethod
     def save_result(img, output_path):

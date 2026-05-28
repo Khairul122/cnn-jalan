@@ -39,9 +39,12 @@
     </form>
     {% endif %}
     {% if hasil %}
-    <form method="POST" action="{{ url_for('arsitektur.evaluasi_delete', config_id=cfg.id) }}"
-          onsubmit="return confirm('Hapus hasil evaluasi ini?')">
-      <button type="submit" class="ev-btn ev-btn-danger">
+    <form method="POST" action="{{ url_for('arsitektur.evaluasi_delete', config_id=cfg.id) }}">
+      <button type="button" class="ev-btn ev-btn-danger"
+              onclick="showConfirmForm(this,
+                'Hapus Hasil Evaluasi',
+                'Hasil evaluasi model <strong>{{ cfg.nama }}</strong> (confusion matrix, precision, recall, F1) akan dihapus. Model &amp; training history tetap ada.',
+                'danger','Ya, Hapus Evaluasi')">
         <i class="bi bi-trash3-fill"></i>
       </button>
     </form>

@@ -94,35 +94,38 @@ def run(config_id):
     for i, foto in enumerate(foto_list):
         img_path = os.path.join(upload_folder, foto.nama_file)
         if not os.path.isfile(img_path):
-            # Coba path_file relatif
             img_path = os.path.join(current_app.root_path, 'static', foto.path_file.lstrip('/\\'))
 
-        ts        = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
-        out_name  = f'{ts}_{foto.nama_file}'
-        out_path  = os.path.join(out_folder, out_name)
-        rel_path  = f'uploads/preprocessed/{out_name}'
-        kb_asal   = PreprocessingService.get_file_kb(img_path)
+        kb_asal = PreprocessingService.get_file_kb(img_path)
 
         try:
-            img, meta = PreprocessingService.run_pipeline(img_path, cfg)
-            PreprocessingService.save_result(img, out_path)
-            kb_hasil = PreprocessingService.get_file_kb(out_path)
+            steps = PreprocessingService.run_pipeline_steps(img_path, cfg)
+            for step_key, step_img, durasi_ms in steps:
+                ts       = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+                out_name = f'{ts}_{step_key}_{foto.nama_file}'
+                out_path = os.path.join(out_folder, out_name)
+                rel_path = f'uploads/preprocessed/{out_name}'
 
-            hasil = HasilPreprocessing(
-                dokumentasi_id  = foto.id,
-                config_id       = cfg.id,
-                path_output     = rel_path,
-                ukuran_kb_asal  = kb_asal,
-                ukuran_kb_hasil = kb_hasil,
-                durasi_ms       = meta['durasi_ms'],
-                status          = 'selesai',
-            )
-            db.session.add(hasil)
+                PreprocessingService.save_result(step_img, out_path)
+                kb_hasil = PreprocessingService.get_file_kb(out_path)
+
+                hasil = HasilPreprocessing(
+                    dokumentasi_id  = foto.id,
+                    config_id       = cfg.id,
+                    step_name       = step_key,
+                    path_output     = rel_path,
+                    ukuran_kb_asal  = kb_asal,
+                    ukuran_kb_hasil = kb_hasil,
+                    durasi_ms       = durasi_ms,
+                    status          = 'selesai',
+                )
+                db.session.add(hasil)
             berhasil += 1
         except Exception as e:
             hasil = HasilPreprocessing(
                 dokumentasi_id  = foto.id,
                 config_id       = cfg.id,
+                step_name       = 'resize',
                 path_output     = '',
                 ukuran_kb_asal  = kb_asal,
                 status          = 'gagal',
@@ -135,7 +138,9 @@ def run(config_id):
             db.session.commit()
 
     db.session.commit()
-    flash(f'Preprocessing selesai — {berhasil} berhasil, {gagal} gagal.', 'success' if gagal == 0 else 'warning')
+    total_gambar = berhasil * 5
+    flash(f'Preprocessing selesai — {berhasil} foto berhasil ({total_gambar} gambar dari 5 tahap), {gagal} gagal.',
+          'success' if gagal == 0 else 'warning')
     return redirect(url_for('preprocessing.hasil'))
 
 
@@ -172,22 +177,33 @@ def hasil_reset():
 @login_required
 def hasil():
     config_id   = request.args.get('config_id', type=int)
+    step        = request.args.get('step', 'semua')
     page        = request.args.get('page', 1, type=int)
     per_page    = 24
     config_list = PreprocessingConfig.query.order_by(PreprocessingConfig.id).all()
 
-    q = HasilPreprocessing.query.order_by(HasilPreprocessing.created_at.desc())
-    if config_id:
-        q = q.filter_by(config_id=config_id)
+    def build_q(s='semua'):
+        q = HasilPreprocessing.query
+        if config_id:
+            q = q.filter(HasilPreprocessing.config_id == config_id)
+        if s != 'semua':
+            q = q.filter(HasilPreprocessing.step_name == s)
+        return q
 
-    total      = q.count()
-    hasil_list = q.offset((page - 1) * per_page).limit(per_page).all()
+    total       = build_q(step).count()
+    hasil_list  = build_q(step).order_by(HasilPreprocessing.created_at.desc()) \
+                               .offset((page - 1) * per_page).limit(per_page).all()
     total_pages = max(1, (total + per_page - 1) // per_page)
+
+    step_counts = {s: build_q(s).count()
+                   for s in ('semua', 'resize', 'crop', 'normalisasi', 'augmentasi', 'denoise')}
 
     return render_template('preprocessing/hasil.html',
                            hasil_list=hasil_list,
                            config_list=config_list,
                            config_id=config_id,
+                           step=step,
+                           step_counts=step_counts,
                            page=page,
                            total=total,
                            total_pages=total_pages,

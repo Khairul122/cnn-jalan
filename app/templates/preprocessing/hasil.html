@@ -32,12 +32,54 @@
   </div>
 </div>
 
-<!-- Filter + total counter -->
+<!-- Tabs filter tahap preprocessing -->
+{% set step = step | default('semua') %}
+{% set step_counts = step_counts | default({'semua':0,'resize':0,'crop':0,'normalisasi':0,'augmentasi':0,'denoise':0}) %}
+{% set step_meta = {
+  'resize':      ('Resize',       'bi-arrows-angle-contract', '#A78BFA'),
+  'crop':        ('Center Crop',  'bi-crop',                  '#F59E0B'),
+  'normalisasi': ('Normalisasi',  'bi-sliders',               '#10B981'),
+  'augmentasi':  ('Augmentasi',   'bi-images',                '#3B82F6'),
+  'denoise':     ('Denoise',      'bi-droplet-half',          '#F472B6'),
+} %}
+{% set tabs = [
+  ('semua',       'Semua',        'bi-layers-fill',            '#38BDF8'),
+  ('resize',      'Resize',       'bi-arrows-angle-contract',  '#A78BFA'),
+  ('crop',        'Center Crop',  'bi-crop',                   '#F59E0B'),
+  ('normalisasi', 'Normalisasi',  'bi-sliders',                '#10B981'),
+  ('augmentasi',  'Augmentasi',   'bi-images',                 '#3B82F6'),
+  ('denoise',     'Denoise',      'bi-droplet-half',           '#F472B6'),
+] %}
+<div style="display:flex;gap:.25rem;flex-wrap:wrap;margin-bottom:.875rem;
+            background:var(--c-surface);border:1px solid var(--c-border);
+            border-radius:var(--r-card);padding:.375rem;">
+  {% for tab_key, tab_label, tab_icon, tab_color in tabs %}
+  <a href="{{ url_for('preprocessing.hasil', step=tab_key, config_id=config_id or '', page=1) }}"
+     style="display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .75rem;
+            border-radius:calc(var(--r-input) - 1px);font-size:.78rem;font-weight:600;
+            text-decoration:none;transition:all .15s;white-space:nowrap;
+            {% if step == tab_key %}background:var(--c-accent);color:#fff;
+            {% else %}background:transparent;color:var(--c-muted);{% endif %}">
+    <i class="bi {{ tab_icon }}"
+       style="font-size:.8rem;{% if step != tab_key %}color:{{ tab_color }};{% endif %}"></i>
+    {{ tab_label }}
+    <span style="font-size:.68rem;font-weight:700;padding:.05rem .4rem;border-radius:999px;
+                 font-variant-numeric:tabular-nums;
+                 {% if step == tab_key %}background:rgba(255,255,255,.2);color:#fff;
+                 {% else %}background:var(--c-bg);color:var(--c-muted);border:1px solid var(--c-border);{% endif %}">
+      {{ step_counts[tab_key] }}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Filter konfigurasi + total counter -->
 <div style="background:var(--c-surface);border:1px solid var(--c-border);
             border-radius:var(--r-card);padding:.75rem 1rem;margin-bottom:1rem;">
   <form method="GET" class="d-flex align-items-center gap-2 flex-wrap">
+    <input type="hidden" name="step" value="{{ step }}">
     <label style="font-size:.8rem;font-weight:600;color:var(--c-text);white-space:nowrap;">
-      <i class="bi bi-funnel" style="color:var(--c-accent);"></i> Filter:
+      <i class="bi bi-funnel" style="color:var(--c-accent);"></i> Konfigurasi:
     </label>
     <select name="config_id" onchange="this.form.submit()"
             style="background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--r-input);
@@ -48,7 +90,7 @@
       {% endfor %}
     </select>
     {% if config_id %}
-    <a href="{{ url_for('preprocessing.hasil') }}"
+    <a href="{{ url_for('preprocessing.hasil', step=step) }}"
        style="font-size:.78rem;color:var(--c-muted);text-decoration:none;">
       <i class="bi bi-x-circle"></i> Reset
     </a>
@@ -172,6 +214,18 @@
         {{ h.dokumentasi.nama_file if h.dokumentasi else 'Foto #' ~ h.dokumentasi_id }}
       </p>
 
+      <!-- Badge tahap preprocessing -->
+      {% if h.step_name and h.step_name in step_meta %}
+      {% set sm = step_meta[h.step_name] %}
+      <div style="margin-bottom:.4rem;">
+        <span style="display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .5rem;
+                     border-radius:999px;font-size:.67rem;font-weight:700;
+                     background:{{ sm[2] }}18;border:1px solid {{ sm[2] }}40;color:{{ sm[2] }};">
+          <i class="bi {{ sm[1] }}" style="font-size:.6rem;"></i> {{ sm[0] }}
+        </span>
+      </div>
+      {% endif %}
+
       <div style="display:grid;grid-template-columns:auto 1fr;column-gap:.5rem;row-gap:.15rem;
                   font-size:.7rem;margin-bottom:.4rem;">
         <span style="color:var(--c-muted);">Konfigurasi</span>
@@ -212,7 +266,7 @@
 
   <!-- Prev -->
   {% if page > 1 %}
-  <a href="{{ url_for('preprocessing.hasil', page=page-1, config_id=config_id or '') }}"
+  <a href="{{ url_for('preprocessing.hasil', page=page-1, config_id=config_id or '', step=step) }}"
      style="display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .8rem;
             border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
             background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">
@@ -230,14 +284,14 @@
   {% set start_p = [1, page-2] | max %}
   {% set end_p   = [total_pages, page+2] | min %}
   {% if start_p > 1 %}
-    <a href="{{ url_for('preprocessing.hasil', page=1, config_id=config_id or '') }}"
+    <a href="{{ url_for('preprocessing.hasil', page=1, config_id=config_id or '', step=step) }}"
        style="padding:.4rem .7rem;border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
               background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">1</a>
     {% if start_p > 2 %}<span style="color:var(--c-muted);padding:0 .25rem;">…</span>{% endif %}
   {% endif %}
 
   {% for p in range(start_p, end_p+1) %}
-  <a href="{{ url_for('preprocessing.hasil', page=p, config_id=config_id or '') }}"
+  <a href="{{ url_for('preprocessing.hasil', page=p, config_id=config_id or '', step=step) }}"
      style="padding:.4rem .7rem;border-radius:var(--r-input);font-size:.8rem;font-weight:{% if p==page %}700{% else %}400{% endif %};
             text-decoration:none;
             background:{% if p==page %}var(--c-accent){% else %}var(--c-surface){% endif %};
@@ -249,7 +303,7 @@
 
   {% if end_p < total_pages %}
     {% if end_p < total_pages-1 %}<span style="color:var(--c-muted);padding:0 .25rem;">…</span>{% endif %}
-    <a href="{{ url_for('preprocessing.hasil', page=total_pages, config_id=config_id or '') }}"
+    <a href="{{ url_for('preprocessing.hasil', page=total_pages, config_id=config_id or '', step=step) }}"
        style="padding:.4rem .7rem;border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
               background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">
       {{ total_pages }}
@@ -258,7 +312,7 @@
 
   <!-- Next -->
   {% if page < total_pages %}
-  <a href="{{ url_for('preprocessing.hasil', page=page+1, config_id=config_id or '') }}"
+  <a href="{{ url_for('preprocessing.hasil', page=page+1, config_id=config_id or '', step=step) }}"
      style="display:inline-flex;align-items:center;gap:.3rem;padding:.4rem .8rem;
             border-radius:var(--r-input);font-size:.8rem;text-decoration:none;
             background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-text);">

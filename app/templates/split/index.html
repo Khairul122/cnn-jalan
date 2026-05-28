@@ -23,9 +23,9 @@
 <!-- Stats -->
 <div class="row g-2 mb-4">
   {% for lbl, val, color, icon in [
-      ('Konfigurasi',   configs|length,       '#A78BFA', 'bi-diagram-3-fill'),
-      ('Data Berlabel', total_berlabel,        '#38BDF8', 'bi-images'),
-      ('Kelas',         tingkat_list|length,   '#10B981', 'bi-layers-fill'),
+      ('Konfigurasi',   configs|length,     '#A78BFA', 'bi-diagram-3-fill'),
+      ('Data Berlabel', total_berlabel,      '#38BDF8', 'bi-images'),
+      ('Kelas',         tingkat_list|length, '#10B981', 'bi-layers-fill'),
   ] %}
   <div class="col">
     <div class="split-stat-card">
@@ -37,6 +37,26 @@
     </div>
   </div>
   {% endfor %}
+  <!-- Preprocessing coverage -->
+  <div class="col">
+    <div class="split-stat-card" style="flex-direction:column;align-items:flex-start;gap:.3rem;">
+      <div style="display:flex;align-items:center;gap:.4rem;width:100%;">
+        <i class="bi bi-filter-circle-fill" style="color:#F472B6;font-size:1rem;flex-shrink:0;"></i>
+        <div style="flex:1;">
+          <div class="split-stat-val">{{ total_prep }}<span style="font-size:.72rem;font-weight:400;color:var(--c-muted);"> / {{ total_berlabel }}</span></div>
+          <div class="split-stat-lbl">Terpreproses (Denoise)</div>
+        </div>
+      </div>
+      {% if total_berlabel > 0 %}
+      {% set pct = (total_prep / total_berlabel * 100) | round | int %}
+      <div style="width:100%;height:4px;background:var(--c-border);border-radius:999px;overflow:hidden;">
+        <div style="height:100%;width:{{ pct }}%;border-radius:999px;
+                    background:{% if pct == 100 %}#10B981{% elif pct > 0 %}#F59E0B{% else %}#DC2626{% endif %};
+                    transition:width .4s;"></div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
 {% if configs %}
@@ -80,9 +100,12 @@
             <a href="{{ url_for('split.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat Detail">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>
-            <form method="POST" action="{{ url_for('split.delete', config_id=cfg.id) }}"
-                  onsubmit="return confirm('Hapus split &quot;{{ cfg.nama }}&quot;?')">
-              <button type="submit" class="btn-action-del" title="Hapus">
+            <form method="POST" action="{{ url_for('split.delete', config_id=cfg.id) }}">
+              <button type="button" class="btn-action-del" title="Hapus"
+                      onclick="showConfirmForm(this,
+                        'Hapus Split',
+                        'Split <strong>{{ cfg.nama }}</strong> beserta semua <strong>{{ cfg.total_data }} item</strong> akan dihapus permanen.',
+                        'danger','Ya, Hapus Split')">
                 <i class="bi bi-trash-fill"></i>
               </button>
             </form>

@@ -4,11 +4,13 @@ import numpy as np
 from datetime import datetime
 from PIL import Image
 
+from sqlalchemy import func
 from app import db
 from app.models.split_item import SplitItem
 from app.models.dokumentasi_foto import DokumentasiFoto
 from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.label_kerusakan import LabelKerusakan
+from app.models.hasil_preprocessing import HasilPreprocessing
 
 
 N_CLASSES = 3  # Berat=0, Sedang=1, Ringan=2
@@ -125,13 +127,31 @@ def _apply_fine_tuning(model, model_type, learning_rate, optimizer_name):
 
 
 def load_dataset(split_config_id, fold_val, input_size, base_dir):
+    # Subquery: path_output terbaru (step=denoise) per dokumentasi_id
+    # path_output diawali timestamp sehingga MAX() = yang paling baru
+    prep_sq = (
+        db.session.query(
+            HasilPreprocessing.dokumentasi_id,
+            func.max(HasilPreprocessing.path_output).label('prep_path'),
+        )
+        .filter(
+            HasilPreprocessing.step_name == 'denoise',
+            HasilPreprocessing.status == 'selesai',
+            HasilPreprocessing.path_output != '',
+        )
+        .group_by(HasilPreprocessing.dokumentasi_id)
+        .subquery()
+    )
+
     rows = (
         db.session.query(
             SplitItem.fold_index,
             SplitItem.tingkat_kerusakan_id,
             DokumentasiFoto.path_file,
+            prep_sq.c.prep_path,
         )
         .join(DokumentasiFoto, SplitItem.dokumentasi_id == DokumentasiFoto.id)
+        .outerjoin(prep_sq, prep_sq.c.dokumentasi_id == SplitItem.dokumentasi_id)
         .filter(SplitItem.config_id == split_config_id)
         .all()
     )
@@ -140,9 +160,18 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
 
     X_train, y_train, X_val, y_val = [], [], [], []
     skipped = 0
+    prep_used = 0
 
     for row in rows:
-        path_rel = row.path_file
+        is_val = (row.fold_index == fold_val)
+
+        # Val fold: selalu pakai foto asli agar tidak terkontaminasi augmentasi offline
+        # Train fold: utamakan preprocessed (denoise), fallback ke asli jika belum diproses
+        if is_val or not row.prep_path:
+            path_rel = row.path_file
+        else:
+            path_rel = row.prep_path
+            prep_used += 1
 
         img_path = os.path.join(base_dir, 'app', 'static', path_rel)
         if not os.path.isfile(img_path):
@@ -157,16 +186,17 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
 
         label = int(row.tingkat_kerusakan_id) - 1
 
-        if row.fold_index == fold_val:
+        if is_val:
             X_val.append(arr)
             y_val.append(label)
         else:
             X_train.append(arr)
             y_train.append(label)
 
+    if prep_used > 0 or skipped > 0:
+        print(f'[load_dataset] train={len(X_train)} ({prep_used} preprocessed), '
+              f'val={len(X_val)} (original), skip={skipped}')
 
-    if skipped > 0:
-        print(f'[load_dataset] WARNING: {skipped}/{len(rows)} gambar dilewati (file tidak ditemukan/rusak)')
 
     if len(X_train) < 20:
         raise ValueError(

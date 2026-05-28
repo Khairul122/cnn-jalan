@@ -197,6 +197,144 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+
+<!-- ── Global Confirm Dialog ────────────────────────────────────────────── -->
+<div id="gcModal"
+     role="dialog" aria-modal="true" aria-labelledby="gcTitle"
+     style="display:none;position:fixed;inset:0;z-index:99999;
+            background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:1rem;"
+     onclick="if(event.target===this)_gcClose()">
+  <div style="background:var(--c-surface);border:1px solid var(--c-border);
+              border-radius:var(--r-card);width:100%;max-width:420px;
+              box-shadow:0 24px 64px rgba(0,0,0,.55);overflow:hidden;
+              animation:fadeInUp .18s ease;">
+
+    <!-- Header -->
+    <div id="gcHeader"
+         style="display:flex;align-items:center;gap:.625rem;
+                padding:.875rem 1.125rem;border-bottom:1px solid var(--c-border);">
+      <span id="gcIconWrap"
+            style="width:34px;height:34px;border-radius:50%;flex-shrink:0;
+                   display:flex;align-items:center;justify-content:center;">
+        <i id="gcIcon" style="font-size:.9rem;"></i>
+      </span>
+      <div>
+        <p id="gcTitle" style="font-size:.88rem;font-weight:700;color:var(--c-text);margin:0;"></p>
+        <p id="gcSubtitle" style="font-size:.72rem;color:var(--c-muted);margin:0;"></p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:1.125rem;">
+      <p id="gcMessage" style="font-size:.83rem;color:var(--c-text);margin:0;line-height:1.6;"></p>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;
+                padding:.75rem 1.125rem;border-top:1px solid var(--c-border);
+                background:var(--c-bg);">
+      <button type="button" onclick="_gcClose()"
+              style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
+                     background:transparent;color:var(--c-muted);border:1px solid var(--c-border);
+                     cursor:pointer;transition:all .15s;"
+              onmouseover="this.style.borderColor='var(--c-text)';this.style.color='var(--c-text)'"
+              onmouseout="this.style.borderColor='var(--c-border)';this.style.color='var(--c-muted)'">
+        Batal
+      </button>
+      <button id="gcConfirmBtn" type="button"
+              style="padding:.45rem 1.1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
+                     border:none;cursor:pointer;display:inline-flex;align-items:center;gap:.35rem;
+                     transition:opacity .15s;"
+              onmouseover="this.style.opacity='.85'"
+              onmouseout="this.style.opacity='1'">
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var _gcCallback = null;
+
+  var _palette = {
+    danger:  { bg: 'rgba(220,38,38,.08)',  border: 'rgba(220,38,38,.25)',  iconBg: 'rgba(220,38,38,.15)',  iconBorder: 'rgba(220,38,38,.3)',  iconColor: '#DC2626', btnBg: '#DC2626',  btnColor: '#fff',    icon: 'bi-exclamation-triangle-fill' },
+    warning: { bg: 'rgba(245,158,11,.08)', border: 'rgba(245,158,11,.25)', iconBg: 'rgba(245,158,11,.15)', iconBorder: 'rgba(245,158,11,.3)', iconColor: '#F59E0B', btnBg: '#F59E0B',  btnColor: '#1C1917', icon: 'bi-exclamation-circle-fill'  },
+    info:    { bg: 'rgba(3,105,161,.08)',   border: 'rgba(3,105,161,.25)',  iconBg: 'rgba(3,105,161,.15)',  iconBorder: 'rgba(3,105,161,.3)',  iconColor: '#0369A1', btnBg: '#0369A1',  btnColor: '#fff',    icon: 'bi-info-circle-fill'          },
+    success: { bg: 'rgba(16,185,129,.08)', border: 'rgba(16,185,129,.25)', iconBg: 'rgba(16,185,129,.15)', iconBorder: 'rgba(16,185,129,.3)', iconColor: '#10B981', btnBg: '#059669',  btnColor: '#fff',    icon: 'bi-play-circle-fill'          },
+  };
+
+  window.showConfirm = function (opts) {
+    var type        = opts.type        || 'danger';
+    var title       = opts.title       || 'Konfirmasi';
+    var subtitle    = opts.subtitle    || 'Tindakan ini memerlukan konfirmasi';
+    var message     = opts.message     || 'Lanjutkan?';
+    var confirmText = opts.confirmText || 'Ya, Lanjutkan';
+    var p           = _palette[type] || _palette.danger;
+
+    document.getElementById('gcHeader').style.background = p.bg;
+    document.getElementById('gcHeader').style.borderBottomColor = p.border;
+
+    var iconWrap = document.getElementById('gcIconWrap');
+    iconWrap.style.background   = p.iconBg;
+    iconWrap.style.border       = '1px solid ' + p.iconBorder;
+
+    var icon = document.getElementById('gcIcon');
+    icon.className = 'bi ' + p.icon;
+    icon.style.color = p.iconColor;
+
+    document.getElementById('gcTitle').textContent    = title;
+    document.getElementById('gcSubtitle').textContent = subtitle;
+    document.getElementById('gcMessage').innerHTML    = message;
+
+    var btn = document.getElementById('gcConfirmBtn');
+    btn.textContent   = '';
+    var iEl = document.createElement('i');
+    iEl.className     = 'bi ' + (opts.confirmIcon || (type === 'danger' ? 'bi-trash-fill' : type === 'warning' ? 'bi-exclamation-triangle-fill' : type === 'success' ? 'bi-play-fill' : 'bi-check-lg'));
+    btn.appendChild(iEl);
+    btn.appendChild(document.createTextNode(' ' + confirmText));
+    btn.style.background = p.btnBg;
+    btn.style.color      = p.btnColor;
+
+    _gcCallback = opts.onConfirm || null;
+
+    var modal = document.getElementById('gcModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(function () { document.getElementById('gcConfirmBtn').focus(); }, 80);
+  };
+
+  window.showConfirmForm = function (btn, title, message, type, confirmText, subtitle) {
+    var form = btn.closest('form');
+    showConfirm({
+      type:        type        || 'danger',
+      title:       title,
+      subtitle:    subtitle    || 'Tindakan ini tidak dapat dibatalkan',
+      message:     message,
+      confirmText: confirmText || 'Ya, Lanjutkan',
+      onConfirm:   function () { form.submit(); },
+    });
+  };
+
+  window._gcClose = function () {
+    document.getElementById('gcModal').style.display = 'none';
+    document.body.style.overflow = '';
+    _gcCallback = null;
+  };
+
+  document.getElementById('gcConfirmBtn').addEventListener('click', function () {
+    var cb = _gcCallback;
+    _gcClose();
+    if (cb) cb();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (document.getElementById('gcModal').style.display !== 'flex') return;
+    if (e.key === 'Escape') _gcClose();
+    if (e.key === 'Enter')  { var cb = _gcCallback; _gcClose(); if (cb) cb(); }
+  });
+})();
+</script>
 <script>
   function toggleSidebar() {
     var s   = document.getElementById('sidebar');
