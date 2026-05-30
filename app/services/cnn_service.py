@@ -165,13 +165,13 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
     for row in rows:
         is_val = (row.fold_index == fold_val)
 
-        # Val fold: selalu pakai foto asli agar tidak terkontaminasi augmentasi offline
-        # Train fold: utamakan preprocessed (denoise), fallback ke asli jika belum diproses
-        if is_val or not row.prep_path:
-            path_rel = row.path_file
-        else:
+        # Train dan val sama-sama utamakan denoise preprocessed agar distribusi konsisten.
+        # Fallback ke original jika foto belum dipreprocessing.
+        if row.prep_path:
             path_rel = row.prep_path
             prep_used += 1
+        else:
+            path_rel = row.path_file
 
         img_path = os.path.join(base_dir, 'app', 'static', path_rel)
         if not os.path.isfile(img_path):
@@ -194,8 +194,8 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
             y_train.append(label)
 
     if prep_used > 0 or skipped > 0:
-        print(f'[load_dataset] train={len(X_train)} ({prep_used} preprocessed), '
-              f'val={len(X_val)} (original), skip={skipped}')
+        print(f'[load_dataset] train={len(X_train)} val={len(X_val)} '
+              f'({prep_used} preprocessed, {len(X_train)+len(X_val)-prep_used} original), skip={skipped}')
 
 
     if len(X_train) < 20:
@@ -222,11 +222,15 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     import time
     from tensorflow import keras
 
-    logger, log_path = _get_logger(arsitektur.id if hasattr(arsitektur, 'id') else 0, base_dir)
+    _aid = getattr(arsitektur, 'id', None)
+    arsitektur_id = _aid if _aid is not None else '?'
+    logger, log_path = _get_logger(_aid if _aid is not None else 0, base_dir)
     t_start = time.time()
 
+    is_cv = getattr(arsitektur, '_cv_fold', None)
+    cv_label = f' [CV fold {is_cv}]' if is_cv is not None else ''
     logger.info('=' * 60)
-    logger.info(f'TRAINING START — arsitektur_id={getattr(arsitektur, "id", "?")}')
+    logger.info(f'TRAINING START — arsitektur_id={arsitektur_id}{cv_label}')
     logger.info(f'  model_type   : {arsitektur.model_type}')
     logger.info(f'  epochs       : {arsitektur.epochs}')
     logger.info(f'  learning_rate: {arsitektur.learning_rate}')
@@ -274,14 +278,14 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     tmp1     = os.path.join(tempfile.gettempdir(), f'best_p1_{id(model)}.keras')
 
     logger.info(f'PHASE 1  epochs_max={arsitektur.epochs}  patience={patience}')
-    logger.info('  [monitor EarlyStopping & Checkpoint: val_loss (lebih stabil dari val_accuracy untuk dataset kecil)]')
+    logger.info('  [Checkpoint: val_accuracy (simpan model terbaik)  |  EarlyStopping & LR: val_loss (lebih stabil)]')
     logger.info('  Epoch  loss      acc       val_loss  val_acc   lr')
 
     cbs1 = [
-        # Monitor val_loss bukan val_accuracy — dengan 56 sampel, val_accuracy terlalu noisy
-        # (1 sampel = 1.78% perubahan). val_loss lebih kontinyu dan informatif.
-        keras.callbacks.ModelCheckpoint(tmp1, monitor='val_loss', save_best_only=True,
-                                        mode='min', verbose=0),
+        # Checkpoint monitor val_accuracy agar model tersimpan = epoch dengan val_accuracy tertinggi.
+        # EarlyStopping & ReduceLROnPlateau tetap monitor val_loss (lebih stabil/kontinyu).
+        keras.callbacks.ModelCheckpoint(tmp1, monitor='val_accuracy', save_best_only=True,
+                                        mode='max', verbose=0),
         keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience,
                                       min_delta=0.001, mode='min',
                                       restore_best_weights=False, verbose=0),
@@ -343,13 +347,14 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     logger.info('  Epoch  loss      acc       val_loss  val_acc   lr')
 
     cbs2 = [
-        # Phase 2 tetap monitor val_accuracy untuk threshold vs Phase 1
+        # Phase 2: semua callback monitor val_accuracy (konsisten — tujuan utama adalah akurasi)
         keras.callbacks.ModelCheckpoint(tmp2, monitor='val_accuracy', save_best_only=True,
-                                        initial_value_threshold=p1_best_val_acc, verbose=0),
+                                        mode='max', initial_value_threshold=p1_best_val_acc,
+                                        verbose=0),
         keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=max(10, patience // 2),
-                                      min_delta=0.001,
+                                      min_delta=0.001, mode='max',
                                       restore_best_weights=False, verbose=0),
-        keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5,
+        keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy', factor=0.5, mode='max',
                                           patience=max(5, patience // 4), min_lr=1e-7, verbose=0),
     ]
 
@@ -493,6 +498,21 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
     split_cfg = SplitConfig.query.get(arsitektur.split_config_id)
     n_splits  = split_cfg.n_splits
 
+    # Subquery: path denoise preprocessed per dokumentasi_id
+    prep_sq = (
+        db.session.query(
+            HasilPreprocessing.dokumentasi_id,
+            func.max(HasilPreprocessing.path_output).label('prep_path'),
+        )
+        .filter(
+            HasilPreprocessing.step_name == 'denoise',
+            HasilPreprocessing.status == 'selesai',
+            HasilPreprocessing.path_output != '',
+        )
+        .group_by(HasilPreprocessing.dokumentasi_id)
+        .subquery()
+    )
+
     # Pre-fetch all split items (fold, dok_id, label, path) — release DB before training loop
     rows = (
         db.session.query(
@@ -500,8 +520,10 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
             SplitItem.dokumentasi_id,
             SplitItem.tingkat_kerusakan_id,
             DokumentasiFoto.path_file,
+            prep_sq.c.prep_path,
         )
         .join(DokumentasiFoto, SplitItem.dokumentasi_id == DokumentasiFoto.id)
+        .outerjoin(prep_sq, prep_sq.c.dokumentasi_id == SplitItem.dokumentasi_id)
         .filter(SplitItem.config_id == arsitektur.split_config_id)
         .all()
     )
@@ -531,7 +553,9 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
         cfg_obj = _Cfg()
         for k, v in cfg_base.items():
             setattr(cfg_obj, k, v)
-        cfg_obj.fold_val = fold_k
+        cfg_obj.fold_val  = fold_k
+        cfg_obj.id        = getattr(arsitektur, 'id', 0)  # agar arsitektur_id tercatat di log
+        cfg_obj._cv_fold  = fold_k                         # label "[CV fold k]" di header log
 
         # Epoch-level progress callback for this fold
         def make_epoch_cb(fk):
@@ -543,7 +567,8 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
         model, _ = train(cfg_obj, base_dir, on_epoch_end=make_epoch_cb(fold_k))
 
         for item in fold_items[fold_k]:
-            path_rel = item.path_file
+            # Utamakan denoise preprocessed agar konsisten dengan training, fallback ke original
+            path_rel = item.prep_path if item.prep_path else item.path_file
             img_path = os.path.join(base_dir, 'app', 'static', path_rel)
             if not os.path.isfile(img_path):
                 continue
@@ -585,14 +610,31 @@ def predict_all(arsitektur, base_dir):
     model_file = os.path.join(base_dir, 'app', 'static', arsitektur.model_path)
     model = keras.models.load_model(model_file, compile=False)
 
+    # Subquery: path denoise preprocessed per dokumentasi_id
+    prep_sq = (
+        db.session.query(
+            HasilPreprocessing.dokumentasi_id,
+            func.max(HasilPreprocessing.path_output).label('prep_path'),
+        )
+        .filter(
+            HasilPreprocessing.step_name == 'denoise',
+            HasilPreprocessing.status == 'selesai',
+            HasilPreprocessing.path_output != '',
+        )
+        .group_by(HasilPreprocessing.dokumentasi_id)
+        .subquery()
+    )
+
     rows = (
         db.session.query(
             DokumentasiFoto.id,
             DokumentasiFoto.path_file,
             LabelKerusakan.tingkat_kerusakan_id,
+            prep_sq.c.prep_path,
         )
         .join(LokasiKerusakan, DokumentasiFoto.lokasi_id == LokasiKerusakan.id)
         .join(LabelKerusakan, LabelKerusakan.lokasi_id == LokasiKerusakan.id)
+        .outerjoin(prep_sq, prep_sq.c.dokumentasi_id == DokumentasiFoto.id)
         .filter(LokasiKerusakan.latitude != None)
         .all()
     )
@@ -601,7 +643,8 @@ def predict_all(arsitektur, base_dir):
     input_size = arsitektur.input_size
     results = []
     for row in rows:
-        path_rel = row.path_file
+        # Utamakan denoise preprocessed agar konsisten dengan training, fallback ke original
+        path_rel = row.prep_path if row.prep_path else row.path_file
         img_path = os.path.join(base_dir, 'app', 'static', path_rel)
         if not os.path.isfile(img_path):
             continue

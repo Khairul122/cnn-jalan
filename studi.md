@@ -70,12 +70,15 @@ Offset Y = (tinggi_gambar - crop_height) / 2
 
 ### Tahap 3 — Normalisasi
 
-Nilai piksel dinormalisasi menggunakan salah satu dari dua metode:
+Nilai piksel dapat dinormalisasi menggunakan salah satu dari dua metode, atau dilewati sama sekali:
 
-| Metode | Formula | Rentang Output |
-|--------|---------|---------------|
-| Min-Max | `x / 255.0` | [0.0, 1.0] |
-| Z-Score | `(x − μ) / σ` | ~[-3, 3] → disimpan sebagai uint8 [0, 255] |
+| Metode | Formula | Rentang Output | Keterangan |
+|--------|---------|---------------|---|
+| Min-Max | `(x − min) / (max − min) × 255` | [0, 255] (uint8) | Per-channel stretch |
+| Z-Score | `(x − μ) / σ` | ~[-3, 3] → uint8 [0, 255] | Standarisasi distribusi |
+| Tanpa normalisasi | — | [0, 255] asli | **Digunakan di training** |
+
+**Catatan penting:** Normalisasi min-max per-channel menghapus sinyal kontras absolut — perbedaan kecerahan antara kelas Berat, Sedang, dan Ringan menjadi tidak terlihat karena setiap gambar di-stretch penuh ke [0, 255] secara independen. Untuk transfer learning MobileNetV2, normalisasi offline sebaiknya dinonaktifkan (`norm_method = none`) karena normalisasi ke `[-1, 1]` sudah dilakukan di dalam model oleh `preprocess_input`.
 
 Output disimpan sebagai uint8 agar dapat ditampilkan sebagai gambar normal.
 
@@ -180,19 +183,20 @@ kedalaman_alur = estimasi berdasarkan luas
 
 ### 5.2 Mode Split yang Digunakan
 
-Pada penelitian ini digunakan **Split 80:20** (bukan K-Fold penuh):
-- `fold_index = 0` → **data training** (≈ 224 foto)
-- `fold_index = 1` → **data validasi/test** (≈ 56 foto)
+Pada penelitian ini digunakan **Stratified K-Fold (K=5)** dengan satu fold sebagai validasi:
+- `fold_index = fold_val` → **data validasi** (≈ 56 foto, 20%)
+- `fold_index ≠ fold_val` → **data training** (≈ 224 foto, 80%)
+- Fold validasi yang digunakan: **fold_val = 3**
 
 Stratifikasi memastikan proporsi kelas Berat, Sedang, dan Ringan terjaga di setiap fold.
 
-### 5.3 Distribusi Kelas (80:20)
+### 5.3 Distribusi Kelas (fold_val=3 sebagai validasi)
 
 | Kelas | Training | Validasi |
 |---|---|---|
 | Berat | 67 | 17 |
-| Sedang | 107 | 26 |
-| Ringan | 50 | 13 |
+| Sedang | 106 | 27 |
+| Ringan | 51 | 12 |
 | **Total** | **224** | **56** |
 
 ### 5.4 Class Weight untuk Imbalanced Dataset
@@ -202,8 +206,8 @@ Karena data tidak seimbang (Sedang dominan), sistem menghitung bobot kelas secar
 ```python
 class_weight = compute_class_weight('balanced', classes=[0,1,2], y=y_train)
 # Berat  : 1.114×  (kelas minor → diberi bobot lebih)
-# Sedang : 0.698×  (kelas mayor → dibobot lebih rendah)
-# Ringan : 1.493×  (kelas minor → diberi bobot terbesar)
+# Sedang : 0.704×  (kelas mayor → dibobot lebih rendah)
+# Ringan : 1.464×  (kelas minor → diberi bobot terbesar)
 ```
 
 ---
@@ -228,7 +232,7 @@ GlobalAveragePooling2D        ← merata-ratakan feature map
     ↓
 Dropout(rate=0.3)             ← regularisasi utama
     ↓
-Dense(128, activation='relu', kernel_regularizer=L2(1e-4))   ← representasi intermediate
+Dense(64, activation='relu', kernel_regularizer=L2(1e-4))    ← representasi intermediate
     ↓
 Dropout(rate=0.15)            ← regularisasi ringan (dropout/2)
     ↓
@@ -246,8 +250,8 @@ Lapisan augmentasi **terintegrasi di dalam model** (aktif saat `training=True`, 
 
 | Layer | Parameter |
 |---|---|
-| RandomFlip | horizontal_and_vertical |
-| RandomRotation | factor=0.25 |
+| RandomFlip | horizontal |
+| RandomRotation | factor=0.05 |
 | RandomZoom | height_factor=0.2 |
 | RandomTranslation | height=0.1, width=0.1 |
 | RandomBrightness | factor=0.3 |
@@ -267,27 +271,38 @@ Lapisan augmentasi **terintegrasi di dalam model** (aktif saat `training=True`, 
 | Batch size | 32 |
 | Dropout rate | 0.3 |
 | Max epoch Phase 1 | 80 |
-| Max epoch Phase 2 | 50 |
-| Loss function | Focal Loss (γ = 2.0) |
+| Max epoch Phase 2 | 40 (`max(20, epochs//2)`) |
+| Loss function | SparseCategoricalCrossentropy |
 
-### 7.2 Focal Loss
+### 7.2 Fungsi Loss
 
-Focal Loss digunakan untuk menangani ketidakseimbangan kelas, memberikan penalti lebih besar pada contoh yang sulit diklasifikasikan:
+**SparseCategoricalCrossentropy** digunakan sebagai fungsi loss, dikombinasikan dengan `class_weight` untuk menangani ketidakseimbangan kelas:
 
 ```
-FL(p_t) = −α_t × (1 − p_t)^γ × log(p_t)
+L = − Σ class_weight[y] × log(p_y)
 ```
 
-- `γ = 2.0` → faktor fokus; menurunkan bobot sampel mudah
-- `α_t` → class weight per kelas
+- Label kelas berbentuk integer (sparse: 0/1/2), tidak perlu one-hot encoding
+- `class_weight` dari `compute_class_weight('balanced')` memberi penalti ekstra pada kelas minor (Berat, Ringan)
+- Dipilih karena lebih stabil daripada Focal Loss pada dataset kecil; Focal Loss dengan γ=2.0 terbukti menekan gradient kelas Ringan terlalu agresif
 
-### 7.3 Callbacks Training (Phase 1)
+### 7.3 Callbacks Training
+
+**Phase 1 (head training):**
 
 | Callback | Konfigurasi |
 |---|---|
-| ModelCheckpoint | Simpan model terbaik berdasarkan `val_loss` |
-| EarlyStopping | `patience = max(user_patience, 20)`, `min_delta = 0.001` |
-| ReduceLROnPlateau | `factor=0.5`, `patience=10`, `min_lr=1e-6` |
+| ModelCheckpoint | Simpan model terbaik berdasarkan `val_accuracy` (maximize) |
+| EarlyStopping | Monitor `val_loss`, `patience = max(user_patience, 20)`, `min_delta = 0.001` |
+| ReduceLROnPlateau | Monitor `val_loss`, `factor=0.5`, `patience=10`, `min_lr=1e-6` |
+
+**Phase 2 (fine-tune):**
+
+| Callback | Konfigurasi |
+|---|---|
+| ModelCheckpoint | Simpan model terbaik berdasarkan `val_accuracy`, threshold = best Phase 1 |
+| EarlyStopping | Monitor `val_accuracy`, `patience = max(10, patience//2)` |
+| ReduceLROnPlateau | Monitor `val_accuracy`, `factor=0.5`, `patience = max(5, patience//4)` |
 
 ### 7.4 Strategi Two-Phase Training
 
@@ -317,41 +332,39 @@ x_normalized = (x / 127.5) - 1.0   →  rentang [-1.0, 1.0]
 
 | Atribut | Nilai |
 |---|---|
-| Data val | **56 foto** (fold_index = 1, 20% dari total) |
-| Tanggal evaluasi | 25 Mei 2026 |
+| Data val | **56 foto** (fold_val = 3, 20% dari total) |
+| Split config | split_config_id = 12 (norm=none, resize 256→crop 224) |
+| Tanggal evaluasi | 29 Mei 2026 |
 
 ### 8.2 Confusion Matrix
 
-```
-               Prediksi
-              Berat  Sedang  Ringan
-Aktual Berat  [ 14      2      1  ]   (total aktual: 17)
-       Sedang [  5     19      2  ]   (total aktual: 26)
-       Ringan [  1      4      8  ]   (total aktual: 13)
-```
+Confusion matrix lengkap tersedia di halaman Evaluasi sistem (tabel `hasil_evaluasi`). Distribusi aktual pada fold validasi:
+
+| Kelas | Aktual (val) |
+|---|---|
+| Berat | 17 foto |
+| Sedang | 27 foto |
+| Ringan | 12 foto |
+| **Total** | **56 foto** |
 
 ### 8.3 Metrik Per Kelas
 
-| Kelas | Precision | Recall | F1-Score | Support |
-|---|---|---|---|---|
-| **Berat** | 70.00% | 82.35% | 75.68% | 17 |
-| **Sedang** | 76.00% | 73.08% | 74.51% | 26 |
-| **Ringan** | 72.73% | 61.54% | 66.67% | 13 |
+Detail precision, recall, dan F1 per kelas tersedia di halaman Evaluasi sistem. Metrik dihitung menggunakan `sklearn.metrics.classification_report` pada data validasi fold 3.
 
 ### 8.4 Metrik Keseluruhan
 
 | Metrik | Nilai |
 |---|---|
-| **Akurasi Keseluruhan** | **73.21%** |
-| Macro Precision | 72.91% |
-| Macro Recall | 72.32% |
-| Macro F1-Score | 72.28% |
+| **Akurasi Keseluruhan** | **71.43%** (40 dari 56 benar) |
+| Fase yang digunakan | Phase 2 (melampaui Phase 1) |
+| Epoch terbaik Phase 2 | Epoch 7 dari 17 |
 
 ### 8.5 Interpretasi
 
-- **Recall Berat tertinggi (82.35%)** — model jarang melewatkan kerusakan berat, penting untuk keselamatan jalan
-- **Recall Ringan terendah (61.54%)** — bottleneck utama; kelas ringan sering salah dikategorikan sebagai sedang (4 dari 13 salah → masuk kolom Sedang di confusion matrix)
-- **Akurasi 73.21%** dicapai pada data validasi yang tidak pernah dilihat model selama training
+- **Akurasi 71.43%** melampaui target 70%, dicapai pada 56 foto validasi yang tidak pernah dilihat model
+- Phase 2 fine-tune (17 epoch) melampaui Phase 1 (best val_acc=0.6250) dengan val_acc=0.7143
+- Perbaikan kunci: mengganti preprocessing norm=minmax menjadi norm=none, menghilangkan distorsi kontras absolut antar kelas
+- LR Phase 1 = 0.001 (tinggi) diperlukan untuk head yang baru diinisialisasi acak; LR Phase 2 = 0.0002 agar tidak merusak fitur pre-trained
 
 ---
 
@@ -455,10 +468,10 @@ Halaman utama sistem (dapat diakses tanpa login) menampilkan statistik real-time
 
 | Elemen | Sumber Data |
 |---|---|
-| Akurasi CNN 73.2% | `HasilEvaluasi.akurasi` (model terbaik) |
+| Akurasi CNN 71.4% | `HasilEvaluasi.akurasi` (model terbaik) |
 | 280 Prediksi | `PrediksiModel.count()` |
-| 91 Berat / 131 Sedang / 58 Ringan | `PrediksiModel` filter per kelas |
-| Peta 280 marker | `GET /api/landing/gis` |
+| Berat / Sedang / Ringan | `PrediksiModel` filter per kelas |
+| Peta marker | `GET /api/landing/gis` |
 
 ---
 
@@ -492,7 +505,7 @@ TRAINING CNN (MobileNetV2 Transfer Learning)
         ▼
 EVALUASI MODEL
   Confusion Matrix 3×3 → Precision / Recall / F1 per kelas
-  Akurasi: 73.21% pada 56 foto val
+  Akurasi: 71.43% pada 56 foto val (fold_val=3)
         │
         ▼
 PREDIKSI SELURUH DATA
@@ -509,5 +522,5 @@ OUTPUT GIS
 
 ---
 
-*Dokumen ini dibuat berdasarkan implementasi aktual sistem CNN-Jalan per 25 Mei 2026.*
+*Dokumen ini dibuat berdasarkan implementasi aktual sistem CNN-Jalan per 29 Mei 2026.*
 *NIM: 210170072 — Universitas Malikussaleh*

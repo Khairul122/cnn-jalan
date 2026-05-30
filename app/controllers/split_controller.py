@@ -96,6 +96,7 @@ def new():
 
     if request.method == 'POST':
         nama         = request.form.get('nama', '').strip()
+        n_splits     = max(3, min(10, int(request.form.get('n_splits') or 5)))
         random_state = int(request.form.get('random_state', 42))
 
         if not nama:
@@ -106,12 +107,20 @@ def new():
             flash('Tidak ada data berlabel. Tambah label SDI terlebih dahulu.', 'warning')
             return redirect(url_for('split.new'))
 
-        result = SplitService.run(0.2, random_state, items)
+        min_class = min(kelas_count.values()) if kelas_count else 0
+        if min_class < n_splits:
+            flash(
+                f'Kelas terkecil hanya {min_class} sampel — K tidak boleh lebih dari {min_class}.',
+                'danger',
+            )
+            return redirect(url_for('split.new'))
+
+        result = SplitService.run(n_splits, random_state, items)
 
         config = SplitConfig(
             nama=nama,
-            split_type='holdout',
-            n_splits=2,
+            split_type='kfold',
+            n_splits=n_splits,
             random_state=random_state,
             label_sumber='tingkat',
             total_data=len(result),
@@ -179,17 +188,19 @@ def detail(config_id):
 
     dist = SplitService.distribusi(item_dicts, label_map)
 
-    # Coverage preprocessing per fold
-    all_doc_ids   = {r.dokumentasi_id for r in items}
-    train_doc_ids = {r.dokumentasi_id for r in items if r.fold_index == 0}
-    test_doc_ids  = {r.dokumentasi_id for r in items if r.fold_index == 1}
-    prep_ids      = _prep_coverage(all_doc_ids)
+    # Preprocessing coverage (K-Fold: setiap foto berperan sebagai train & val di fold berbeda)
+    all_doc_ids  = {r.dokumentasi_id for r in items}
+    prep_ids     = _prep_coverage(all_doc_ids)
+    fold_indices = sorted(set(r.fold_index for r in items))
+    fold_prep    = {}
+    for fi in fold_indices:
+        fold_ids      = {r.dokumentasi_id for r in items if r.fold_index == fi}
+        fold_prep[fi] = {'total': len(fold_ids), 'prep': len(prep_ids & fold_ids)}
+
     prep_coverage = {
-        'train': len(prep_ids & train_doc_ids),
-        'test':  len(prep_ids & test_doc_ids),
-        'total': len(prep_ids),
-        'train_total': len(train_doc_ids),
-        'test_total':  len(test_doc_ids),
+        'total':       len(prep_ids),
+        'grand_total': len(all_doc_ids),
+        'per_fold':    fold_prep,
     }
 
     return render_template(
@@ -199,6 +210,7 @@ def detail(config_id):
         label_map=label_map,
         dist=dist,
         prep_coverage=prep_coverage,
+        fold_indices=fold_indices,
     )
 
 

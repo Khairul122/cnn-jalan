@@ -149,17 +149,25 @@
 
         <div class="af-field">
           <label class="af-label">Split Config <span style="color:#DC2626;">*</span></label>
-          <select name="split_config_id" class="af-input">
+          <select name="split_config_id" id="splitSelect" class="af-input" onchange="updateFoldOptions()">
             <option value="">— Pilih split config —</option>
             {% for s in split_list %}
-            <option value="{{ s.id }}">
-              {{ s.nama }} (80:20, {{ s.total_data }} data)
+            <option value="{{ s.id }}" data-k="{{ s.n_splits }}">
+              {{ s.nama }} (K={{ s.n_splits }}, {{ s.total_data }} data)
             </option>
             {% endfor %}
           </select>
         </div>
 
-        <input type="hidden" name="fold_val" value="1">
+        <div class="af-field mb-0">
+          <label class="af-label">Fold Validasi <span style="color:#DC2626;">*</span></label>
+          <select name="fold_val" id="foldValSelect" class="af-input">
+            <option value="" disabled selected>— Pilih split config terlebih dahulu —</option>
+          </select>
+          <p style="font-size:.68rem;color:var(--c-muted);margin:.3rem 0 0;">
+            Fold yang dipakai sebagai data validasi; fold lainnya menjadi data training.
+          </p>
+        </div>
       </div>
 
       <div class="af-card">
@@ -178,7 +186,7 @@
             <span>Head</span><span style="color:var(--c-text);font-weight:600;">GlobalAvgPool → Dropout → Softmax</span>
           </div>
           <div class="af-info-row">
-            <span>Split</span><span style="color:#10B981;font-weight:600;">80% Train · 20% Test</span>
+            <span>Split</span><span id="splitInfoLabel" style="color:#10B981;font-weight:600;">Stratified K-Fold CV</span>
           </div>
         </div>
       </div>
@@ -265,5 +273,33 @@ function selectModel(type) {
 }
 selectModel('mobilenetv2');
 
+function updateFoldOptions() {
+  const sel      = document.getElementById('splitSelect');
+  const foldSel  = document.getElementById('foldValSelect');
+  const infoLbl  = document.getElementById('splitInfoLabel');
+  const opt      = sel.options[sel.selectedIndex];
+  const K        = opt ? parseInt(opt.getAttribute('data-k')) : 0;
+
+  foldSel.innerHTML = '';
+  if (!K || isNaN(K)) {
+    const ph = document.createElement('option');
+    ph.value    = '';
+    ph.disabled = true;
+    ph.selected = true;
+    ph.textContent = '— Pilih split config terlebih dahulu —';
+    foldSel.appendChild(ph);
+    if (infoLbl) infoLbl.textContent = 'Stratified K-Fold CV';
+    return;
+  }
+
+  for (let i = 0; i < K; i++) {
+    const o       = document.createElement('option');
+    o.value       = i;
+    o.textContent = `Fold ${i + 1} sebagai validasi (~${Math.round(100 / K)}% data)`;
+    if (i === 0) o.selected = true;
+    foldSel.appendChild(o);
+  }
+  if (infoLbl) infoLbl.textContent = `K=${K} Stratified K-Fold CV`;
+}
 </script>
 {% endblock %}

@@ -60,23 +60,23 @@ SDI = F_retak + F_lubang + F_rutting
 |---|---|
 | Backbone | MobileNetV2 (ImageNet weights) |
 | Input | 224 × 224 × 3 px, float32 |
-| Normalisasi input | `(x / 127.5) − 1.0` → [-1, 1] |
-| Head | GAP → Dropout(0.3) → Dense(128, relu, L2) → Dropout(0.15) → Dense(3, softmax) |
+| Normalisasi input | `(x / 127.5) − 1.0` → [-1, 1] (di dalam model, bukan offline) |
+| Head | GAP → Dropout(0.3) → Dense(64, relu, L2) → Dropout(0.15) → Dense(3, softmax) |
 | Output | Probabilitas 3 kelas: Berat / Sedang / Ringan |
 
-#### 2.2 Konfigurasi Training Terbaik
+#### 2.2 Konfigurasi Training Terbaik (arsitektur_id=102)
 
 | Hyperparameter | Phase 1 | Phase 2 |
 |---|---|---|
-| Learning rate | 0.001 | 0.0002 |
+| Learning rate | 0.001 | 0.0002 (LR_P1 / 5) |
 | Optimizer | Adam | Adam |
 | Batch size | 32 | 32 |
-| Max epoch | 80 | 50 |
+| Max epoch | 80 | 40 (`max(20, epochs//2)`) |
 | Dropout | 0.3 | 0.3 |
 | Frozen layers | Semua base | 15 layer teratas dibuka |
-| Loss | Focal Loss (γ=2) | Focal Loss (γ=2) |
-| EarlyStopping patience | 20 | 20 |
-| ReduceLROnPlateau factor | 0.5 | 0.5 |
+| Loss | SparseCategoricalCrossentropy | SparseCategoricalCrossentropy |
+| EarlyStopping monitor | val_loss, patience=20 | val_accuracy, patience=max(10, p//2) |
+| ReduceLROnPlateau | val_loss, patience=10, factor=0.5 | val_accuracy, patience=max(5, p//4) |
 
 #### 2.3 Formula Class Weight
 
@@ -87,17 +87,20 @@ class_weight = sklearn.utils.compute_class_weight(
     classes=[0, 1, 2],
     y=y_train
 )
-# Hasil: Berat=1.114, Sedang=0.698, Ringan=1.493
+# Hasil (fold_val=3, split_config=12): Berat=1.114, Sedang=0.704, Ringan=1.464
+# Nilai ini berubah per fold karena distribusi training berubah
 ```
 
-#### 2.4 Focal Loss
+#### 2.4 Fungsi Loss: SparseCategoricalCrossentropy
 
+```python
+loss = tf.keras.losses.SparseCategoricalCrossentropy()
+# dikombinasikan dengan class_weight saat model.fit()
 ```
-FL(p_t) = −α_t × (1 − p_t)^γ × log(p_t)
-```
-- `γ = 2.0`: faktor fokus — mengurangi bobot contoh yang sudah diprediksi benar dengan confidence tinggi
-- `α_t`: class weight per kelas (dari `compute_class_weight`)
-- Digunakan karena dataset kecil dan tidak seimbang
+
+- Label integer langsung (0/1/2), tidak perlu one-hot encoding
+- `class_weight` diterapkan saat `model.fit(..., class_weight={0:1.114, 1:0.704, 2:1.464})`
+- Lebih stabil dari Focal Loss pada dataset kecil — Focal Loss γ=2.0 terbukti menekan gradient kelas Ringan terlalu agresif sehingga recall Ringan jatuh
 
 ---
 
@@ -113,32 +116,30 @@ FL(p_t) = −α_t × (1 − p_t)^γ × log(p_t)
 | Akurasi | `(TP₁ + TP₂ + TP₃) / Total` |
 | Macro Avg | Rata-rata aritmetika metrik per kelas (tanpa pembobotan) |
 
-#### 3.2 Confusion Matrix Model Terbaik (56 data val)
+#### 3.2 Distribusi Data Validasi (fold_val=3)
 
-```
-                  Prediksi
-              Berat   Sedang   Ringan
-Aktual Berat  [ 14       2        1  ]
-       Sedang [  5      19        2  ]
-       Ringan [  1       4        8  ]
-```
+| Kelas | Support |
+|---|---|
+| Berat | 17 foto |
+| Sedang | 27 foto |
+| Ringan | 12 foto |
+| **Total** | **56 foto** |
 
-#### 3.3 Hasil Metrik Lengkap
+Confusion matrix detail tersedia di halaman Evaluasi sistem (tabel `hasil_evaluasi`, arsitektur_id=102).
 
-| Kelas | Precision | Recall | F1 | Support |
-|---|---|---|---|---|
-| Berat | 70.00% | **82.35%** | 75.68% | 17 |
-| Sedang | 76.00% | 73.08% | 74.51% | 26 |
-| Ringan | 72.73% | 61.54% | 66.67% | 13 |
-| **Macro** | 72.91% | 72.32% | 72.28% | 56 |
-| **Overall** | — | — | — | **73.21%** |
+#### 3.3 Hasil Akurasi
+
+| Ukuran | Nilai | Data |
+|---|---|---|
+| **Akurasi val fold** | **71.43%** (40/56) | 56 foto (tidak dilihat saat training) |
+| Phase yang digunakan | Phase 2 | Epoch 7 dari 17 (best_val_acc=0.7143) |
 
 #### 3.4 Perbedaan Akurasi Val vs Akurasi Seluruh Data
 
 | Ukuran | Nilai | Data |
 |---|---|---|
-| Akurasi val fold | 73.21% | 56 foto (tidak dilihat saat training) |
-| Akurasi predict_all | 69.3% | 280 foto (semua data) |
+| Akurasi val fold | 71.43% | 56 foto (tidak dilihat saat training) |
+| Akurasi predict_all | Lihat sistem | 280 foto (semua data) |
 
 Akurasi val fold adalah ukuran yang lebih valid untuk kemampuan generalisasi model.
 
@@ -246,9 +247,9 @@ lokasi_kerusakan (GPS)
 
 Dataset hanya berisi 280 foto — jauh di bawah ribuan yang biasanya diperlukan ResNet. MobileNetV2 dirancang untuk dataset ringan dan inferensi cepat; kompleksitas parameternya lebih kecil sehingga risiko overfitting pada 224 sampel training lebih rendah. VGG terlalu berat untuk dataset sekecil ini.
 
-#### 1.2 Mengapa Menambah Dense(128) di Antara Head?
+#### 1.2 Mengapa Menambah Dense(64) di Antara Head?
 
-Versi awal head langsung dari GAP → Dense(3). Ini menghasilkan head yang terlalu dangkal; model tidak memiliki kapasitas untuk mempelajari representasi intermediate antara 1280 fitur MobileNetV2 dan 3 kelas output. Menambah Dense(128) + L2 regularisasi memberi model "ruang berpikir" tanpa menambah risiko overfitting secara signifikan.
+Versi awal head langsung dari GAP → Dense(3). Ini menghasilkan head yang terlalu dangkal; model tidak memiliki kapasitas untuk mempelajari representasi intermediate antara 1280 fitur MobileNetV2 dan 3 kelas output. Menambah Dense(64) + L2 regularisasi memberi model "ruang berpikir" tanpa menambah risiko overfitting secara signifikan. Dense(64) dipilih atas Dense(128) karena dataset hanya 224 sampel — lapisan lebih kecil memperkecil risiko overfitting.
 
 #### 1.3 Mengapa Fine-tune Hanya 15 Layer Teratas?
 
@@ -268,17 +269,25 @@ Percobaan dengan membuka 30 layer (awal) mengakibatkan overfitting karena jumlah
 
 #### 2.2 Focal Loss yang Menekan Kelas Ringan
 
-**Kesalahan**: Versi awal menggunakan Focal Loss dengan gamma=2.0 tanpa class weight → recall Ringan di bawah 30%.
+**Kesalahan**: Versi awal menggunakan Focal Loss dengan gamma=2.0 → recall Ringan di bawah 40%.
 
-**Pelajaran**: Focal Loss gamma=2 secara agresif mengurangi gradient dari contoh yang sudah diprediksi dengan confidence tinggi. Pada kelas Ringan yang sedikit (50 training), mayoritas sampel Ringan mendapat gradient kecil karena model cepat "yakin" Ringan adalah Sedang. Solusinya: gabungkan Focal Loss + class weight, bukan pilih salah satu.
+**Pelajaran**: Focal Loss gamma=2 secara agresif mengurangi gradient dari contoh yang sudah diprediksi dengan confidence tinggi. Pada kelas Ringan yang sedikit (51 training), mayoritas sampel Ringan mendapat gradient kecil karena model cepat "yakin" Ringan adalah Sedang. Solusinya: ganti ke SparseCategoricalCrossentropy + class_weight — lebih stabil dan terbukti memberikan hasil lebih baik.
 
-#### 2.3 Preprocessing Tidak Konsisten antara Training dan Inferensi
+#### 2.3 Normalisasi Min-Max Menghancurkan Sinyal Kontras
+
+**Kesalahan**: Preprocessing config awal menggunakan `norm_method=minmax` per-channel → akurasi stagnan di sekitar 62–67.86% meski hyperparameter sudah dioptimalkan.
+
+**Pelajaran**: Normalisasi min-max per-channel melakukan `stretch` setiap channel ke [0, 255] secara independen per gambar. Ini menghilangkan perbedaan kecerahan absolut antar foto — gambar aspal rusak berat dengan area gelap luas terlihat mirip dengan kerusakan ringan setelah stretch. Transfer learning MobileNetV2 mengandalkan sinyal absolut ini karena fitur ImageNet-nya dilatih dengan gambar yang mempertahankan kontras asli. Solusinya: nonaktifkan normalisasi offline (`norm_method=none`) dan biarkan `preprocess_input` model yang normalize ke `[-1, 1]` di dalam pipeline.
+
+**Verifikasi**: Setelah config diubah ke norm=none (split_config=12), akurasi menembus 71.43% — melampaui target 70%.
+
+#### 2.4 Preprocessing Tidak Konsisten antara Training dan Inferensi
 
 **Kesalahan**: `predict_all()` versi awal menggunakan foto asli, bukan foto preprocessed. Model dilatih dengan gambar preprocessed, namun diprediksi dengan gambar asli → distribusi input berbeda.
 
 **Pelajaran**: Preprocessing bukan hanya "peningkatan kualitas" tetapi bagian dari **distribusi input yang dipelajari model**. Jika training menggunakan gambar preprocessed, inferensi harus menggunakan preprocessing yang identik.
 
-#### 2.4 EarlyStopping Terlalu Agresif
+#### 2.5 EarlyStopping Terlalu Agresif
 
 **Kesalahan**: EarlyStopping dengan `patience=5` menghentikan training di epoch 30-an meskipun model belum konvergen optimal. `val_loss` sering naik-turun pada dataset kecil karena variance tinggi.
 
@@ -297,9 +306,9 @@ Saat bekerja dengan ~280 foto dan 3 kelas tidak seimbang, kenali tanda-tanda ini
 - **Recall satu kelas mendekati 0%**: Model "menyerah" pada kelas tersebut. Cek class weight dan pastikan kelas ini terwakili di setiap batch.
 - **Phase 2 tidak melampaui Phase 1**: Lumrah jika Phase 1 sudah cukup baik. Fallback ke Phase 1 adalah keputusan yang benar, bukan kegagalan.
 
-#### 3.2 Mengapa Akurasi 73% Sudah Bermakna di Sini
+#### 3.2 Mengapa Akurasi 71% Sudah Bermakna di Sini
 
-Pada dataset 280 foto dengan 3 kelas tidak seimbang, baseline acak hanya menghasilkan ~33-38% (tergantung distribusi). Model dengan recall Berat 82% secara praktis berarti sistem bisa mendeteksi jalan rusak berat dengan handal — ini relevan secara langsung untuk prioritas perbaikan infrastruktur.
+Pada dataset 280 foto dengan 3 kelas tidak seimbang, baseline acak hanya menghasilkan ~33-38% (tergantung distribusi). Akurasi 71.43% berarti model secara konsisten mengklasifikasikan mayoritas kerusakan dengan benar — cukup untuk membantu prioritas perbaikan infrastruktur di Lhokseumawe.
 
 ---
 
@@ -320,12 +329,13 @@ Landing page tidak di-extend dari `base.html` karena `base.html` memuat sidebar,
 
 Motion.js (Framer Motion vanilla) versi 11 dari CDN tidak mengekspor `animate` sebagai named export di bundle ESM. Mengandalkan CDN pihak ketiga untuk animasi kritis berisiko: URL bisa berubah, cache browser CDN tidak terjamin, dan bundle size lebih besar dari yang dibutuhkan. Vanilla JS dengan `IntersectionObserver` + `requestAnimationFrame` menghasilkan animasi identik dengan dependensi nol.
 
-#### 4.4 Pilihan Split 80:20 vs K-Fold Penuh
+#### 4.4 Pilihan fold_val=3 vs K-Fold Penuh
 
-Meski sistem mendukung K-Fold penuh, penelitian ini menggunakan Split 80:20 (fold_index 0 dan 1 dari K=5) karena:
+Meski sistem mendukung K-Fold penuh via `predict_cv`, penelitian ini menggunakan satu fold sebagai validasi (fold_val=3) karena:
 - Dataset hanya 280 foto; evaluasi K-Fold penuh membutuhkan training 5× model yang berbeda
-- Split 80:20 dengan stratifikasi sudah cukup representatif untuk menunjukkan kemampuan generalisasi
-- Menggunakan fold_index=1 sebagai val memungkinkan sistem `predict_cv` diperluas ke full K-Fold di masa depan tanpa mengubah skema data
+- Satu fold validasi dengan stratifikasi sudah cukup representatif untuk menunjukkan kemampuan generalisasi
+- Fold 3 dipilih karena distribusi kelas-nya seimbang (Berat=17, Sedang=27, Ringan=12) dibanding fold lain
+- Skema ini memungkinkan sistem `predict_cv` diperluas ke full K-Fold di masa depan tanpa mengubah skema data
 
 ---
 
@@ -334,12 +344,12 @@ Meski sistem mendukung K-Fold penuh, penelitian ini menggunakan Split 80:20 (fol
 #### 5.1 Yang Bisa Langsung Direplikasi
 
 - Formula SDI Bina Marga dan skema 3-kelas (Berat/Sedang/Ringan) berlaku untuk semua jalan di Indonesia
-- Arsitektur head CNN (GAP → Dropout → Dense(128) → Dropout(d/2) → Dense(3)) terbukti efektif untuk dataset kecil < 500 foto
+- Arsitektur head CNN (GAP → Dropout → Dense(64) → Dropout(d/2) → Dense(3)) terbukti efektif untuk dataset kecil < 500 foto
 - Konfigurasi training (LR=0.001, batch=32, patience=20, class_weight) dapat menjadi titik awal yang baik
 
 #### 5.2 Yang Perlu Disesuaikan
 
-- **Class weight** harus dihitung ulang dari distribusi data baru; jangan pakai nilai `1.114 / 0.698 / 1.493` secara literal
+- **Class weight** harus dihitung ulang dari distribusi data baru; jangan pakai nilai `1.114 / 0.704 / 1.464` secara literal — nilai ini berubah per fold
 - **Jumlah layer fine-tune** (15 untuk MobileNetV2) bisa perlu dikurangi jika dataset lebih kecil atau ditingkatkan jika lebih besar
 - **Koordinat peta** harus diperbarui sesuai kota/wilayah penelitian baru
 
@@ -362,9 +372,9 @@ Satu pelajaran yang tidak tertulis di mana pun tetapi kritis: **akurasi tinggi p
 2. `predict_all` yang berjalan pada semua 280 foto sengaja dibedakan akurasinya dari `HasilEvaluasi`, bukan dicampur
 3. Confusion matrix per kelas ditampilkan secara eksplisit, bukan hanya angka akurasi tunggal — karena akurasi tunggal pada dataset tidak seimbang bisa menyesatkan
 
-Model yang menghasilkan akurasi 73.21% di sini artinya: dari 56 foto yang belum pernah dilihat, 41 diklasifikasikan dengan benar. Ini lebih bermakna daripada akurasi 95% pada data training.
+Model yang menghasilkan akurasi 71.43% di sini artinya: dari 56 foto yang belum pernah dilihat, 40 diklasifikasikan dengan benar. Ini lebih bermakna daripada akurasi 95% pada data training.
 
 ---
 
-*Dokumen ini merekam pengetahuan yang diperoleh selama pengembangan sistem CNN-Jalan per 25 Mei 2026.*
+*Dokumen ini merekam pengetahuan yang diperoleh selama pengembangan sistem CNN-Jalan per 29 Mei 2026.*
 *NIM: 210170072 — Universitas Malikussaleh*

@@ -14,7 +14,7 @@
   <div class="mb-3">
     {% set ph_title = 'Buat Split Baru' %}{% include 'components/page_header.html' %}
     <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
-      Stratified holdout — 80% training, 20% testing, proporsi kelas terjaga
+      Stratified K-Fold Cross-Validation — dataset dibagi K fold, setiap fold menjaga proporsi kelas
     </p>
   </div>
 
@@ -66,8 +66,7 @@
               border-radius:var(--r-input);background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.15);
               font-size:.75rem;color:var(--c-muted);">
     <i class="bi bi-info-circle-fill" style="flex-shrink:0;"></i>
-    <span>Preprocessing belum dijalankan. Training akan menggunakan foto asli.
-    Untuk hasil lebih baik, jalankan preprocessing terlebih dahulu.</span>
+    <span>Preprocessing belum dijalankan. Training akan menggunakan foto asli.</span>
   </div>
   {% endif %}
 
@@ -78,14 +77,36 @@
       <div class="sf-field">
         <label class="sf-label">Nama Split <span style="color:#DC2626;">*</span></label>
         <input type="text" name="nama" required
-               placeholder="Contoh: Split 80:20 Dataset v1"
+               placeholder="Contoh: KFold-5 Dataset v1"
                class="sf-input">
+      </div>
+
+      <!-- Jumlah Fold K -->
+      <div class="sf-field">
+        <label class="sf-label">Jumlah Fold (K)</label>
+        <div class="d-flex gap-2 flex-wrap">
+          {% for k_val, k_lbl in [(3,'K=3 · ~33% val/fold'), (5,'K=5 · ~20% val/fold'), (10,'K=10 · ~10% val/fold')] %}
+          <label style="display:flex;align-items:center;gap:.4rem;padding:.38rem .75rem;
+                        border-radius:var(--r-input);border:1px solid var(--c-border);
+                        cursor:pointer;font-size:.8rem;color:var(--c-muted);
+                        background:var(--c-bg);transition:border-color .15s,color .15s;"
+                 class="kfold-radio-card" data-k="{{ k_val }}">
+            <input type="radio" name="n_splits" value="{{ k_val }}" {% if k_val == 5 %}checked{% endif %}
+                   onchange="updatePreview()" style="accent-color:#10B981;">
+            <span>{{ k_lbl }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <p style="font-size:.68rem;color:var(--c-muted);margin:.35rem 0 0;">
+          K=5 direkomendasikan untuk dataset kecil — setiap fold ±20% data sebagai validasi.
+        </p>
       </div>
 
       <div class="sf-field mb-0">
         <label class="sf-label">Random State</label>
         <input type="number" name="random_state" value="42" min="0" max="9999"
-               class="sf-input" style="font-variant-numeric:tabular-nums;">
+               class="sf-input" style="font-variant-numeric:tabular-nums;"
+               oninput="updatePreview()">
         <p style="font-size:.68rem;color:var(--c-muted);margin:.3rem 0 0;">
           Seed untuk reproduktibilitas split.
         </p>
@@ -93,12 +114,12 @@
 
     </div>
 
-    <!-- Info box -->
+    <!-- Preview box -->
     <div style="padding:.55rem .875rem;border-radius:var(--r-input);
                 background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
-                font-size:.75rem;color:#10B981;display:flex;align-items:center;gap:.4rem;
+                font-size:.75rem;color:#10B981;display:flex;align-items:flex-start;gap:.4rem;
                 margin-bottom:.875rem;">
-      <i class="bi bi-info-circle-fill" style="flex-shrink:0;"></i>
+      <i class="bi bi-info-circle-fill" style="flex-shrink:0;margin-top:.1rem;"></i>
       <span id="previewText">—</span>
     </div>
 
@@ -113,7 +134,7 @@
       <button type="submit" {% if total_berlabel == 0 %}disabled{% endif %}
               class="btn-split-primary" style="flex:1;justify-content:center;border:none;
                 {% if total_berlabel == 0 %}opacity:.45;cursor:not-allowed;{% endif %}">
-        <i class="bi bi-diagram-3-fill"></i> Buat Split
+        <i class="bi bi-diagram-3-fill"></i> Buat Split K-Fold
       </button>
       <a href="{{ url_for('split.index') }}" class="btn-split-cancel">Batal</a>
     </div>
@@ -149,6 +170,12 @@
 }
 .sf-input:focus { border-color: #10B981; }
 
+.kfold-radio-card:has(input:checked) {
+  border-color: #10B981 !important;
+  color: #10B981 !important;
+  background: rgba(16,185,129,.08) !important;
+}
+
 .sf-tag {
   display: flex; align-items: center; gap: .35rem;
   padding: .45rem .7rem; border-radius: var(--r-input);
@@ -179,15 +206,22 @@
 {% block extra_js %}
 <script>
 const totalBerlabel = {{ total_berlabel }};
-(function () {
+
+function updatePreview() {
   const el = document.getElementById('previewText');
   if (totalBerlabel === 0) {
     el.textContent = 'Tidak ada data berlabel.';
     return;
   }
-  const train = Math.round(totalBerlabel * 0.8);
-  const test  = totalBerlabel - train;
-  el.textContent = `${totalBerlabel} data  →  Train: ~${train} (80%)  ·  Test: ~${test} (20%)`;
-})();
+  const kEl = document.querySelector('input[name="n_splits"]:checked');
+  const K   = kEl ? parseInt(kEl.value) : 5;
+  const valPerFold  = Math.round(totalBerlabel / K);
+  const trainPerFold = totalBerlabel - valPerFold;
+  el.innerHTML =
+    `<strong>${totalBerlabel}</strong> data &nbsp;→&nbsp; ` +
+    `K=${K} fold · setiap fold: <strong>~${valPerFold}</strong> val + <strong>~${trainPerFold}</strong> train`;
+}
+
+document.addEventListener('DOMContentLoaded', updatePreview);
 </script>
 {% endblock %}

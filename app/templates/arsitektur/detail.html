@@ -137,22 +137,50 @@
 {% else %}
 
 <!-- ===== TRAINING RESULTS ===== -->
-{% if best %}
+{% if best_acc %}
 <div class="row g-2 mb-3">
-  {% for lbl, val, color in [
-      ('Best Val Accuracy', '%.2f%%'|format(best.val_accuracy * 100), '#10B981'),
-      ('Best Val Loss',     '%.4f'|format(best.val_loss),             '#38BDF8'),
-      ('Best Epoch',        best.epoch,                               '#A78BFA'),
-      ('Train Accuracy',    '%.2f%%'|format(best.accuracy * 100),    '#F59E0B'),
-  ] %}
   <div class="col-6 col-md-3">
     <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
                 border-radius:var(--r-card);text-align:center;">
-      <div style="font-size:1.05rem;font-weight:700;color:{{ color }};font-variant-numeric:tabular-nums;">{{ val }}</div>
-      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">{{ lbl }}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:#10B981;font-variant-numeric:tabular-nums;">
+        {{ '%.2f%%'|format(best_acc.val_accuracy * 100) }}
+      </div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">Best Val Accuracy</div>
     </div>
   </div>
-  {% endfor %}
+  <div class="col-6 col-md-3">
+    <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);text-align:center;">
+      <div style="font-size:1.05rem;font-weight:700;color:#38BDF8;font-variant-numeric:tabular-nums;">
+        {{ '%.4f'|format(best_loss.val_loss) }}
+      </div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
+        Min Val Loss
+        <span style="font-size:.62rem;color:var(--c-muted);"> (epoch {{ best_loss.epoch }})</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);text-align:center;">
+      <div style="font-size:1.05rem;font-weight:700;color:#A78BFA;font-variant-numeric:tabular-nums;">
+        {{ best_acc.epoch }}
+      </div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">Best Epoch (Val Acc)</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
+                border-radius:var(--r-card);text-align:center;">
+      <div style="font-size:1.05rem;font-weight:700;color:#F59E0B;font-variant-numeric:tabular-nums;">
+        {{ '%.2f%%'|format(best_acc.accuracy * 100) }}
+      </div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
+        Train Acc
+        <span style="font-size:.62rem;color:var(--c-muted);"> (@ Best Epoch)</span>
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -186,11 +214,13 @@
     </thead>
     <tbody>
       {% for h in hasil %}
-      <tr {% if best and h.id == best.id %}style="background:rgba(16,185,129,.06);"{% endif %}>
+      <tr {% if best_acc and h.id == best_acc.id %}style="background:rgba(16,185,129,.06);"{% elif best_loss and h.id == best_loss.id %}style="background:rgba(56,189,248,.04);"{% endif %}>
         <td style="font-variant-numeric:tabular-nums;">
           {{ h.epoch }}
-          {% if best and h.id == best.id %}
-          <span style="font-size:.65rem;color:#10B981;font-weight:600;margin-left:.25rem;">best</span>
+          {% if best_acc and h.id == best_acc.id %}
+          <span style="font-size:.65rem;color:#10B981;font-weight:600;margin-left:.25rem;">best acc</span>
+          {% elif best_loss and h.id == best_loss.id %}
+          <span style="font-size:.65rem;color:#38BDF8;font-weight:600;margin-left:.25rem;">min loss</span>
           {% endif %}
         </td>
         <td style="text-align:center;font-variant-numeric:tabular-nums;">{{ '%.4f'|format(h.loss) }}</td>
@@ -351,7 +381,10 @@
     <div class="gis-stat"><span id="gSalah" class="gis-stat-val" style="color:#EF4444;">—</span><span class="gis-stat-lbl">Prediksi Salah</span></div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="gis-stat"><span id="gAkurasi" class="gis-stat-val" style="color:#F59E0B;">—</span><span class="gis-stat-lbl">Akurasi Peta</span></div>
+    <div class="gis-stat" title="Dihitung dari semua foto (train + val) — bukan metrik evaluasi yang valid">
+      <span id="gAkurasi" class="gis-stat-val" style="color:#F59E0B;">—</span>
+      <span class="gis-stat-lbl">Benar/Total Peta <span style="font-size:.6rem;color:#F59E0B;">⚠ incl. train</span></span>
+    </div>
   </div>
 </div>
 

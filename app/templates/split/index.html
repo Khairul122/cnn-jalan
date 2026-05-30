@@ -12,7 +12,7 @@
   <div>
     {% set ph_title = 'Split Data' %}{% include 'components/page_header.html' %}
     <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
-      Stratified holdout 80:20 — pembagian dataset berlabel dengan distribusi kelas seimbang
+      Stratified K-Fold Cross-Validation — pembagian dataset berlabel ke K fold dengan distribusi kelas seimbang
     </p>
   </div>
   <a href="{{ url_for('split.new') }}" class="btn-split-primary">
@@ -83,7 +83,7 @@
         <td style="text-align:center;">
           <span style="padding:.15rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;
                        background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#10B981;">
-            80:20
+            K={{ cfg.n_splits }}
           </span>
         </td>
         <td style="text-align:center;font-size:.8rem;color:var(--c-muted);font-variant-numeric:tabular-nums;">
@@ -122,7 +122,7 @@
   <i class="bi bi-diagram-3" style="font-size:2rem;color:var(--c-muted);display:block;margin-bottom:.625rem;"></i>
   <p style="font-size:.88rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada split</p>
   <p style="font-size:.75rem;color:var(--c-muted);margin:0 0 1rem;max-width:320px;">
-    Buat split 80:20 untuk membagi dataset ke set training dan testing secara stratified
+    Buat split K-Fold untuk membagi dataset ke K fold secara stratified
   </p>
   {% if total_berlabel == 0 %}
   <p style="font-size:.73rem;color:#F59E0B;margin:0 0 1rem;">

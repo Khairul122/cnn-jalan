@@ -58,6 +58,7 @@ def _run_training(app, config_id, base_dir):
         _progress[config_id] = {'phase': 'training', 'current': 0, 'total': cfg.epochs, 'pct': 0}
 
         _cfg_snapshot = {
+            'id':              cfg.id,
             'split_config_id': cfg.split_config_id,
             'fold_val':        cfg.fold_val,
             'input_size':      cfg.input_size,
@@ -233,11 +234,13 @@ def new():
 def detail(config_id):
     cfg            = ArsitekturConfig.query.get_or_404(config_id)
     hasil          = HasilTraining.query.filter_by(arsitektur_id=config_id).order_by(HasilTraining.epoch).all()
-    best           = max(hasil, key=lambda h: h.val_accuracy) if hasil else None
+    best_acc       = max(hasil, key=lambda h: h.val_accuracy) if hasil else None
+    best_loss      = min(hasil, key=lambda h: h.val_loss)     if hasil else None
     evaluasi       = HasilEvaluasi.query.filter_by(arsitektur_id=config_id).first()
     total_prediksi = PrediksiModel.query.filter_by(arsitektur_id=config_id).count()
     return render_template('arsitektur/detail.html',
-                           cfg=cfg, hasil=hasil, best=best,
+                           cfg=cfg, hasil=hasil,
+                           best_acc=best_acc, best_loss=best_loss,
                            evaluasi=evaluasi, total_prediksi=total_prediksi)
 
 
@@ -257,12 +260,15 @@ def progress(config_id):
     return jsonify(prog)
 
 
-@arsitektur_bp.route('/<int:config_id>/train', methods=['POST'])
+@arsitektur_bp.route('/<int:config_id>/train', methods=['GET', 'POST'])
 @login_required
 def train(config_id):
     from flask import current_app
 
     cfg = ArsitekturConfig.query.get_or_404(config_id)
+
+    if request.method == 'GET':
+        return redirect(url_for('arsitektur.detail', config_id=config_id))
 
     HasilTraining.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
     HasilEvaluasi.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
@@ -300,6 +306,48 @@ def re_evaluate(config_id):
         flash(f'Evaluasi gagal: {e}', 'danger')
 
     return redirect(url_for('arsitektur.detail', config_id=config_id))
+
+
+@arsitektur_bp.route('/<int:config_id>/evaluate', methods=['GET', 'POST'])
+@login_required
+def evaluate(config_id):
+    """Alias route for evaluasi.html — GET shows detail, POST re-runs evaluation."""
+    from app.services import cnn_service
+
+    cfg = ArsitekturConfig.query.get_or_404(config_id)
+
+    if request.method == 'GET':
+        evaluasi = HasilEvaluasi.query.filter_by(arsitektur_id=config_id).first()
+        return render_template('arsitektur/evaluasi.html', cfg=cfg, evaluasi=evaluasi)
+
+    if cfg.status != 'selesai' or not cfg.model_path:
+        flash('Model belum selesai dilatih.', 'warning')
+        return redirect(url_for('arsitektur.detail', config_id=config_id))
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    try:
+        result = cnn_service.evaluate(cfg, base_dir)
+        _save_evaluasi(config_id, result)
+        flash('Evaluasi berhasil diperbarui.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Evaluasi gagal: {e}', 'danger')
+
+    return redirect(url_for('arsitektur.evaluate', config_id=config_id))
+
+
+@arsitektur_bp.route('/<int:config_id>/evaluasi-delete', methods=['POST'])
+@login_required
+def evaluasi_delete(config_id):
+    """Hapus data HasilEvaluasi untuk config tertentu."""
+    ArsitekturConfig.query.get_or_404(config_id)
+    deleted = HasilEvaluasi.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
+    db.session.commit()
+    if deleted:
+        flash('Data evaluasi dihapus.', 'success')
+    else:
+        flash('Tidak ada data evaluasi untuk dihapus.', 'info')
+    return redirect(url_for('arsitektur.evaluate', config_id=config_id))
 
 
 @arsitektur_bp.route('/<int:config_id>/gis')
@@ -405,6 +453,7 @@ def _run_cv_predict(app, config_id, base_dir):
         n_splits  = split_cfg.n_splits
 
         _cfg_snapshot = dict(
+            id              = cfg.id,
             split_config_id = cfg.split_config_id,
             input_size      = cfg.input_size,
             model_type      = cfg.model_type,

@@ -15,7 +15,9 @@
   <div>
     {% set ph_title = config.nama %}{% include 'components/page_header.html' %}
     <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
-      <span class="sd-meta-chip" style="background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.25);color:#10B981;">80:20 Holdout</span>
+      <span class="sd-meta-chip" style="background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.25);color:#10B981;">
+        K={{ config.n_splits }} Stratified K-Fold
+      </span>
       <span class="sd-meta-chip">seed={{ config.random_state }}</span>
       <span class="sd-meta-chip">{{ config.total_data }} data</span>
       <span style="font-size:.72rem;color:var(--c-muted);">{{ config.created_at.strftime('%d %b %Y, %H:%M') }}</span>
@@ -43,53 +45,35 @@
   </div>
 </div>
 
-<!-- Coverage preprocessing -->
-{% set train_pct = (prep_coverage.train / prep_coverage.train_total * 100) | round | int if prep_coverage.train_total > 0 else 0 %}
-{% set test_pct  = (prep_coverage.test  / prep_coverage.test_total  * 100) | round | int if prep_coverage.test_total  > 0 else 0 %}
-<div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
-
-  <!-- Train coverage -->
-  <div style="flex:1;min-width:200px;background:var(--c-surface);border:1px solid var(--c-border);
-              border-radius:var(--r-card);padding:.625rem .875rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
-      <span style="font-size:.72rem;font-weight:600;color:var(--c-muted);display:flex;align-items:center;gap:.3rem;">
-        <i class="bi bi-filter-circle-fill" style="color:#F472B6;"></i> Preprocessing — Train
-      </span>
-      <span style="font-size:.72rem;font-weight:700;color:{% if train_pct==100 %}#10B981{% elif train_pct>0 %}#F59E0B{% else %}#94a3b8{% endif %};">
-        {{ prep_coverage.train }}/{{ prep_coverage.train_total }}
-        ({{ train_pct }}%)
-      </span>
-    </div>
-    <div style="height:5px;background:var(--c-border);border-radius:999px;overflow:hidden;">
-      <div style="height:100%;width:{{ train_pct }}%;border-radius:999px;transition:width .4s;
-                  background:{% if train_pct==100 %}#10B981{% elif train_pct>0 %}#F59E0B{% else %}#475569{% endif %};"></div>
-    </div>
-    <p style="font-size:.67rem;color:var(--c-muted);margin:.35rem 0 0;">
-      {% if train_pct == 100 %}Training akan pakai gambar preprocessed (denoise)
-      {% elif train_pct > 0 %}{{ prep_coverage.train_total - prep_coverage.train }} foto belum diproses, akan pakai gambar asli
-      {% else %}Belum ada preprocessing — training pakai foto asli{% endif %}
-    </p>
+<!-- Preprocessing coverage (global) -->
+{% set prep_pct = (prep_coverage.total / prep_coverage.grand_total * 100) | round | int if prep_coverage.grand_total > 0 else 0 %}
+<div style="background:var(--c-surface);border:1px solid var(--c-border);
+            border-radius:var(--r-card);padding:.75rem 1rem;margin-bottom:1rem;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem;">
+    <span style="font-size:.75rem;font-weight:600;color:var(--c-text);display:flex;align-items:center;gap:.35rem;">
+      <i class="bi bi-filter-circle-fill" style="color:#F472B6;"></i>
+      Preprocessing (Denoise) — Semua Fold
+    </span>
+    <span style="font-size:.78rem;font-weight:700;
+                 color:{% if prep_pct==100 %}#10B981{% elif prep_pct>0 %}#F59E0B{% else %}#94a3b8{% endif %};">
+      {{ prep_coverage.total }} / {{ prep_coverage.grand_total }} foto
+      <span style="font-weight:400;color:var(--c-muted);">({{ prep_pct }}%)</span>
+    </span>
   </div>
-
-  <!-- Test coverage -->
-  <div style="flex:1;min-width:200px;background:var(--c-surface);border:1px solid var(--c-border);
-              border-radius:var(--r-card);padding:.625rem .875rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
-      <span style="font-size:.72rem;font-weight:600;color:var(--c-muted);display:flex;align-items:center;gap:.3rem;">
-        <i class="bi bi-shield-check" style="color:#38BDF8;"></i> Preprocessing — Test
-      </span>
-      <span style="font-size:.72rem;font-weight:700;color:#38BDF8;">
-        Foto Asli (selalu)
-      </span>
-    </div>
-    <div style="height:5px;background:rgba(56,189,248,.25);border-radius:999px;overflow:hidden;">
-      <div style="height:100%;width:100%;border-radius:999px;background:#38BDF8;"></div>
-    </div>
-    <p style="font-size:.67rem;color:var(--c-muted);margin:.35rem 0 0;">
-      Validasi selalu pakai foto asli — menghindari kontaminasi augmentasi offline
-    </p>
+  <div style="height:6px;background:var(--c-border);border-radius:999px;overflow:hidden;margin-bottom:.4rem;">
+    <div style="height:100%;width:{{ prep_pct }}%;border-radius:999px;transition:width .4s;
+                background:{% if prep_pct==100 %}#10B981{% elif prep_pct>0 %}#F59E0B{% else %}#475569{% endif %};"></div>
   </div>
-
+  <p style="font-size:.68rem;color:var(--c-muted);margin:0;">
+    {% if prep_pct == 100 %}
+      Semua foto sudah terpreproses — training K-Fold akan menggunakan gambar denoise di setiap fold.
+    {% elif prep_pct > 0 %}
+      {{ prep_coverage.grand_total - prep_coverage.total }} foto belum diproses akan menggunakan gambar asli saat training.
+    {% else %}
+      Belum ada preprocessing — training akan menggunakan foto asli.
+    {% endif %}
+    Dalam K-Fold, setiap foto berperan sebagai <em>train</em> (K-1 fold) dan <em>val</em> (1 fold) secara bergantian.
+  </p>
 </div>
 
 <!-- Layout: tabel + chart side by side on wide screens -->
@@ -98,13 +82,13 @@
   <!-- Distribusi tabel -->
   <div class="sd-card">
     <p class="sd-card-title">
-      <i class="bi bi-table" style="color:#A78BFA;"></i> Distribusi Data
+      <i class="bi bi-table" style="color:#A78BFA;"></i> Distribusi Data per Fold
     </p>
     <div style="overflow-x:auto;">
       <table class="table align-middle mb-0" style="font-size:.8rem;">
         <thead>
           <tr>
-            <th style="padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">Set</th>
+            <th style="padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">Fold</th>
             {% for t in tingkat_list %}
             {% set tc = {'Berat':'#DC2626','Sedang':'#F59E0B','Ringan':'#10B981'} %}
             {% set col = tc.get(t.nama_tingkat, '#A78BFA') %}
@@ -118,17 +102,15 @@
         </thead>
         <tbody>
           {% set total_dataset = config.total_data %}
-          {% set set_labels = {0: ('Train', '#10B981'), 1: ('Test', '#F59E0B')} %}
-          {% for fold_idx in [0, 1] %}
-          {% set fd = dist.get(fold_idx, {}) %}
+          {% for fi in fold_indices %}
+          {% set fd = dist.get(fi, {}) %}
           {% set ft = fd.values() | sum %}
-          {% set lbl, lbl_col = set_labels[fold_idx] %}
           <tr style="border-bottom:1px solid var(--c-border);">
             <td style="padding:.4rem .6rem;">
               <span style="display:inline-flex;align-items:center;justify-content:center;
                            padding:.15rem .6rem;border-radius:6px;font-size:.72rem;font-weight:700;
-                           background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);
-                           color:{{ lbl_col }};">{{ lbl }}</span>
+                           background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.25);
+                           color:#A78BFA;">Fold {{ fi + 1 }}</span>
             </td>
             {% for t in tingkat_list %}
             <td style="text-align:center;padding:.4rem .6rem;font-variant-numeric:tabular-nums;color:var(--c-text);">
@@ -147,7 +129,7 @@
             <td style="padding:.4rem .6rem;font-weight:700;font-size:.75rem;color:var(--c-muted);">Total</td>
             {% for t in tingkat_list %}
             {% set ct = namespace(val=0) %}
-            {% for fi in [0, 1] %}{% set ct.val = ct.val + dist.get(fi, {}).get(t.id, 0) %}{% endfor %}
+            {% for fi in fold_indices %}{% set ct.val = ct.val + dist.get(fi, {}).get(t.id, 0) %}{% endfor %}
             <td style="text-align:center;padding:.4rem .6rem;font-weight:700;font-variant-numeric:tabular-nums;">{{ ct.val }}</td>
             {% endfor %}
             <td style="text-align:center;padding:.4rem .6rem;font-weight:700;font-variant-numeric:tabular-nums;">{{ total_dataset }}</td>
@@ -161,7 +143,7 @@
   <!-- Chart -->
   <div class="sd-card">
     <p class="sd-card-title">
-      <i class="bi bi-bar-chart-fill" style="color:#A78BFA;"></i> Distribusi Kelas
+      <i class="bi bi-bar-chart-fill" style="color:#A78BFA;"></i> Distribusi Kelas per Fold
     </p>
     <div style="position:relative;height:220px;">
       <canvas id="distChart"></canvas>
@@ -197,8 +179,7 @@
       <p style="font-size:.83rem;color:var(--c-text);margin:0 0 .75rem;">
         Semua <strong style="color:#F59E0B;">{{ config.total_data }} item</strong> dalam split
         <strong>"{{ config.nama }}"</strong> akan dihapus.
-        Konfigurasi split (seed={{ config.random_state }}) tetap ada dan bisa
-        digunakan untuk membuat split baru.
+        Konfigurasi split (K={{ config.n_splits }}, seed={{ config.random_state }}) tetap ada.
       </p>
       <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);
                   border-radius:var(--r-input);padding:.6rem .875rem;font-size:.78rem;color:#D97706;">
@@ -270,6 +251,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+  margin-top: 1rem;
 }
 @media (min-width: 900px) {
   .sd-grid { grid-template-columns: 1fr 1fr; }
@@ -290,10 +272,11 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const labels   = ['Train (80%)', 'Test (20%)'];
-  const tingkats = [{% for t in tingkat_list %}{ id: {{ t.id }}, nama: '{{ t.nama_tingkat }}' }{% if not loop.last %},{% endif %}{% endfor %}];
-  const palette  = { 'Berat': '#EF4444', 'Sedang': '#F59E0B', 'Ringan': '#10B981' };
-  const raw      = {{ dist | tojson }};
+  const foldIndices = {{ fold_indices | tojson }};
+  const labels      = foldIndices.map(i => `Fold ${i + 1}`);
+  const tingkats    = [{% for t in tingkat_list %}{ id: {{ t.id }}, nama: '{{ t.nama_tingkat }}' }{% if not loop.last %},{% endif %}{% endfor %}];
+  const palette     = { 'Berat': '#EF4444', 'Sedang': '#F59E0B', 'Ringan': '#10B981' };
+  const raw         = {{ dist | tojson }};
 
   new Chart(document.getElementById('distChart'), {
     type: 'bar',
@@ -303,7 +286,7 @@
         label: t.nama,
         backgroundColor: palette[t.nama] || '#A78BFA',
         borderRadius: 3,
-        data: ['0', '1'].map(i => (raw[i] || {})[String(t.id)] || 0),
+        data: foldIndices.map(i => (raw[String(i)] || {})[String(t.id)] || 0),
       }))
     },
     options: {
