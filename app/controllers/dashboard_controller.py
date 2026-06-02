@@ -2,9 +2,12 @@ from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models.lokasi_kerusakan import LokasiKerusakan
-from app.models.peta_kerusakan import PetaKerusakan
-from app.models.hasil_klasifikasi_cnn import HasilKlasifikasiCnn
 from app.models.pengguna import Pengguna
+from app.models.label_kerusakan import LabelKerusakan
+from app.models.prediksi_model import PrediksiModel
+from app.models.hasil_evaluasi import HasilEvaluasi
+from app.models.arsitektur_config import ArsitekturConfig
+from app.models.dokumentasi_foto import DokumentasiFoto
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -87,22 +90,37 @@ def landing_gis():
 @dashboard_bp.route('/dashboard')
 @login_required
 def index():
-    total_lokasi      = LokasiKerusakan.query.count()
-    total_peta        = PetaKerusakan.query.count()
-    total_klasifikasi = HasilKlasifikasiCnn.query.count()
-    total_pengguna    = Pengguna.query.count()
+    total_lokasi   = LokasiKerusakan.query.count()
+    total_pengguna = Pengguna.query.count()
+    total_foto     = DokumentasiFoto.query.count()
+    total_label    = LabelKerusakan.query.count()
+    total_prediksi = PrediksiModel.query.count()
 
-    draft         = PetaKerusakan.query.filter_by(status_pemetaan='draft').count()
-    terverifikasi = PetaKerusakan.query.filter_by(status_pemetaan='terverifikasi').count()
-    diperbaiki    = PetaKerusakan.query.filter_by(status_pemetaan='diperbaiki').count()
+    berat_label  = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=1).count()
+    sedang_label = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=2).count()
+    ringan_label = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=3).count()
+
+    best_eval = (HasilEvaluasi.query
+                 .join(ArsitekturConfig, HasilEvaluasi.arsitektur_id == ArsitekturConfig.id)
+                 .filter(ArsitekturConfig.status == 'selesai')
+                 .order_by(HasilEvaluasi.akurasi.desc())
+                 .first())
+
+    akurasi_cnn  = round(best_eval.akurasi, 1) if best_eval else None
+    model_nama   = best_eval.arsitektur.nama if best_eval else None
+    model_status = 'selesai' if best_eval else 'mock'
 
     stats = {
-        'total_lokasi'      : total_lokasi,
-        'total_peta'        : total_peta,
-        'total_klasifikasi' : total_klasifikasi,
-        'total_pengguna'    : total_pengguna,
-        'draft'             : draft,
-        'terverifikasi'     : terverifikasi,
-        'diperbaiki'        : diperbaiki,
+        'total_lokasi'   : total_lokasi,
+        'total_pengguna' : total_pengguna,
+        'total_foto'     : total_foto,
+        'total_label'    : total_label,
+        'total_prediksi' : total_prediksi,
+        'berat_label'    : berat_label,
+        'sedang_label'   : sedang_label,
+        'ringan_label'   : ringan_label,
+        'akurasi_cnn'    : akurasi_cnn,
+        'model_nama'     : model_nama,
+        'model_status'   : model_status,
     }
     return render_template('dashboard/index.html', stats=stats)

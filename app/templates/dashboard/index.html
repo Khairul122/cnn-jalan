@@ -199,26 +199,6 @@
 }
 .kpi-meta i { font-size: .7rem; }
 
-/* Sparkline bars */
-.kpi-sparkline {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 28px;
-  margin-top: .625rem;
-}
-.kpi-sparkline .bar {
-  flex: 1;
-  background: var(--kpi-color, var(--c-accent));
-  border-radius: 2px 2px 0 0;
-  opacity: .25;
-  transition: opacity var(--duration-fast);
-  min-width: 0;
-}
-.kpi-sparkline .bar.active { opacity: .6; }
-.kpi-card:hover .kpi-sparkline .bar { opacity: .35; }
-.kpi-card:hover .kpi-sparkline .bar.active { opacity: .8; }
-
 /* ── Bottom row grid ──────────────────────────────── */
 .db-row {
   display: grid;
@@ -274,83 +254,6 @@
   font-variant-numeric: tabular-nums;
 }
 .db-card-body { padding: 1.125rem 1.25rem; }
-
-/* ── Donut chart (SVG) ────────────────────────────── */
-.donut-wrap {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-.donut-svg-wrap {
-  flex-shrink: 0;
-  position: relative;
-  width: 100px; height: 100px;
-}
-.donut-svg-wrap svg { overflow: visible; }
-.donut-track {
-  fill: none;
-  stroke: var(--c-border);
-  stroke-width: 12;
-}
-.donut-seg {
-  fill: none;
-  stroke-width: 12;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), opacity var(--duration-fast);
-}
-.donut-seg:hover { opacity: .8; }
-.donut-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.donut-center-val {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--c-text);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-.donut-center-lbl {
-  font-size: .62rem;
-  color: var(--c-muted);
-  margin-top: .1rem;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.donut-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .625rem; }
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .375rem .625rem;
-  border-radius: .375rem;
-  cursor: default;
-  transition: background var(--duration-fast);
-}
-.legend-item:hover { background: var(--c-bg); }
-.legend-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.legend-label { font-size: .8rem; color: var(--c-label); flex: 1; }
-.legend-val {
-  font-size: .85rem;
-  font-weight: 700;
-  color: var(--c-text);
-  font-variant-numeric: tabular-nums;
-}
-.legend-pct {
-  font-size: .72rem;
-  color: var(--c-muted);
-  margin-left: .25rem;
-}
 
 /* ── Progress bar rows ────────────────────────────── */
 .status-row {
@@ -560,20 +463,6 @@
 
 
 {% block content %}
-{% set total_status = (stats.draft + stats.terverifikasi + stats.diperbaiki) if (stats.draft + stats.terverifikasi + stats.diperbaiki) > 0 else 1 %}
-
-{# Donut chart constants: circumference = 2πr = 2×3.14159×38 ≈ 238.76 #}
-{% set circ = 238.76 %}
-{% set pct_draft       = (stats.draft        / total_status) %}
-{% set pct_verified    = (stats.terverifikasi / total_status) %}
-{% set pct_fixed       = (stats.diperbaiki   / total_status) %}
-{% set dash_draft    = (pct_draft    * circ) | round(2) %}
-{% set dash_verified = (pct_verified * circ) | round(2) %}
-{% set dash_fixed    = (pct_fixed    * circ) | round(2) %}
-{% set off_draft    = 0 %}
-{% set off_verified = circ - dash_draft %}
-{% set off_fixed    = circ - dash_draft - dash_verified %}
-
 <div class="db-page">
 
   <!-- ══════ HEADER ══════ -->
@@ -613,292 +502,154 @@
       </div>
       <p class="kpi-value js-kpi" data-val="{{ stats.total_lokasi }}">{{ stats.total_lokasi }}</p>
       <div class="kpi-meta">
-        <i class="bi bi-dash" aria-hidden="true"></i>
+        <i class="bi bi-map" aria-hidden="true"></i>
         <span>Lokasi tercatat</span>
-      </div>
-      <div class="kpi-sparkline" aria-hidden="true">
-        <div class="bar" style="height:40%"></div>
-        <div class="bar" style="height:55%"></div>
-        <div class="bar" style="height:45%"></div>
-        <div class="bar" style="height:70%"></div>
-        <div class="bar" style="height:60%"></div>
-        <div class="bar" style="height:75%"></div>
-        <div class="bar active" style="height:85%"></div>
       </div>
     </div>
 
-    <!-- Klasifikasi CNN -->
+    <!-- Foto Berlabel -->
     <div class="kpi-card" style="--kpi-color:#059669;--kpi-bg:#ECFDF5;" role="listitem">
       <div class="kpi-top">
-        <p class="kpi-label">Klasifikasi CNN</p>
+        <p class="kpi-label">Foto Berlabel</p>
         <div class="kpi-ico" style="background:#ECFDF5;">
           <svg fill="none" stroke="#059669" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+          </svg>
+        </div>
+      </div>
+      <p class="kpi-value js-kpi" data-val="{{ stats.total_label }}">{{ stats.total_label }}</p>
+      <div class="kpi-meta">
+        <i class="bi bi-images" aria-hidden="true"></i>
+        <span>dari {{ stats.total_foto }} foto</span>
+      </div>
+    </div>
+
+    <!-- Prediksi CNN -->
+    <div class="kpi-card" style="--kpi-color:#D97706;--kpi-bg:#FFFBEB;" role="listitem">
+      <div class="kpi-top">
+        <p class="kpi-label">Prediksi CNN</p>
+        <div class="kpi-ico" style="background:#FFFBEB;">
+          <svg fill="none" stroke="#D97706" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
           </svg>
         </div>
       </div>
-      <p class="kpi-value js-kpi" data-val="{{ stats.total_klasifikasi }}">{{ stats.total_klasifikasi }}</p>
+      <p class="kpi-value js-kpi" data-val="{{ stats.total_prediksi }}">{{ stats.total_prediksi }}</p>
       <div class="kpi-meta">
-        <i class="bi bi-dash" aria-hidden="true"></i>
-        <span>Foto terklasifikasi</span>
-      </div>
-      <div class="kpi-sparkline" aria-hidden="true">
-        <div class="bar" style="height:30%"></div>
-        <div class="bar" style="height:50%"></div>
-        <div class="bar" style="height:65%"></div>
-        <div class="bar" style="height:55%"></div>
-        <div class="bar" style="height:80%"></div>
-        <div class="bar" style="height:70%"></div>
-        <div class="bar active" style="height:90%"></div>
+        <i class="bi bi-cpu" aria-hidden="true"></i>
+        <span>Foto terprediksi</span>
       </div>
     </div>
 
-    <!-- Layer Peta -->
-    <div class="kpi-card" style="--kpi-color:#D97706;--kpi-bg:#FFFBEB;" role="listitem">
-      <div class="kpi-top">
-        <p class="kpi-label">Layer Peta</p>
-        <div class="kpi-ico" style="background:#FFFBEB;">
-          <svg fill="none" stroke="#D97706" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-          </svg>
-        </div>
-      </div>
-      <p class="kpi-value js-kpi" data-val="{{ stats.total_peta }}">{{ stats.total_peta }}</p>
-      <div class="kpi-meta">
-        <i class="bi bi-dash" aria-hidden="true"></i>
-        <span>Titik di peta</span>
-      </div>
-      <div class="kpi-sparkline" aria-hidden="true">
-        <div class="bar" style="height:55%"></div>
-        <div class="bar" style="height:45%"></div>
-        <div class="bar" style="height:70%"></div>
-        <div class="bar" style="height:60%"></div>
-        <div class="bar" style="height:50%"></div>
-        <div class="bar" style="height:75%"></div>
-        <div class="bar active" style="height:80%"></div>
-      </div>
-    </div>
-
-    <!-- Pengguna -->
+    <!-- Akurasi CNN -->
     <div class="kpi-card" style="--kpi-color:#7C3AED;--kpi-bg:#F5F3FF;" role="listitem">
       <div class="kpi-top">
-        <p class="kpi-label">Pengguna</p>
+        <p class="kpi-label">Akurasi CNN</p>
         <div class="kpi-ico" style="background:#F5F3FF;">
           <svg fill="none" stroke="#7C3AED" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
           </svg>
         </div>
       </div>
-      <p class="kpi-value js-kpi" data-val="{{ stats.total_pengguna }}">{{ stats.total_pengguna }}</p>
+      {% if stats.akurasi_cnn is not none %}
+      <p class="kpi-value" style="font-size:1.6rem;">{{ stats.akurasi_cnn }}<span style="font-size:1rem;font-weight:500;color:var(--c-muted);">%</span></p>
+      <div class="kpi-meta">
+        <i class="bi bi-check-circle-fill" style="color:var(--c-ok);" aria-hidden="true"></i>
+        <span>Validasi fold terbaik</span>
+      </div>
+      {% else %}
+      <p class="kpi-value" style="color:var(--c-muted);">—</p>
       <div class="kpi-meta">
         <i class="bi bi-dash" aria-hidden="true"></i>
-        <span>Akun terdaftar</span>
+        <span>Belum ada model terlatih</span>
       </div>
-      <div class="kpi-sparkline" aria-hidden="true">
-        <div class="bar" style="height:60%"></div>
-        <div class="bar" style="height:70%"></div>
-        <div class="bar" style="height:65%"></div>
-        <div class="bar" style="height:80%"></div>
-        <div class="bar" style="height:75%"></div>
-        <div class="bar" style="height:85%"></div>
-        <div class="bar active" style="height:95%"></div>
-      </div>
+      {% endif %}
     </div>
 
   </div><!-- /.kpi-grid -->
 
-  <!-- ══════ ROW 2: Status + Damage types + Quick Actions ══════ -->
-  <div class="db-row db-row-3">
+  <!-- ══════ ROW 2: Distribusi SDI + Quick Actions ══════ -->
+  <div class="db-row db-row-2">
 
-    <!-- Status Pemetaan — Donut + Progress -->
+    <!-- Distribusi SDI -->
+    {% set total_sdi = (stats.berat_label + stats.sedang_label + stats.ringan_label) if (stats.berat_label + stats.sedang_label + stats.ringan_label) > 0 else 1 %}
     <div class="db-card">
       <div class="db-card-head">
         <h2 class="db-card-title">
-          <i class="bi bi-pie-chart-fill" aria-hidden="true"></i>
-          Status Pemetaan
+          <i class="bi bi-bar-chart-steps" aria-hidden="true"></i>
+          Distribusi SDI
         </h2>
-        <span class="db-card-badge">{{ stats.draft + stats.terverifikasi + stats.diperbaiki }} total</span>
-      </div>
-      <div class="db-card-body">
-
-        <!-- Donut chart -->
-        <div class="donut-wrap">
-          <div class="donut-svg-wrap" role="img" aria-label="Donut chart status pemetaan">
-            <svg viewBox="0 0 100 100" width="100" height="100">
-              <!-- Track -->
-              <circle class="donut-track" cx="50" cy="50" r="38"/>
-              <!-- Draft segment -->
-              <circle class="donut-seg" cx="50" cy="50" r="38"
-                stroke="#94A3B8"
-                stroke-dasharray="{{ dash_draft }} {{ circ }}"
-                stroke-dashoffset="-{{ off_draft }}"
-                transform="rotate(-90 50 50)"
-                data-final-dasharray="{{ dash_draft }} {{ circ }}"
-                style="stroke-dasharray: 0 {{ circ }};">
-              </circle>
-              <!-- Terverifikasi segment -->
-              <circle class="donut-seg" cx="50" cy="50" r="38"
-                stroke="#059669"
-                stroke-dasharray="{{ dash_verified }} {{ circ }}"
-                stroke-dashoffset="-{{ off_verified }}"
-                transform="rotate(-90 50 50)"
-                data-final-dasharray="{{ dash_verified }} {{ circ }}"
-                style="stroke-dasharray: 0 {{ circ }};">
-              </circle>
-              <!-- Diperbaiki segment -->
-              <circle class="donut-seg" cx="50" cy="50" r="38"
-                stroke="#0284C7"
-                stroke-dasharray="{{ dash_fixed }} {{ circ }}"
-                stroke-dashoffset="-{{ off_fixed }}"
-                transform="rotate(-90 50 50)"
-                data-final-dasharray="{{ dash_fixed }} {{ circ }}"
-                style="stroke-dasharray: 0 {{ circ }};">
-              </circle>
-            </svg>
-            <div class="donut-center" aria-hidden="true">
-              <span class="donut-center-val js-kpi" data-val="{{ stats.draft + stats.terverifikasi + stats.diperbaiki }}">
-                {{ stats.draft + stats.terverifikasi + stats.diperbaiki }}
-              </span>
-              <span class="donut-center-lbl">Total</span>
-            </div>
-          </div>
-
-          <!-- Legend -->
-          <div class="donut-legend" role="list">
-            <div class="legend-item" role="listitem">
-              <div class="legend-dot" style="background:#94A3B8;" aria-hidden="true"></div>
-              <span class="legend-label">Draft</span>
-              <span class="legend-val">{{ stats.draft }}</span>
-              <span class="legend-pct">({{ ((stats.draft / total_status) * 100) | round(0) | int }}%)</span>
-            </div>
-            <div class="legend-item" role="listitem">
-              <div class="legend-dot" style="background:#059669;" aria-hidden="true"></div>
-              <span class="legend-label">Terverifikasi</span>
-              <span class="legend-val">{{ stats.terverifikasi }}</span>
-              <span class="legend-pct">({{ ((stats.terverifikasi / total_status) * 100) | round(0) | int }}%)</span>
-            </div>
-            <div class="legend-item" role="listitem">
-              <div class="legend-dot" style="background:#0284C7;" aria-hidden="true"></div>
-              <span class="legend-label">Diperbaiki</span>
-              <span class="legend-val">{{ stats.diperbaiki }}</span>
-              <span class="legend-pct">({{ ((stats.diperbaiki / total_status) * 100) | round(0) | int }}%)</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Progress bars -->
-        <div class="status-row">
-          <div class="status-item">
-            <div class="status-item-top">
-              <div class="status-item-label">
-                <i class="bi bi-circle-fill" style="color:#94A3B8;" aria-hidden="true"></i>
-                Draft
-              </div>
-              <div class="status-item-right">
-                <span class="status-item-val">{{ stats.draft }}</span>
-                <span class="status-item-pct">{{ ((stats.draft / total_status) * 100) | round(1) }}%</span>
-              </div>
-            </div>
-            <div class="prog-track">
-              <div class="prog-fill js-prog" style="background:#94A3B8;"
-                   data-pct="{{ ((stats.draft / total_status) * 100) | round(1) }}"></div>
-            </div>
-          </div>
-          <div class="status-item">
-            <div class="status-item-top">
-              <div class="status-item-label">
-                <i class="bi bi-circle-fill" style="color:var(--c-ok);" aria-hidden="true"></i>
-                Terverifikasi
-              </div>
-              <div class="status-item-right">
-                <span class="status-item-val">{{ stats.terverifikasi }}</span>
-                <span class="status-item-pct">{{ ((stats.terverifikasi / total_status) * 100) | round(1) }}%</span>
-              </div>
-            </div>
-            <div class="prog-track">
-              <div class="prog-fill js-prog" style="background:var(--c-ok);"
-                   data-pct="{{ ((stats.terverifikasi / total_status) * 100) | round(1) }}"></div>
-            </div>
-          </div>
-          <div class="status-item">
-            <div class="status-item-top">
-              <div class="status-item-label">
-                <i class="bi bi-circle-fill" style="color:var(--c-info);" aria-hidden="true"></i>
-                Diperbaiki
-              </div>
-              <div class="status-item-right">
-                <span class="status-item-val">{{ stats.diperbaiki }}</span>
-                <span class="status-item-pct">{{ ((stats.diperbaiki / total_status) * 100) | round(1) }}%</span>
-              </div>
-            </div>
-            <div class="prog-track">
-              <div class="prog-fill js-prog" style="background:var(--c-info);"
-                   data-pct="{{ ((stats.diperbaiki / total_status) * 100) | round(1) }}"></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div><!-- /.db-card status -->
-
-    <!-- Jenis Kerusakan -->
-    <div class="db-card">
-      <div class="db-card-head">
-        <h2 class="db-card-title">
-          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-          Jenis Kerusakan
-        </h2>
+        <span class="db-card-badge">{{ stats.total_label }} berlabel</span>
       </div>
       <div class="db-card-body">
         <div class="dmg-list" role="list">
+
+          <!-- Berat -->
           <div class="dmg-item" style="--dmg-color:#DC2626;--dmg-bg:#FEF2F2;" role="listitem">
             <div class="dmg-ico">
-              <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
             </div>
             <div class="dmg-info">
-              <p class="dmg-name">Crack</p>
-              <p class="dmg-desc">Retak permukaan jalan</p>
+              <p class="dmg-name">Berat</p>
+              <p class="dmg-desc">SDI &gt; 150</p>
+              <div class="prog-track" style="margin-top:.35rem;">
+                <div class="prog-fill js-prog" style="background:#DC2626;"
+                     data-pct="{{ ((stats.berat_label / total_sdi) * 100) | round(1) }}"></div>
+              </div>
             </div>
-            <span class="dmg-badge">Berat</span>
+            <span class="dmg-badge">{{ stats.berat_label }}</span>
           </div>
+
+          <!-- Sedang -->
           <div class="dmg-item" style="--dmg-color:#D97706;--dmg-bg:#FFFBEB;" role="listitem">
             <div class="dmg-ico">
-              <i class="bi bi-record-circle-fill" aria-hidden="true"></i>
+              <i class="bi bi-dash-circle-fill" aria-hidden="true"></i>
             </div>
             <div class="dmg-info">
-              <p class="dmg-name">Pothole</p>
-              <p class="dmg-desc">Lubang pada jalan</p>
+              <p class="dmg-name">Sedang</p>
+              <p class="dmg-desc">SDI 51–150</p>
+              <div class="prog-track" style="margin-top:.35rem;">
+                <div class="prog-fill js-prog" style="background:#D97706;"
+                     data-pct="{{ ((stats.sedang_label / total_sdi) * 100) | round(1) }}"></div>
+              </div>
             </div>
-            <span class="dmg-badge">Sedang</span>
+            <span class="dmg-badge">{{ stats.sedang_label }}</span>
           </div>
-          <div class="dmg-item" style="--dmg-color:#7C3AED;--dmg-bg:#F5F3FF;" role="listitem">
+
+          <!-- Ringan -->
+          <div class="dmg-item" style="--dmg-color:#059669;--dmg-bg:#ECFDF5;" role="listitem">
             <div class="dmg-ico">
-              <i class="bi bi-distribute-horizontal" aria-hidden="true"></i>
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
             </div>
             <div class="dmg-info">
-              <p class="dmg-name">Rutting</p>
-              <p class="dmg-desc">Alur/jalur pada jalan</p>
+              <p class="dmg-name">Ringan</p>
+              <p class="dmg-desc">SDI ≤ 50</p>
+              <div class="prog-track" style="margin-top:.35rem;">
+                <div class="prog-fill js-prog" style="background:#059669;"
+                     data-pct="{{ ((stats.ringan_label / total_sdi) * 100) | round(1) }}"></div>
+              </div>
             </div>
-            <span class="dmg-badge">Ringan</span>
+            <span class="dmg-badge">{{ stats.ringan_label }}</span>
           </div>
+
         </div>
 
         <div style="margin-top:1rem;padding-top:.875rem;border-top:1px solid var(--c-border-sub);">
-          <a href="{{ url_for('evaluasi.index') }}"
+          <a href="{{ url_for('label.index') }}"
              style="display:flex;align-items:center;justify-content:center;gap:.4rem;
                     font-size:.8rem;font-weight:600;color:var(--c-accent);text-decoration:none;
                     padding:.5rem;border-radius:.375rem;transition:background var(--duration-fast);"
              onmouseover="this.style.background='var(--c-accent-light)'"
              onmouseout="this.style.background='transparent'">
-            <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
-            Lihat Evaluasi Model
+            <i class="bi bi-tags-fill" aria-hidden="true"></i>
+            Kelola Label SDI
           </a>
         </div>
       </div>
-    </div><!-- /.db-card damage -->
+    </div><!-- /.db-card sdi -->
 
     <!-- Akses Cepat + Info Sistem -->
     <div class="db-card">
@@ -953,10 +704,21 @@
           <div class="sysinfo-list">
             <div class="sysinfo-row">
               <span class="sysinfo-key"><i class="bi bi-cpu" aria-hidden="true"></i> CNN Model</span>
+              {% if stats.model_status == 'selesai' %}
+              <span class="sysinfo-badge ok" title="{{ stats.model_nama }}">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                Terlatih
+              </span>
+              {% else %}
               <span class="sysinfo-badge warn">
                 <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
                 Mock Mode
               </span>
+              {% endif %}
+            </div>
+            <div class="sysinfo-row">
+              <span class="sysinfo-key"><i class="bi bi-graph-up" aria-hidden="true"></i> Prediksi CNN</span>
+              <span class="sysinfo-val">{{ stats.total_prediksi }} foto</span>
             </div>
             <div class="sysinfo-row">
               <span class="sysinfo-key"><i class="bi bi-database" aria-hidden="true"></i> Database</span>
@@ -1025,20 +787,6 @@ function animateCounter(el) {
   requestAnimationFrame(step);
 }
 
-/* ── Donut chart segments ─────────────────────────── */
-function animateDonut() {
-  document.querySelectorAll('.donut-seg').forEach(function (seg) {
-    var final = seg.getAttribute('data-final-dasharray');
-    if (!final) return;
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        seg.style.strokeDasharray = final;
-        seg.style.transition = 'stroke-dasharray 1s cubic-bezier(.4,0,.2,1)';
-      });
-    });
-  });
-}
-
 /* ── Progress bars ────────────────────────────────── */
 function animateProgs() {
   document.querySelectorAll('.js-prog').forEach(function (bar) {
@@ -1064,7 +812,6 @@ var io = new IntersectionObserver(function (entries) {
 document.querySelectorAll('.js-kpi').forEach(function (el) { io.observe(el); });
 
 /* Run on load */
-animateDonut();
 animateProgs();
 
 /* ── Refresh button ───────────────────────────────── */
