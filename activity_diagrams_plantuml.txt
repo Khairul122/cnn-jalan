@@ -1,0 +1,270 @@
+' ============================================================
+' CNN-JALAN — ACTIVITY DIAGRAMS (PlantUML Swimlane)
+' NIM: 210170072 — Universitas Malikussaleh
+' ============================================================
+
+
+' ============================================================
+' 1. INPUT DATA LOKASI
+' ============================================================
+@startuml AD_01_InputDataLokasi
+title Activity Diagram — Input Data Lokasi
+
+|Admin|
+start
+:Buka halaman Lokasi;
+:Isi form data lokasi\ndan upload foto;
+:Klik Simpan;
+
+|Sistem|
+:Validasi data;
+if (Valid?) then (Ya)
+  :Simpan file foto;
+
+  |Database|
+  :Simpan data lokasi\ndan dokumentasi foto;
+
+  |Sistem|
+  :Tampilkan pesan sukses;
+
+  |Admin|
+  :Melihat daftar lokasi;
+else (Tidak)
+  |Sistem|
+  :Tampilkan pesan error;
+  |Admin|
+  :Perbaiki form;
+endif
+stop
+@enduml
+
+
+' ============================================================
+' 2. LABELING SDI
+' ============================================================
+@startuml AD_02_LabelingSDI
+title Activity Diagram — Labeling SDI
+
+|Admin|
+start
+:Buka halaman Labeling SDI;
+:Pilih lokasi;
+:Isi parameter SDI\n(retak, lubang, alur);
+:Klik Simpan;
+
+|Sistem|
+:Hitung nilai SDI;
+:Tentukan tingkat kerusakan\n(Berat / Sedang / Ringan);
+
+|Database|
+:Simpan label kerusakan;
+
+|Sistem|
+:Tampilkan pesan sukses;
+
+|Admin|
+:Melihat hasil label SDI;
+stop
+@enduml
+
+
+' ============================================================
+' 3. PREPROCESSING GAMBAR
+' ============================================================
+@startuml AD_03_PreprocessingGambar
+title Activity Diagram — Preprocessing Gambar
+
+|Admin|
+start
+:Buka halaman Preprocessing;
+:Atur konfigurasi pipeline\n(resize, crop, normalisasi,\naugmentasi, denoise);
+:Klik Jalankan;
+
+|Sistem|
+:Proses setiap foto\nsesuai konfigurasi;
+:Simpan gambar hasil;
+
+|Database|
+:Simpan konfigurasi\ndan hasil preprocessing;
+
+|Sistem|
+:Tampilkan pesan selesai;
+
+|Admin|
+:Melihat galeri hasil preprocessing;
+stop
+@enduml
+
+
+' ============================================================
+' 4. SPLIT DATA
+' ============================================================
+@startuml AD_04_SplitData
+title Activity Diagram — Split Data
+
+|Admin|
+start
+:Buka halaman Split Data;
+:Atur konfigurasi split\n(nama, jumlah fold K,\nrandom state);
+:Klik Jalankan Split;
+
+|Sistem|
+:Jalankan Stratified K-Fold;
+:Bagi foto ke setiap fold\nsesuai proporsi kelas;
+
+|Database|
+:Simpan konfigurasi split\ndan pembagian fold;
+
+|Sistem|
+:Tampilkan pesan sukses;
+
+|Admin|
+:Melihat distribusi data\nper fold;
+stop
+@enduml
+
+
+' ============================================================
+' 5. TRAINING CNN
+' ============================================================
+@startuml AD_05_TrainingCNN
+title Activity Diagram — Training CNN
+
+|Admin|
+start
+:Buka halaman Arsitektur CNN;
+:Atur hyperparameter\n(model, learning rate,\nbatch size, epoch, dll);
+:Klik Mulai Training;
+
+|Sistem|
+:Bangun model CNN;
+:Latih model Phase 1\n(head training);
+:Latih model Phase 2\n(fine-tuning);
+
+|Database|
+:Simpan riwayat training\nper epoch;
+
+|Sistem|
+:Evaluasi model otomatis;
+:Prediksi seluruh data;
+
+|Database|
+:Simpan hasil evaluasi\ndan prediksi;
+
+|Sistem|
+:Tampilkan notifikasi selesai;
+
+|Admin|
+:Melihat akurasi\ndan grafik training;
+stop
+@enduml
+
+
+' ============================================================
+' 6. EVALUASI MODEL
+' ============================================================
+@startuml AD_06_EvaluasiModel
+title Activity Diagram — Evaluasi Model
+
+|Admin|
+start
+:Buka halaman Arsitektur CNN;
+:Pilih model yang sudah selesai;
+:Klik Lihat Evaluasi;
+
+|Sistem|
+:Ambil data hasil evaluasi;
+
+|Database|
+:Ambil data hasil evaluasi\ndan riwayat training;
+
+|Sistem|
+:Tampilkan confusion matrix,\nmetrik per kelas,\ndan grafik epoch;
+
+|Admin|
+:Analisis akurasi\ndan metrik model;
+if (Akurasi memenuhi target?) then (Ya)
+  :Lanjut ke Peta GIS;
+else (Tidak)
+  :Atur ulang hyperparameter\ndan training ulang;
+endif
+stop
+@enduml
+
+
+' ============================================================
+' 7. MELIHAT PETA GIS
+' ============================================================
+@startuml AD_07_MelihatPetaGIS
+title Activity Diagram — Melihat Peta GIS
+
+|Admin|
+start
+:Buka halaman Peta GIS;
+
+|Sistem|
+:Muat halaman peta Leaflet;
+:Request data GeoJSON;
+
+|Database|
+:Ambil data prediksi\nbeserta koordinat GPS;
+
+|Sistem|
+:Render marker pada peta\n(Berat / Sedang / Ringan);
+
+|Admin|
+:Melihat sebaran\nkerusakan jalan di peta;
+:Pilih filter tingkat kerusakan;
+
+|Sistem|
+:Filter tampilan marker;
+
+|Admin|
+:Klik marker pada peta;
+
+|Sistem|
+:Tampilkan popup\ninfo kerusakan;
+
+|Admin|
+:Membaca informasi lokasi;
+stop
+@enduml
+
+
+' ============================================================
+' 8. LIHAT LANDING PAGE
+' ============================================================
+@startuml AD_08_LandingPage
+title Activity Diagram — Lihat Landing Page
+
+|Pengunjung|
+start
+:Akses halaman utama aplikasi;
+
+|Sistem|
+:Ambil statistik dari database;
+
+|Database|
+:Ambil jumlah prediksi\ndan akurasi model;
+
+|Sistem|
+:Tampilkan statistik\ndan peta publik;
+
+|Pengunjung|
+:Melihat peta sebaran\nkerusakan jalan;
+:Klik marker pada peta;
+
+|Sistem|
+:Tampilkan popup\ninfo kerusakan;
+
+|Pengunjung|
+:Membaca informasi;
+if (Ingin akses fitur lengkap?) then (Ya)
+  :Klik tombol Masuk;
+  |Sistem|
+  :Redirect ke halaman login;
+else (Tidak)
+  :Tetap di landing page;
+endif
+stop
+@enduml

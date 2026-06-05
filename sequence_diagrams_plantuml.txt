@@ -1,0 +1,442 @@
+' ============================================================
+' CNN-JALAN — SEQUENCE DIAGRAMS (PlantUML)
+' NIM: 210170072 — Universitas Malikussaleh
+' ============================================================
+
+
+' ============================================================
+' 1. INPUT DATA LOKASI
+' ============================================================
+@startuml SD_01_InputDataLokasi
+title Sequence Diagram — Input Data Lokasi
+
+actor    Admin
+boundary Browser
+control  LokasiController
+database Database
+
+Admin -> Browser : Isi form lokasi + upload foto
+activate Browser
+
+Browser -> LokasiController : POST /lokasi/create
+activate LokasiController
+
+LokasiController -> LokasiController : Validasi input
+
+alt Data valid
+    LokasiController -> Database : INSERT lokasi_kerusakan\n+ dokumentasi_foto
+    activate Database
+    Database --> LokasiController : OK
+    deactivate Database
+
+    LokasiController --> Browser : Redirect + flash sukses
+    deactivate LokasiController
+    Browser --> Admin : Tampil daftar lokasi
+    deactivate Browser
+
+else Data tidak valid
+    LokasiController --> Browser : Render form + pesan error
+    deactivate LokasiController
+    Browser --> Admin : Tampil pesan error
+    deactivate Browser
+end
+
+@enduml
+
+
+' ============================================================
+' 2. LABELING SDI
+' ============================================================
+@startuml SD_02_LabelingSDI
+title Sequence Diagram — Labeling SDI
+
+actor    Admin
+boundary Browser
+control  LabelController
+database Database
+
+Admin -> Browser : Pilih lokasi → isi parameter SDI
+activate Browser
+
+Browser -> LabelController : POST /label/create
+activate LabelController
+
+LabelController -> LabelController : Hitung SDI\n(F_retak + F_lubang + F_rutting)\nTentukan tingkat kerusakan
+
+alt Berhasil dihitung
+    LabelController -> Database : INSERT label_kerusakan
+    activate Database
+    Database --> LabelController : OK
+    deactivate Database
+
+    LabelController --> Browser : Redirect + flash sukses
+    deactivate LabelController
+    Browser --> Admin : Tampil hasil label SDI
+    deactivate Browser
+
+else Lokasi sudah berlabel
+    LabelController --> Browser : Flash peringatan
+    deactivate LabelController
+    Browser --> Admin : Tampil peringatan
+    deactivate Browser
+end
+
+@enduml
+
+
+' ============================================================
+' 3. PREPROCESSING GAMBAR
+' ============================================================
+@startuml SD_03_PreprocessingGambar
+title Sequence Diagram — Preprocessing Gambar
+
+actor    Admin
+boundary Browser
+control  PreprocessingController
+entity   PreprocessingService
+database Database
+
+Admin -> Browser : Atur konfigurasi pipeline → Klik Jalankan
+activate Browser
+
+Browser -> PreprocessingController : POST /preprocessing/jalankan
+activate PreprocessingController
+
+PreprocessingController -> Database : INSERT preprocessing_config
+activate Database
+Database --> PreprocessingController : config_id
+deactivate Database
+
+PreprocessingController -> PreprocessingService : run_pipeline(foto, config)
+activate PreprocessingService
+
+PreprocessingService -> PreprocessingService : Proses setiap foto\n(Resize → Crop → Normalisasi\n→ Augmentasi → Denoise)
+
+PreprocessingService -> Database : INSERT hasil_preprocessing (per foto)
+activate Database
+Database --> PreprocessingService : OK
+deactivate Database
+
+PreprocessingService --> PreprocessingController : Selesai
+deactivate PreprocessingService
+
+PreprocessingController --> Browser : Redirect + flash selesai
+deactivate PreprocessingController
+Browser --> Admin : Tampil galeri hasil preprocessing
+deactivate Browser
+
+Admin -> Browser : Klik gambar / Klik Reset Semua
+activate Browser
+
+alt Klik gambar
+    Browser --> Admin : Tampil modal viewer
+else Klik Reset Semua
+    Browser -> PreprocessingController : POST /preprocessing/hasil/reset
+    activate PreprocessingController
+    PreprocessingController -> Database : DELETE hasil_preprocessing\n+ hapus file fisik
+    activate Database
+    Database --> PreprocessingController : OK
+    deactivate Database
+    PreprocessingController --> Browser : Redirect + flash reset berhasil
+    deactivate PreprocessingController
+    Browser --> Admin : Galeri kosong
+end
+
+deactivate Browser
+@enduml
+
+
+' ============================================================
+' 4. SPLIT DATA
+' ============================================================
+@startuml SD_04_SplitData
+title Sequence Diagram — Split Data (Stratified K-Fold)
+
+actor    Admin
+boundary Browser
+control  SplitController
+entity   SplitService
+database Database
+
+Admin -> Browser : Isi parameter split → Klik Jalankan
+activate Browser
+
+Browser -> SplitController : POST /split/create
+activate SplitController
+
+SplitController -> Database : SELECT foto berlabel
+activate Database
+Database --> SplitController : List foto berlabel
+deactivate Database
+
+alt Foto cukup untuk K fold
+    SplitController -> Database : INSERT split_config
+    activate Database
+    Database --> SplitController : config_id
+    deactivate Database
+
+    SplitController -> SplitService : run(K, random_state, items)
+    activate SplitService
+
+    SplitService -> SplitService : Jalankan StratifiedKFold\nAssign fold_index per foto
+
+    SplitService -> Database : INSERT split_item (per foto)\nUPDATE split_config total_data
+    activate Database
+    Database --> SplitService : OK
+    deactivate Database
+
+    SplitService --> SplitController : Selesai
+    deactivate SplitService
+
+    SplitController --> Browser : Redirect + flash sukses
+    deactivate SplitController
+    Browser --> Admin : Tampil distribusi per fold + chart
+    deactivate Browser
+
+else Foto tidak cukup
+    SplitController --> Browser : Flash error "Data tidak cukup"
+    deactivate SplitController
+    Browser --> Admin : Tampil pesan error
+    deactivate Browser
+end
+
+@enduml
+
+
+' ============================================================
+' 5. TRAINING CNN
+' ============================================================
+@startuml SD_05_TrainingCNN
+title Sequence Diagram — Training CNN
+
+actor    Admin
+boundary Browser
+control  ArsitekturController
+entity   CNNService
+database Database
+
+Admin -> Browser : Isi hyperparameter → Klik Mulai Training
+activate Browser
+
+Browser -> ArsitekturController : POST /arsitektur/create
+activate ArsitekturController
+
+ArsitekturController -> Database : INSERT arsitektur_config\n(status = antri)
+activate Database
+Database --> ArsitekturController : arsitektur_id
+deactivate Database
+
+ArsitekturController -> CNNService : train(arsitektur) [background thread]
+activate CNNService
+
+ArsitekturController --> Browser : Redirect ke halaman monitor progress
+deactivate ArsitekturController
+Browser --> Admin : Tampil halaman monitor training
+deactivate Browser
+
+CNNService -> CNNService : Build model + load dataset\nHitung class_weight
+CNNService -> CNNService : Phase 1 — Head Training\nPhase 2 — Fine-tuning
+
+CNNService -> Database : INSERT hasil_training (per epoch)
+activate Database
+Database --> CNNService : OK
+deactivate Database
+
+CNNService -> CNNService : Auto Evaluate (confusion matrix + F1)
+
+CNNService -> Database : INSERT hasil_evaluasi\nINSERT prediksi_model\nUPDATE status = selesai
+activate Database
+Database --> CNNService : OK
+deactivate Database
+
+deactivate CNNService
+
+Admin -> Browser : Polling GET /arsitektur/<id>/progress
+activate Browser
+Browser -> ArsitekturController : GET /progress
+activate ArsitekturController
+
+alt Training sedang berjalan
+    ArsitekturController --> Browser : JSON (epoch, loss, val_accuracy)
+    deactivate ArsitekturController
+    Browser --> Admin : Update grafik live
+    deactivate Browser
+else Training selesai
+    ArsitekturController --> Browser : JSON (status = selesai, akurasi)
+    deactivate ArsitekturController
+    Browser --> Admin : Tampil notifikasi selesai
+    deactivate Browser
+end
+
+@enduml
+
+
+' ============================================================
+' 6. EVALUASI MODEL
+' ============================================================
+@startuml SD_06_EvaluasiModel
+title Sequence Diagram — Evaluasi Model CNN
+
+actor    Admin
+boundary Browser
+control  ArsitekturController
+database Database
+
+Admin -> Browser : Pilih model selesai → Klik Lihat Evaluasi
+activate Browser
+
+Browser -> ArsitekturController : GET /arsitektur/<id>/evaluasi
+activate ArsitekturController
+
+ArsitekturController -> Database : SELECT hasil_evaluasi\nSELECT hasil_training
+activate Database
+Database --> ArsitekturController : Data evaluasi + riwayat epoch
+deactivate Database
+
+alt Data evaluasi tersedia
+    ArsitekturController --> Browser : Render halaman evaluasi
+    deactivate ArsitekturController
+    Browser --> Admin : Tampil confusion matrix,\nmetrik per kelas, grafik epoch
+    deactivate Browser
+
+    Admin -> Browser : Analisis hasil
+    activate Browser
+
+    alt Akurasi memenuhi target
+        Browser --> Admin : Lanjut ke Peta GIS
+        deactivate Browser
+    else Akurasi belum memenuhi target
+        Browser --> Admin : Kembali atur hyperparameter\ndan training ulang
+        deactivate Browser
+    end
+
+else Data belum tersedia
+    ArsitekturController --> Browser : Flash "Jalankan training dahulu"
+    deactivate ArsitekturController
+    Browser --> Admin : Tampil pesan informasi
+    deactivate Browser
+end
+
+@enduml
+
+
+' ============================================================
+' 7. MELIHAT PETA GIS
+' ============================================================
+@startuml SD_07_MelihatPetaGIS
+title Sequence Diagram — Melihat Peta GIS
+
+actor    Admin
+boundary Browser
+control  PetaController
+database Database
+
+Admin -> Browser : Buka halaman Peta GIS
+activate Browser
+
+Browser -> PetaController : GET /peta atau /arsitektur/<id>/gis
+activate PetaController
+
+alt Sudah login
+    PetaController --> Browser : Render template peta (Leaflet.js)
+    deactivate PetaController
+
+    Browser -> PetaController : GET /peta/geojson
+    activate PetaController
+
+    PetaController -> Database : SELECT prediksi_model\nJOIN lokasi_kerusakan
+    activate Database
+    Database --> PetaController : Data koordinat + prediksi
+    deactivate Database
+
+    PetaController --> Browser : Response GeoJSON
+    deactivate PetaController
+
+    Browser -> Browser : Render marker di peta\n(Berat/Sedang/Ringan)
+    Browser --> Admin : Tampil peta kerusakan jalan
+    deactivate Browser
+
+    Admin -> Browser : Interaksi peta
+    activate Browser
+
+    alt Klik filter tingkat
+        Browser --> Admin : Marker difilter
+    else Klik marker
+        Browser --> Admin : Tampil popup info lokasi
+    end
+
+    deactivate Browser
+
+else Belum login
+    PetaController --> Browser : Redirect ke /auth/login
+    deactivate PetaController
+    Browser --> Admin : Tampil halaman login
+    deactivate Browser
+end
+
+@enduml
+
+
+' ============================================================
+' 8. LIHAT LANDING PAGE
+' ============================================================
+@startuml SD_08_LandingPage
+title Sequence Diagram — Lihat Landing Page
+
+actor    Pengunjung
+boundary Browser
+control  DashboardController
+database Database
+
+Pengunjung -> Browser : Akses URL aplikasi
+activate Browser
+
+Browser -> DashboardController : GET /
+activate DashboardController
+
+alt Belum login
+    DashboardController -> Database : SELECT statistik prediksi\n+ akurasi model terbaik
+    activate Database
+    Database --> DashboardController : Data statistik
+    deactivate Database
+
+    DashboardController --> Browser : Render landing page
+    deactivate DashboardController
+
+    Browser -> DashboardController : GET /api/landing/gis
+    activate DashboardController
+
+    DashboardController -> Database : SELECT prediksi_model\nJOIN lokasi_kerusakan
+    activate Database
+    Database --> DashboardController : Data koordinat + prediksi
+    deactivate Database
+
+    DashboardController --> Browser : Response GeoJSON publik
+    deactivate DashboardController
+
+    Browser --> Pengunjung : Tampil statistik + peta interaktif
+    deactivate Browser
+
+    Pengunjung -> Browser : Klik marker / Klik tombol Masuk
+    activate Browser
+
+    alt Klik marker
+        Browser --> Pengunjung : Tampil popup info kerusakan
+    else Klik tombol Masuk
+        Browser -> DashboardController : GET /auth/login
+        activate DashboardController
+        DashboardController --> Browser : Render halaman login
+        deactivate DashboardController
+        Browser --> Pengunjung : Tampil form login
+    end
+
+    deactivate Browser
+
+else Sudah login
+    DashboardController --> Browser : Redirect ke dashboard
+    deactivate DashboardController
+    Browser --> Pengunjung : Tampil halaman dashboard
+    deactivate Browser
+end
+
+@enduml
