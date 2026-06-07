@@ -23,7 +23,9 @@
       "Bash(Select-Object FullName)",
       "PowerShell(mysql *)",
       "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -c \"from app.services.split_service import SplitService; items=[{'dokumentasi_id':i,'label_id':i%3+1,'nama_file':f'f{i}.jpg','latitude':5.0,'longitude':97.0} for i in range\\(12\\)]; r=SplitService.run\\(3,42,items\\); from collections import Counter; print\\('fold counts:',Counter\\(x['fold_index'] for x in r\\)\\); print\\('per fold label dist:'\\); [print\\(f'  fold {fi}:', Counter\\(x['label_id'] for x in r if x['fold_index']==fi\\)\\) for fi in range\\(3\\)]\")",
-      "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -c \"import tensorflow as tf; print\\('TF version:', tf.__version__\\); from tensorflow.keras.applications import efficientnet, mobilenet_v2; import numpy as np; x = np.array\\([[[0., 128., 255.]]]\\);  print\\('MobileNetV2 preprocess [0,128,255]:', mobilenet_v2.preprocess_input\\(x.copy\\(\\)\\)\\); print\\('EfficientNet preprocess [0,128,255]:', efficientnet.preprocess_input\\(x.copy\\(\\)\\)\\)\")"
+      "Bash(.\\\\.venv\\\\Scripts\\\\python.exe -c \"import tensorflow as tf; print\\('TF version:', tf.__version__\\); from tensorflow.keras.applications import efficientnet, mobilenet_v2; import numpy as np; x = np.array\\([[[0., 128., 255.]]]\\);  print\\('MobileNetV2 preprocess [0,128,255]:', mobilenet_v2.preprocess_input\\(x.copy\\(\\)\\)\\); print\\('EfficientNet preprocess [0,128,255]:', efficientnet.preprocess_input\\(x.copy\\(\\)\\)\\)\")",
+      "Bash(.venv/Scripts/python.exe -m pip freeze)",
+      "Bash(.venv/Scripts/python.exe -c ' *)"
     ]
   }
 }
