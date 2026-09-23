@@ -14,7 +14,11 @@ Bagian ini harus selesai dulu supaya semua eksperimen berikutnya diukur dengan a
 
 - [ ] **Perbaiki inkonsistensi pemilihan "model terbaik" di UI.** `arsitektur_controller.py::index()` masih memilih `best_id` berdasarkan `HasilEvaluasi.akurasi` (metrik 1 fold), bukan `cv_summary().macro_f1`. Ini bertentangan dengan `prediction.py::best_model()` yang sudah benar memprioritaskan metrik CV. Ganti logika di `index()` supaya konsisten pakai `cv_summary().macro_f1` untuk config yang sudah punya `pred_type='cv'`, fallback ke `HasilEvaluasi.akurasi` hanya kalau belum ada CV sama sekali. Update juga label kolom "Akurasi" di `arsitektur/index.html` (baris 54, 98) supaya jelas menyebut sumber angkanya (CV atau 1 fold). **(M)**
 - [ ] **Buat split baru (jangan reuse split lama) sebelum baseline CV berikutnya.** `split_service.py` sekarang group-aware terhadap foto near-duplicate (`dedup_service.py`, average-hash + union-find, baru ditambahkan) — di 280 foto saat ini terdeteksi 31 foto near-duplicate yang split lama (`StratifiedKFold` polos) bisa taruh di fold train dan val berbeda sekaligus (leakage). Split lama yang dibuat sebelum perubahan ini **tidak otomatis diperbaiki** — harus dibuat split baru dari `/split/new` supaya baseline CV di bawah ini bersih dari leakage duplikat sejak awal. **(S)**
-- [ ] **Jalankan ulang "Prediksi CV K-Fold" dengan setting fine-tuning terbaru** (MobileNetV2 8 layer, EfficientNetB0 12 layer, LR fine-tune dibagi 10) sebelum mengubah apa pun lagi. Angka 45,4% ± 6,7 yang ada sekarang masih pakai setting fine-tuning lama, jadi belum mencerminkan perbaikan overfitting yang sudah diterapkan hari ini. **Pastikan pakai split baru (lihat item di atas), bukan split lama.** **(L, butuh 5 training run penuh)**
+- [x] **Jalankan ulang "Prediksi CV K-Fold" dengan setting fine-tuning terbaru** (MobileNetV2 8 layer, EfficientNetB0 12 layer, LR fine-tune dibagi 10). **Selesai 2026-09-24** (`scripts/run_pipeline.py --skip-preprocessing --lr 0.0001 --epochs 80 --k 5 --model mobilenetv2`, split baru near-dup-aware `split_config_id=483`, `arsitektur_id=279`). Hasil:
+  **akurasi 47,1% ± 6,1, macro-F1 45,8%, baseline 50,4% (selisih −3,2 poin) — masih di BAWAH baseline.**
+  Perbaikan kecil dari 45,4%/44,6% sebelumnya, kesimpulan tidak berubah. Mesin CPU-only — total waktu ~7,7 jam
+  (training tunggal 405 menit, CV 5-fold 46 menit, model final 13 menit). Detail riwayat angka di `CLAUDE.md`
+  "Status Akurasi CNN". **(L, selesai — jauh lebih lama dari estimasi karena CPU-only)**
 - [ ] **Audit ulang semua tempat yang menampilkan atau membandingkan angka akurasi** (dashboard, halaman detail arsitektur, landing page publik) untuk memastikan tidak ada lagi tempat yang diam-diam memakai `HasilEvaluasi.akurasi` sebagai klaim akurasi akhir. Beri label eksplisit "1 fold, bukan metrik resmi" di setiap tempat yang menampilkannya. **(M)**
 - [ ] **Perbaiki dan sinkronkan dokumentasi (`studi.md`, `CLAUDE.md`, `README.md`)** supaya mencerminkan kode yang benar-benar berjalan, bukan snapshot 29 Mei 2026. Setiap kali skema training/preprocessing/arsitektur berubah setelah ini, update dokumentasi di commit yang sama. **(M)**
 
@@ -23,46 +27,98 @@ Bagian ini harus selesai dulu supaya semua eksperimen berikutnya diukur dengan a
 ## P1 — Pelabelan (SDI)
 
 - [ ] **Pertahankan `hitung_sdi()` apa adanya.** Sudah 100% sesuai standar Bina Marga (F_retak, F_lubang, F_rutting, threshold Ringan/Sedang/Berat). Tidak perlu diubah.
-- [ ] **Perbaiki `estimasi_dari_dimensi()`.** Implementasi saat ini pakai tabel lookup diskrit 5 kelompok luas (≤0,5 / ≤2 / ≤6 / ≤12 / >12 m²) dengan nilai hardcoded, menyimpang dari formula kontinu yang didokumentasikan di `studi.md` (`persen_retak = min(luas/referensi, 100)`, `jumlah_lubang = luas/0,1`). Pilih salah satu:
-  - **Opsi A:** ganti ke formula kontinu sesuai draft asli di `studi.md`, tentukan nilai `referensi` yang masuk akal dan didokumentasikan alasannya.
-  - **Opsi B:** tetap pakai tabel diskrit, tapi tuliskan justifikasi ambang batas dan nilai parameter di `CLAUDE.md`, idealnya dirujuk ke observasi lapangan atau literatur Bina Marga.
-  
-  **(M)**
-- [ ] **Audit label yang berada dekat ambang batas SDI** (mendekati 50 dan 150). Tandai baris ini di database untuk analisis kesalahan terpisah karena paling rawan salah klasifikasi. **(M)**
-- [ ] **Latih model kedua dengan label surveyor** (kolom `keterangan` pada baris Estimasi) sebagai target, untuk subset data yang punya kedua sumber label. Bandingkan macro-F1 dengan model label SDI. Catatan proyek menunjukkan label surveyor memberi macro-F1 lebih tinggi (~56–61%) dibanding SDI dari P×L (~46–52%). **(L)**
+- [x] **Perbaiki `estimasi_dari_dimensi()`.** Opsi A dipilih (2026-09-23, keputusan pemilik) — diganti ke formula kontinu
+  (`persen_retak = min(luas/REF_RETAK,100)`, `jumlah_lubang = luas/0,1` dipotong di 999, `kedalaman_rutting =
+  min(luas/REF_RUTTING,5)`, `jenis_retak` = 'lebar' kalau luas>2m²). Konstanta kalibrasi (REF_RETAK=1.0,
+  REF_RUTTING=4.0, AMBANG_LEBAR=2.0) didokumentasikan di `CLAUDE.md` dan `label_kerusakan.py`. Test regresi di
+  `tests/test_p2.py`. **Belum di-apply ke DB** — `label_kerusakan` masih berisi nilai lama sampai `/label/auto`
+  dijalankan ulang; sengaja ditunda supaya tidak balapan dengan baseline CV P0 yang masih training (lihat item split
+  baru di atas — split & CV P0 pakai snapshot label LAMA, itu memang disengaja untuk isolasi variabel). **(M, selesai)**
+- [x] **Audit label yang berada dekat ambang batas SDI** (mendekati 50 dan 150). `scripts/audit_sdi_borderline.py`
+  dibuat dan dijalankan pada label lama (tabel diskrit): **0 dari 280 label dekat ambang batas** — bukan karena
+  datanya tidak ambigu, tapi karena tabel diskrit lama cuma menghasilkan 5 nilai SDI tetap (20/25/75/135/195) yang
+  semuanya jauh dari 50/150. Ini bukti tambahan kenapa Opsi A perlu — tabel lama secara struktural tidak bisa
+  merepresentasikan kasus borderline. Jalankan ulang script ini setelah `/label/auto` dijalankan dengan formula baru
+  untuk audit borderline yang sebenarnya. **(M, selesai — perlu rerun setelah relabel)**
+- [ ] **Latih model kedua dengan label surveyor** (kolom `keterangan` pada baris Estimasi) sebagai target, untuk subset data yang punya kedua sumber label. Bandingkan macro-F1 dengan model label SDI. Catatan proyek menunjukkan label surveyor memberi macro-F1 lebih tinggi (~56–61%) dibanding SDI dari P×L (~46–52%).
+  **Script siap** (`scripts/run_surveyor_cv.py`, 2026-09-23) — subset 147 foto berkeratangan `Estimasi (Ringan|Sedang|Berat)`
+  (133 foto `Ukur` dikecualikan, tidak punya penilaian kelas surveyor independen), split terpisah + near-dup-aware,
+  reuse penuh `_run_training`/`_run_cv_predict`. **Belum dijalankan** — antre setelah pipeline CV P0 selesai (CPU-only,
+  jalan paralel cuma akan memperlambat keduanya berebut core yang sama). **(L, tertunda)**
 - [ ] **Laporkan kedua sumber label secara berdampingan di bab pembahasan skripsi**, jangan cuma pilih satu yang hasilnya lebih baik. Jelaskan kenapa SDI dari P×L secara struktural tidak sepenuhnya tampak di foto tanpa skala. **(S, penulisan)**
 
 ---
 
 ## P2 — Preprocessing
 
-- [ ] **Ganti default denoise dari Gaussian/Median ke Bilateral Filter**, kernel kecil (3 atau 5). Bilateral mempertahankan tepi retak sambil meredam noise di area datar. Uji juga varian tanpa denoise sama sekali sebagai pembanding ablation, karena blur berisiko menghilangkan retak halus yang jadi sinyal utama kelas. **(M)**
-- [ ] **Tambahkan opsi CLAHE (Contrast Limited Adaptive Histogram Equalization)** di kanal luminance sebagai pilihan baru di `norm_method`, selain minmax/zscore/none. CLAHE menonjolkan kontras lokal tanpa merusak kontras absolut antar foto seperti minmax global. **(M)**
-- [ ] **Ganti center crop generik dengan ROI-aware crop.** Anotasi bounding box area kerusakan untuk 280 foto (pakai LabelImg atau Roboflow, kerja satu kali), lalu crop ke area itu sebelum masuk pipeline. Sediakan fallback ke center crop kalau anotasi belum tersedia untuk foto tertentu. **(L, kerja anotasi manual)**
-- [ ] **Tambahkan tahap koreksi iluminasi** (gray-world white balance atau histogram matching ke satu foto referensi), sebelum atau sesudah resize, untuk mengurangi variasi pencahayaan antar sesi pemotretan lapangan. **(M)**
-- [ ] **Perbaiki urutan pipeline supaya konsisten dengan dokumentasi**, atau perbarui dokumentasi supaya sesuai urutan kode saat ini (Resize → Crop → Normalisasi → Denoise → Augmentasi). Pastikan `studi.md` dan `CLAUDE.md` menyebut urutan yang sama. **(S)**
-- [ ] **(Eksperimen opsional) Tambahkan edge map (Canny/Sobel) sebagai kanal ke-4 input**, digabung dengan RGB, untuk memberi sinyal eksplisit lokasi tepi retak ke model. **(L, perlu ubah arsitektur input)**
+- [x] **Ganti default denoise dari Gaussian/Median ke Bilateral Filter**, kernel kecil (3 atau 5). Config yang aktif dipakai
+  training sudah `bilateral` k=3 sebelum item ini dikerjakan; yang diubah 2026-09-23: default SKEMA (`preprocessing_config.denoise_method`)
+  dari `none` → `bilateral` supaya config baru mulai dari rekomendasi ini, bukan "tanpa denoise". **Ablation tanpa
+  denoise sama sekali BELUM dijalankan** — perlu preprocessing ulang + split + CV baru, antre di belakang P0/P1 item 4
+  (CPU-only, satu training pipeline dalam satu waktu). **(M, default selesai — ablation tertunda)**
+- [x] **Tambahkan opsi CLAHE** di `norm_method` (`preprocessing_service.py` — CLAHE di kanal L LAB, `clipLimit=2.0`,
+  `tileGridSize=(8,8)`), migration `migrate_add_clahe_norm.sql` sudah diterapkan. Belum dibandingkan lewat CV terhadap
+  minmax/zscore — sama seperti item denoise, ablation perlu run baru. **(M, opsi selesai — ablation tertunda)**
+- [ ] **Ganti center crop generik dengan ROI-aware crop.** **Diskip (keputusan pemilik, 2026-09-23)** — butuh anotasi
+  bounding box manual 280 foto yang belum tersedia. Revisit kalau anotasi sudah ada. **(L, kerja anotasi manual — diskip)**
+- [x] **Tambahkan tahap koreksi iluminasi** — gray-world white balance (`PreprocessingService._gray_world_white_balance`),
+  toggle `illum_correction` di preprocessing_config, diterapkan SEBELUM resize (Step 1). Migration
+  `migrate_add_illum_correction.sql` sudah diterapkan. Diuji manual: color cast [80,100,180] → [119,119,119] rata kanal
+  setelah koreksi. **(M, selesai)**
+- [x] **Perbaiki urutan pipeline supaya konsisten dengan dokumentasi.** Ditemukan: `CLAUDE.md` menulis bullet Step 5
+  (Augmentasi) SEBELUM Step 4 (Denoise), padahal kode & penomoran sama-sama Denoise dulu. Urutan bullet di `CLAUDE.md`
+  diperbaiki mengikuti kode (kode adalah yang benar). **(S, selesai)**
+- [ ] **(Eksperimen opsional) Tambahkan edge map (Canny/Sobel) sebagai kanal ke-4 input.** **Diskip (keputusan pemilik,
+  2026-09-23)** — akan mengorbankan kompatibilitas transfer learning ImageNet (backbone pretrained perlu input 3-kanal)
+  untuk dataset yang sudah sangat bergantung padanya karena kecil. **(L, perlu ubah arsitektur input — diskip)**
 
 ---
 
 ## P3 — Augmentasi
 
 - [ ] **Pertahankan pembatasan yang sudah benar**: flip vertikal tetap dihapus, rotasi tetap dibatasi kecil (sekitar ±18 derajat). Jangan diubah, karena jalan terbalik atau miring ekstrem tidak realistis.
-- [ ] **Tambahkan color jitter** (variasi hue dan saturasi ringan) di layer augmentasi model, selain brightness dan contrast yang sudah ada. **(S)**
-- [ ] **Implementasikan Mixup atau CutMix** di level batch lewat `tf.data`, bukan layer Keras preprocessing biasa (layer bawaan Keras tidak mendukung ini). Campur dua foto dan label secara proporsional untuk membuat sampel sintetis baru. **(M)**
-- [ ] **Tambahkan Cutout / Random Erasing** dengan patch kecil (di bawah 10% luas gambar) saat training, supaya model tidak terlalu bergantung pada satu titik kerusakan paling mencolok. **(M)**
-- [ ] **Tambahkan noise sintetis ringan** (Gaussian noise) setelah tahap denoise saat training, melatih model tahan terhadap variasi sensor kamera lapangan. **(S)**
-- [ ] **Perluas Test-Time Augmentation** di `prediction.py::_predict_with_tta` dari sekadar flip horizontal menjadi kombinasi flip horizontal dan multi-crop (5-crop: tengah + 4 sudut), dirata-ratakan. **(M)**
+- [x] **Tambahkan color jitter** (hue & saturasi ringan) di layer augmentasi model. `model.py::build_model` — `RandomHue(0.05)` +
+  `RandomSaturation((0.4,0.6))` (Keras 3.15 native layers, value_range=(0,255) konsisten dgn layer lain). **(S, selesai)**
+- [x] **Implementasikan Mixup** di level batch lewat `tf.data` (bukan layer Keras preprocessing — TODO.md sendiri
+  menyebut "Mixup ATAU CutMix", Mixup dipilih karena CutMix menambah kompleksitas spatial-box yang sama tanpa manfaat
+  tambahan untuk tujuan ini). `training.py::_mixup_dataset` + `_fit_phase(..., mixup_alpha=)`. **Opt-in murni**
+  (`ArsitekturConfig.mixup_alpha`, default 0 = TIDAK ada perubahan perilaku sama sekali dari sebelumnya). Saat aktif:
+  loss otomatis `CategoricalCrossentropy` (`model.py::_make_loss`), `class_weight` dibaurkan jadi `sample_weight`
+  per-batch (bukan dibuang) supaya penanganan imbalance kelas tetap jalan meski label sudah soft. Diuji smoke-test
+  end-to-end (dataset shapes, `model.fit()`, `_fit_phase` penuh dgn callback checkpoint) — **belum divalidasi lewat CV
+  sungguhan** (antre di belakang eksperimen lain, CPU-only). Field baru di form `/arsitektur/new`. **(M→sedikit lebih,
+  selesai — validasi CV tertunda)**
+- [x] **Tambahkan Cutout / Random Erasing** — `RandomErasing(factor=0.5, scale=(0.02,0.08))` (Keras 3.15 native,
+  patch 2-8% luas, di bawah 10% sesuai TODO). **(M, selesai)**
+- [x] **Tambahkan noise sintetis ringan** setelah augmentasi lain saat training. `GaussianNoise` bawaan Keras
+  ternyata membatasi stddev ke [0,1] (asumsi input ternormalisasi) — tidak cocok dengan pipeline [0,255] ini, jadi
+  dibuat `_pixel_gaussian_noise_layer` kecil (logika sama, tanpa batasan itu), stddev=3.0. **(S, selesai)**
+- [x] **Perluas Test-Time Augmentation** ke 5-crop (tengah + 4 sudut, 87,5% lalu di-resize balik) × flip horizontal
+  = 10 view, dari sebelumnya cuma 2 view (asli+flip). `prediction.py::_five_crop_flip_views` + `_predict_with_tta`
+  diupdate. Test regresi di `tests/test_p2.py` (shape, flip correctness, averaging). **Konsekuensi:** prediksi jadi
+  ~5x lebih lambat (10 forward pass vs 2) — untuk 280 foto di CPU-only ini AKAN memperlambat `predict_all`/`predict_cv`
+  secara nyata; belum diukur end-to-end. **(M, selesai — dampak kecepatan belum diukur)**
 
 ---
 
 ## P4 — Arsitektur Model
 
-- [ ] **Uji Jalur A (foto saja, backbone beku penuh).** Coba matikan Phase 2 fine-tuning sepenuhnya, bandingkan dengan Phase 1+2 seperti sekarang. Catatan proyek menyebut backbone beku + classifier sederhana sudah mengalahkan CNN fine-tuned pada eksperimen sebelumnya (~56–61% dengan label surveyor). **(M)**
-- [ ] **Sederhanakan kepala klasifikasi.** Turunkan `Dense(64)` ke `Dense(32)`, atau naikkan L2 regularizer dari `1e-4` ke `1e-3` di `model.py::build_model`. Dataset kecil (224 foto per fold) rawan overfit pada kepala yang terlalu besar. **(S)**
-- [ ] **(Eksperimen, dilaporkan sebagai pembanding) Bangun Jalur B: model hybrid foto + tabular.** Tambahkan cabang input numerik untuk panjang, lebar, dan jenis kerusakan, digabung dengan embedding CNN sebelum dense layer terakhir. Laporkan sebagai ablation study terpisah dengan catatan metodologis: jalur ini menunjukkan batas atas performa ketika model diberi akses langsung ke faktor penentu label, bukan murni belajar dari visual. **(L)**
-- [ ] **Cari bobot pretrained yang lebih dekat ke domain jalan** (dataset publik seperti CRACK500 atau GAPs), pakai sebagai titik awal alih-alih ImageNet murni. **(L, riset + integrasi)**
-- [ ] **Tambahkan label smoothing** pada loss function (`SparseCategoricalCrossentropy(label_smoothing=...)`), membantu mengurangi rasa percaya diri berlebih pada label yang berada dekat ambang batas SDI. **(S)**
+- [x] **Uji Jalur A (foto saja, backbone beku penuh).** `ArsitekturConfig.skip_fine_tuning` (opt-in, default False = perilaku
+  lama tidak berubah) — kalau True, `train()` melewati Phase 2 sepenuhnya dan pakai bobot Phase 1 apa adanya. Field
+  baru di form `/arsitektur/new`. Diuji smoke-test (`train()` penuh dgn `load_dataset` di-mock, 2 epoch, tanpa Phase 2
+  terpanggil). **Belum dibandingkan lewat CV sungguhan** — antre di belakang eksperimen lain. **(M, kode selesai — CV tertunda)**
+- [x] **Sederhanakan kepala klasifikasi.** Dibuat CONFIGURABLE (`dense_units` default 64, `dense_l2` default 1e-4 di
+  `ArsitekturConfig`), bukan hardcode salah satu opsi — bisa uji `Dense(32)` ATAU `L2=1e-3` (atau kombinasi) langsung
+  dari UI tanpa ubah kode. Default tetap 64/1e-4, perilaku lama tidak berubah. **(S, kode selesai — ablation tertunda)**
+- [ ] **(Eksperimen, dilaporkan sebagai pembanding) Bangun Jalur B: model hybrid foto + tabular.** **Belum dikerjakan**
+  — perlu keputusan pemilik dulu (lihat pertanyaan terpisah), effort besar (L): cabang input tabular baru, dataset
+  loader baru yang ikut kembalikan panjang/lebar/jenis per sampel, training/prediction path terpisah. **(L, tertunda)**
+- [ ] **Cari bobot pretrained yang lebih dekat ke domain jalan** (CRACK500/GAPs). **Belum dikerjakan** — perlu keputusan
+  pemilik dulu (riset dataset publik, kemungkinan besar bukan format Keras siap-pakai untuk MobileNetV2/EfficientNetB0,
+  bisa berarti retrain dari awal di dataset itu — proyek terpisah, bukan cuma "ganti weights='imagenet'"). **(L, tertunda)**
+- [x] **Tambahkan label smoothing.** `ArsitekturConfig.label_smoothing` (opt-in, default 0). Aktif tanpa Mixup → label
+  di-onehot (tanpa dicampur antar sampel, beda dari Mixup), `CategoricalCrossentropy(label_smoothing=X)`, class_weight
+  tetap jalan lewat `sample_weight`. Field baru di form. **Belum divalidasi lewat CV.** **(S, kode selesai — validasi tertunda)**
 
 ---
 

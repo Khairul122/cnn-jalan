@@ -91,6 +91,11 @@ def _run_training(app, config_id, base_dir):
             'batch_size':      cfg.batch_size,
             'epochs':          cfg.epochs,
             'patience':        cfg.patience,
+            'mixup_alpha':     cfg.mixup_alpha,
+            'label_smoothing': cfg.label_smoothing,
+            'dense_units':     cfg.dense_units,
+            'dense_l2':        cfg.dense_l2,
+            'skip_fine_tuning': cfg.skip_fine_tuning,
         }
         db.session.remove()
 
@@ -258,6 +263,11 @@ def new():
         patience        = int(request.form.get('patience') or 5)
         dropout_rate    = float(request.form.get('dropout_rate') or 0.3)
         optimizer       = request.form.get('optimizer') or 'adam'
+        mixup_alpha     = float(request.form.get('mixup_alpha') or 0)
+        label_smoothing = float(request.form.get('label_smoothing') or 0)
+        dense_units     = int(request.form.get('dense_units') or 64)
+        dense_l2        = float(request.form.get('dense_l2') or 0.0001)
+        skip_fine_tuning = bool(request.form.get('skip_fine_tuning'))
         split_config_id = int(request.form.get('split_config_id') or 0)
         fold_val        = int(request.form.get('fold_val') or 0)
 
@@ -277,7 +287,9 @@ def new():
             nama=nama, model_type=model_type, input_size=224,
             learning_rate=learning_rate, batch_size=batch_size,
             epochs=epochs, patience=patience, dropout_rate=dropout_rate,
-            optimizer=optimizer, split_config_id=split_config_id,
+            optimizer=optimizer, mixup_alpha=mixup_alpha, label_smoothing=label_smoothing,
+            dense_units=dense_units, dense_l2=dense_l2, skip_fine_tuning=skip_fine_tuning,
+            split_config_id=split_config_id,
             fold_val=fold_val, status='draft',
             pengguna_id=current_user.id,
         )
@@ -522,6 +534,11 @@ def _run_cv_predict(app, config_id, base_dir):
             batch_size      = cfg.batch_size,
             epochs          = cfg.epochs,
             patience        = cfg.patience,
+            mixup_alpha     = cfg.mixup_alpha,
+            label_smoothing = cfg.label_smoothing,
+            dense_units     = cfg.dense_units,
+            dense_l2        = cfg.dense_l2,
+            skip_fine_tuning = cfg.skip_fine_tuning,
         )
         db.session.remove()
 

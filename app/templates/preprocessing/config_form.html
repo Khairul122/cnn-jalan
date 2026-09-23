@@ -121,6 +121,15 @@
               {% endfor %}
             </select>
           </div>
+          <div class="col-sm-8 d-flex align-items-end">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="illum_correction" name="illum_correction"
+                     {{ 'checked' if config and config.illum_correction }} onchange="updatePreview()">
+              <label class="form-check-label prep-label" for="illum_correction" style="margin:0;">
+                Koreksi Iluminasi (gray-world white balance, sebelum resize)
+              </label>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -182,6 +191,7 @@
           {% for val, title, desc in [
               ('minmax', 'Min-Max [0,1]', 'Bagi semua nilai piksel dengan 255 → rentang 0.0–1.0'),
               ('zscore', 'Z-Score Standardisasi', 'Kurangi mean, bagi std → distribusi normal (µ=0, σ=1)'),
+              ('clahe',  'CLAHE', 'Contrast Limited Adaptive Histogram Equalization di kanal L — kontras lokal naik tanpa merusak kontras absolut antar foto'),
               ('none',   'Tidak Ada', 'Pertahankan nilai piksel asli (0–255)'),
           ] %}
           <label class="radio-card" onclick="updatePreview()">
@@ -281,7 +291,7 @@
           ] %}
           <label class="radio-card" onclick="toggleKsize()">
             <input type="radio" name="denoise_method" value="{{ val }}" style="accent-color:#A78BFA;margin-top:.15rem;"
-                   {{ 'checked' if (config and config.denoise_method == val) or (not config and val == 'none') }}>
+                   {{ 'checked' if (config and config.denoise_method == val) or (not config and val == 'bilateral') }}>
             <div>
               <span style="font-size:.82rem;font-weight:600;color:var(--c-text);">{{ title }}</span>
               <span class="prep-sublabel">{{ desc }}</span>
@@ -289,7 +299,7 @@
           </label>
           {% endfor %}
         </div>
-        <div id="ksizeRow" style="{{ 'display:none' if not config or config.denoise_method == 'none' else '' }}">
+        <div id="ksizeRow" style="{{ 'display:none' if (config and config.denoise_method == 'none') else '' }}">
           <label class="prep-label">Ukuran Kernel: <span id="ksizeVal">{{ config.denoise_ksize if config else 3 }}</span></label>
           <div class="range-row">
             <span style="font-size:.72rem;color:var(--c-muted);">3</span>
@@ -393,7 +403,7 @@ function updatePreview() {
   var ct  = document.getElementById('aug_contrast').value;
   var ks  = document.getElementById('denoise_ksize').value;
 
-  var normMap = {minmax:'Min-Max [0,1]', zscore:'Z-Score', none:'Tidak Ada'};
+  var normMap = {minmax:'Min-Max [0,1]', zscore:'Z-Score', clahe:'CLAHE', none:'Tidak Ada'};
   var denoiseMap = {none:'Tidak Ada', gaussian:'Gaussian', median:'Median', bilateral:'Bilateral'};
 
   var augParts = [];

@@ -21,6 +21,31 @@ class P2Test(unittest.TestCase):
         self.assertEqual(LabelKerusakan.tingkat_dari_sdi(150), 2)
         self.assertEqual(LabelKerusakan.tingkat_dari_sdi(150.01), 1)
 
+    def test_estimasi_dari_dimensi_is_continuous_not_5_fixed_buckets(self):
+        # Regresi untuk bug lama: tabel diskrit cuma menghasilkan 5 nilai SDI tetap
+        # (20/25/75/135/195) untuk SELURUH dataset, tidak pernah dekat ambang 50/150.
+        sdis = set()
+        for area in (0.2, 0.9, 1.5, 3.0, 5.5, 8.0, 11.0, 20.0, 40.0):
+            _, sdi, _ = LabelKerusakan.estimasi_dari_dimensi(area, 1.0)
+            sdis.add(sdi)
+        self.assertGreater(len(sdis), 5, 'harus lebih beragam dari tabel diskrit lama')
+
+    def test_estimasi_dari_dimensi_monotonic_in_area(self):
+        _, sdi_kecil, area_kecil = LabelKerusakan.estimasi_dari_dimensi(1.0, 1.0)
+        _, sdi_besar, area_besar = LabelKerusakan.estimasi_dari_dimensi(10.0, 1.0)
+        self.assertLess(area_kecil, area_besar)
+        self.assertLessEqual(sdi_kecil, sdi_besar)
+
+    def test_estimasi_dari_dimensi_caps_extreme_area(self):
+        # Baris 'Ukur' dengan panjang ribuan meter (kemungkinan data segmen jalan, bukan
+        # patch kerusakan) tidak boleh menghasilkan jumlah_lubang yang tidak masuk akal.
+        params, sdi, area = LabelKerusakan.estimasi_dari_dimensi(8000, 10)
+        self.assertEqual(area, 80000)
+        self.assertLessEqual(params['jumlah_lubang'], LabelKerusakan.LUBANG_MAX)
+        self.assertLessEqual(params['persen_retak'], 100)
+        self.assertLessEqual(params['kedalaman_rutting'], LabelKerusakan.RUTTING_MAX)
+        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(sdi), 1)  # Berat — saturasi wajar
+
     def test_split_service_is_stratified_and_deterministic(self):
         items = [{'dokumentasi_id': index, 'label_id': index % 3} for index in range(12)]
         first = SplitService.run(3, 42, items)
@@ -92,16 +117,34 @@ class P2Test(unittest.TestCase):
         self.assertFalse(cnn_service._is_better_checkpoint(
             cand_acc=0.40, cand_loss=1.10, best_acc=0.40, best_loss=0.90))
 
-    def test_predict_with_tta_averages_original_and_flipped(self):
+    def test_five_crop_flip_views_shape_and_flip_correctness(self):
+        img = np.zeros((20, 20, 3), dtype=np.float32)
+        img[:, :10, :] = 9   # separuh kiri beda dari kanan -> flip menghasilkan array berbeda
+
+        views = cnn_service._five_crop_flip_views(img, crop_frac=0.875)
+
+        self.assertEqual(len(views), 10)   # 5 crop x (asli + flip)
+        for v in views:
+            self.assertEqual(v.shape, img.shape)   # di-resize balik ke ukuran asli
+        # tiap pasang (asli, flip) harus berbeda satu sama lain (crop kiri-kanan tidak simetris)
+        for i in range(0, 10, 2):
+            self.assertFalse(np.array_equal(views[i], views[i + 1]))
+            np.testing.assert_allclose(views[i], views[i + 1][:, ::-1, :])
+
+    def test_predict_with_tta_averages_all_views(self):
         class FakeModel:
             def predict(self, batch, verbose=0):
-                # baris 0 = gambar asli -> [1,0,0]; baris 1 = flip -> [0,1,0]
-                return np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+                self.last_batch_size = len(batch)
+                # baris ganjil -> [1,0,0], baris genap -> [0,1,0] (independen dari isi gambar)
+                return np.array([[1.0, 0.0, 0.0] if i % 2 == 0 else [0.0, 1.0, 0.0]
+                                  for i in range(len(batch))])
 
-        img = np.zeros((4, 4, 3), dtype=np.float32)
-        img[:, 0, :] = 9   # kolom kiri beda dari kanan -> flip menghasilkan array berbeda
+        img = np.zeros((20, 20, 3), dtype=np.float32)
+        img[:, :10, :] = 9
 
-        probs = cnn_service._predict_with_tta(FakeModel(), img)
+        model = FakeModel()
+        probs = cnn_service._predict_with_tta(model, img)
+        self.assertEqual(model.last_batch_size, 10)   # 5-crop x flip
         np.testing.assert_allclose(probs, [0.5, 0.5, 0.0])
 
     def test_predict_probs_with_averages_across_ensemble_models(self):

@@ -129,50 +129,49 @@ Database: `db_cnn_jalan` (MySQL utf8mb4)
 
 ---
 
-## Status Akurasi CNN (per 2026-09-22)
+## Status Akurasi CNN (per 2026-09-24)
 
-**Metrik utama:** 5-fold CV MobileNetV2 = **48,9% ± 4,5**; baseline kelas mayoritas = **42,9%**.
-**Kesimpulan:** target 70% belum tercapai. Backbone beku + regresi logistik berada di kisaran ±56–61% pada label surveyor, tetapi dengan label SDI kisarannya kembali ±46–52%.
+**Metrik resmi (5-fold CV, MobileNetV2, label SDI, split group-aware near-dup-baru):
+akurasi 47,1% ± 6,1, macro-F1 45,8%, baseline kelas mayoritas 50,4% (selisih âˆ’3,2 poin â€”
+MASIH DI BAWAH BASELINE).** Recall per kelas: Berat 49,4% / Sedang 47,5% / Ringan 43,5%.
+Per-fold: 39,3% / 51,7% / 51,8% / 40,0% / 52,7% (`arsitektur_id=279`, `split_config_id=483`).
+
+**Riwayat angka (jangan bandingkan versi lama sebagai tren naik/turun â€” tiap angka pakai
+kode/split berbeda, lihat catatan masing-masing di bawah):**
+1. 48,9% Â± 4,5 (sebelum 2026-09-23) â€” **tidak valid**, dihasilkan saat `predict_cv()` selalu
+   crash diam-diam (`NameError`), jadi `pred_type` sebenarnya tidak pernah `'cv'`.
+2. 45,4% Â± 6,7, macro-F1 44,6% (2026-09-23, setelah bug `predict_cv` NameError diperbaiki) â€”
+   CV valid PERTAMA di proyek ini, tapi masih pakai fine-tune 15/25 layer & lr/5, dan split
+   belum near-dup-aware.
+3. **47,1% Â± 6,1, macro-F1 45,8% (2026-09-24, angka resmi saat ini)** â€” setelah fine-tune
+   diperketat ke 8/12 layer + lr/10 (`model.py::_apply_fine_tuning`), dan split baru yang
+   sudah group-aware terhadap 31 foto near-duplicate (`dedup_service.py`). Perbaikan kecil
+   dari (2), tapi kesimpulan tidak berubah: **model masih di bawah baseline kelas mayoritas.**
+
+**Kesimpulan tetap sama:** target 70% belum tercapai, kemungkinan besar tidak tercapai murni
+dari Jalur A (foto saja) â€” lihat "Catatan Kejujuran Akademik" di `TODO.md`. Backbone beku +
+regresi logistik pada label SURVEYOR (bukan SDI) sempat mencapai kisaran ±56â€“61% pada
+eksperimen sebelumnya; perbandingan formal label SDI vs surveyor masih tertunda
+(`scripts/run_surveyor_cv.py`, lihat TODO.md P1).
 
 **Catatan metodologi terbaru:**
 
 | Area | Status terbaru |
 |---|---|
-| Label utama | Semua label dari SDI; kolom `keterangan` hanya informasi |
+| Label utama | SDI dari formula kontinu (`estimasi_dari_dimensi`, diputuskan 2026-09-23) â€” run CV di atas MASIH pakai label formula diskrit LAMA (relabel belum di-apply, lihat TODO.md P1) |
 | Evaluasi utama | 5-fold CV; mode Single hanya visualisasi karena memprediksi foto latih |
-| Model final | Dilatih pada 100% data setelah CV; akurasinya tidak dilaporkan sebagai metrik uji |
-| Augmentasi | Layer Keras di dalam model; aktif hanya saat training |
-| Head model | `GAP → Dropout(d) → Dense(64, relu, L2) → Dropout(d/2) → Dense(3, softmax, L2)` |
+| Model final | Dilatih pada 100% data setelah CV (`models/model_279_final.keras`); akurasinya tidak dilaporkan sebagai metrik uji |
+| Augmentasi | Layer Keras di dalam model (termasuk color jitter/noise/cutout baru 2026-09-24); aktif hanya saat training |
+| Head model | `GAP â†’ Dropout(d) â†’ Dense(64, relu, L2) â†’ Dropout(d/2) â†’ Dense(3, softmax, L2)` |
 
 **Target akurasi: 70% (belum tercapai)**
-**Setting awal yang disarankan untuk training baru:**
-- Epochs: 60–80
-- Learning Rate: `0.0001` (diperbaiki 2026-09-23 — `0.001` **salah**, form UI sendiri sudah menandai "⚠ terlalu tinggi, berisiko class collapse ke kelas mayoritas" dan semua run nyata sejauh ini memang memakai 0.0001)
+**Setting yang dipakai run 2026-09-24 (dan disarankan untuk run berikutnya):**
+- Epochs: 80 (max; early stopping patience 20 biasanya berhenti lebih awal)
+- Learning Rate: `0.0001` (`0.001` **salah** â€” berisiko class collapse ke kelas mayoritas)
 - Batch Size: 32
-- Dropout: 0.3–0.5
-- Patience: biarkan default (min 20)
-
----|---------|----------|---------------------|
-| 1 | Dataset sangat kecil (~280 foto, ~56 val/fold) | CRITICAL | Belum bisa difix dari kode â€” perlu tambah data |
-| 2 | Recall Ringan hanya 33% â€” model bias ke Sedang | CRITICAL | Kembalikan class_weight (Ringan: 1.46x, Sedang: 0.70x) |
-| 3 | Focal loss lama mereduksi gradient kelas Ringan | HIGH | Ganti ke SparseCategoricalCrossentropy |
-| 4 | Train pakai preprocessed (augmented), val pakai original | HIGH | load_dataset selalu pakai path_file original |
-| 5 | Fine-tune 30 layer dengan 224 sampel â†’ overfitting | MEDIUM | Kurangi 30â†’15 layer untuk MobileNetV2 |
-| 6 | Dense layer langsung ke 3 kelas tanpa capacity | MEDIUM | Tambah Dense(128, relu) + L2(1e-4) sebelum output |
-| 7 | EarlyStopping terlalu agresif | HIGH | patience min 20, min_delta 0.001 |
-| 8 | ReduceLROnPlateau tidak ada | HIGH | Ditambah di Phase 1 & Phase 2 |
-| 9 | predict_all() pakai gambar original bukan preprocessed | BUG | Diperbaiki dengan subquery HasilPreprocessing |
-
-**Target akurasi: >70%**
-**Setting yang disarankan untuk training baru:**
-- Epochs: 60â€“80
-- Learning Rate: `0.0001` (lihat catatan di atas â€” `0.001` berisiko class collapse)
-- Batch Size: 32
-- Dropout: 0.3â€“0.5 (model kini ada Dense(64) intermediate + Dropout(dropout/2))
-- Patience: biarkan default (min 20)
-
-**Arsitektur head model saat ini:**
-`GAP â†’ Dropout(d) â†’ Dense(128, relu, L2) â†’ Dropout(d/2) â†’ Dense(3, softmax, L2)`
+- Dropout: 0.3
+- Fine-tune: unfreeze 8 layer (MobileNetV2) / 12 layer (EfficientNetB0), lr/10
+- Mixup: nonaktif (`mixup_alpha=0`, baru tersedia 2026-09-24, belum divalidasi lewat CV)
 
 ---
 
@@ -295,7 +294,26 @@ F_rutting: 0(â†’0)  | â‰¤1cm(â†’5) | â‰¤3cm(â†’20) | >3cm
 Tingkat: SDIâ‰¤50=Ringan | 51â€“150=Sedang | >150=Berat
 ```
 Implementasi: `app/models/label_kerusakan.py::LabelKerusakan.hitung_sdi()`
-Auto-estimasi dari dimensi (meter): `LabelKerusakan.estimasi_dari_dimensi(panjang, lebar)`
+Auto-estimasi dari dimensi (meter): `LabelKerusakan.estimasi_dari_dimensi(panjang, lebar)` — **formula kontinu**
+(diputuskan 2026-09-23, opsi A dari TODO.md P1, menggantikan tabel diskrit 5-bucket lama yang cuma menghasilkan 5
+nilai SDI tetap untuk 280 foto dan tidak pernah dekat ambang batas 50/150 — lihat `scripts/audit_sdi_borderline.py`):
+```
+luas              = panjang × lebar
+persen_retak      = min(luas / 1.0, 100)              # REF_RETAK = 1.0 m² per 1 poin persen
+jumlah_lubang     = min(luas / 0.1, 999)               # studi.md; dipotong di 999 untuk tampilan
+kedalaman_rutting = min(luas / 4.0, 5.0)  cm            # REF_RUTTING = 4.0
+jenis_retak       = 'lebar' kalau luas > 2.0 m², selain itu 'halus'
+```
+REF_RETAK/REF_RUTTING/AMBANG_LEBAR adalah **kalibrasi**, bukan nilai baku Bina Marga — dipilih dari distribusi luas
+riil dataset (persentil 10–95 ≈ 1–60 m²) supaya nilai tersebar ke semua bucket F_retak/F_rutting. Keterbatasan
+metodologis ini perlu disebut di bab pembahasan skripsi (lihat [[label-source-comparison]] dan TODO.md P1).
+
+**Temuan data terpisah (audit 2026-09-23):** 4 baris `lokasi_kerusakan` (id 123/125/126/127, semua `keterangan='Ukur'`)
+punya `panjang` dalam ribuan meter (1000–8000 m) dengan `lebar` konstan 10 m — luas 10.000–80.000 m², jauh di luar
+kisaran 276 baris lain (0,15–300 m²). Kemungkinan ini data segmen jalan (bukan patch kerusakan titik) atau salah unit
+saat entry Excel. Formula SDI (lama maupun baru) tetap aman secara numerik karena semua parameter jenuh (capped), tapi
+nilai `panjang`/`lebar` mentahnya sendiri layak diverifikasi manual ke `data/DATA JALAN REVISI.xlsx` — belum diperbaiki,
+di luar cakupan P0/P1 saat ini.
 
 **Sumber kelas (Auto-label):** semua dari SDI hasil estimasi PÃ—L (keputusan pemilik, 2026-09-22). Kolom `keterangan`
 (`Ukur` / `Estimasi (X)`) hanya disimpan sebagai informasi, tidak memengaruhi kelas.
@@ -307,11 +325,20 @@ surveyor (`Ket` untuk baris Estimasi) memberi macro-F1 lebih tinggi (~56â€“
 Service: `app/services/preprocessing_service.py::PreprocessingService.run_pipeline(img_path, config)`
 - Step 1 Resize: Pillow `Image.resize()` dengan metode LANCZOS/BILINEAR/BICUBIC/NEAREST. `resize_mode` (baru 2026-09-23):
   `stretch` (default, resize langsung ke target — bisa distorsi) atau `letterbox` (jaga aspect ratio, resize masuk ke
-  dalam target box lalu pad hitam di sisa ruang) — pilih di `preprocessing_config.resize_mode` saat buat/edit config
-- Step 2 Center Crop: crop tengah ke dimensi target (crop_width Ã— crop_height), opsional
-- Step 3 Normalisasi: numpy â€” min-max (`Ã·255`) atau z-score (`(x-Âµ)/Ïƒ`); output disimpan sebagai uint8 [0-255]
+  dalam target box lalu pad hitam di sisa ruang) — pilih di `preprocessing_config.resize_mode` saat buat/edit config.
+  **Koreksi iluminasi** (toggle `illum_correction`, baru 2026-09-23): gray-world white balance diterapkan SEBELUM
+  resize kalau aktif (`PreprocessingService._gray_world_white_balance` — skalakan tiap kanal RGB supaya mean-nya sama
+  dengan mean abu-abu keseluruhan gambar), mengurangi variasi warna akibat pencahayaan beda antar sesi pemotretan.
+- Step 2 Center Crop: crop tengah ke dimensi target (crop_width Ã— crop_height), opsional. ROI-aware crop (anotasi bbox
+  manual per foto) diusulkan di TODO.md P2 tapi **diskip** — belum ada anotasi bounding box untuk 280 foto.
+- Step 3 Normalisasi: `minmax` (Ã·255), `zscore` ((x-Âµ)/Ïƒ), atau `clahe` (baru 2026-09-23 â€” Contrast Limited Adaptive
+  Histogram Equalization di kanal L color space LAB, `clipLimit=2.0`, `tileGridSize=(8,8)`, kontras lokal naik tanpa
+  merusak kontras absolut antar foto seperti minmax/zscore global); output disimpan sebagai uint8 [0-255]
+- Step 4 Denoise (keluarannya yang dipakai training): OpenCV `GaussianBlur` / `medianBlur` / `bilateralFilter`. Default
+  skema (config baru) diganti 2026-09-23 dari `none` ke `bilateral` k=3 (pertahankan tepi retak, redam noise area datar)
+  — config yang dipakai training saat ini sudah `bilateral` k=3 sebelum perubahan ini. Ablation "tanpa denoise sama
+  sekali" vs bilateral BELUM dijalankan (TODO.md P2, perlu training run baru).
 - Step 5 Augmentasi (tahap TERAKHIR, hanya visualisasi â€” tidak dipakai training; augmentasi training ada di dalam model): Pillow `ImageOps`, `ImageEnhance` â€” flip H/V, rotate, brightness, contrast; **setiap transform bersifat random per gambar** (bukan deterministik semua identik)
-- Step 4 Denoise (keluarannya yang dipakai training): OpenCV `GaussianBlur` / `medianBlur` / `bilateralFilter`
 Output: `app/static/uploads/preprocessed/`
 Halaman hasil: pagination 24/halaman, modal viewer dengan navigasi prev/next + keyboard (â†â†’Esc), tombol Reset Semua.
 
@@ -360,7 +387,7 @@ helper (harus patch di submodule tempat didefinisikan, mis. `cnn_service.dataset
 - Return: `(X_train, y_train, groups_train, X_val, y_val, groups_val)` â€” `groups_train` = `dokumentasi_id` per sampel training, dipakai `_group_aware_split` di `train()` supaya varian tahap dari foto yang sama tidak terpisah antara data fit dan inner-val (cegah leakage sampel nyaris-identik). `groups_val` isinya 1:1 dengan `y_val` (tidak dipakai untuk apa pun khusus, sekadar konsisten)
 - Input: float32 [0,255] â†’ `preprocess_input()` di dalam model yang normalize ke [-1,1]
 - Label: `tingkat_kerusakan_id - 1` (Berat=0, Sedang=1, Ringan=2)
-- **PENTING (audit metodologi 2026-09-23):** `HasilEvaluasi`/"Akurasi Model Final" di halaman detail arsitektur adalah metrik **1 FOLD SAJA**, BUKAN metrik CV resmi. Metrik yang boleh dilaporkan (lihat bagian "Evaluasi, Pipeline Ulang, dan Tes") adalah `cv_summary()` (`pred_type='cv'`, hasil "Prediksi CV K-Fold"). **Bug ditemukan & diperbaiki 2026-09-23:** `predict_cv()` selalu crash (`NameError: SimpleNamespace` tidak di-import) sejak awal project â€” errornya senyap (langsung ke-`pop()` sebelum sempat tampil), jadi `pred_type` tidak pernah `'cv'` sampai bug ini ditemukan. Hasil CV pertama yang valid di project ini (split baru, arsitektur MobileNetV2 default): **akurasi 45,4% Â± 6,7, macro-F1 44,6%, baseline mayoritas 50,4%** â€” model masih di BAWAH baseline, jadi jangan anggap 45,4% ini "target tercapai". Jangan bandingkan angka `HasilEvaluasi.akurasi` (1 fold) antar-run sebagai indikator naik/turun â€” variansnya besar (per-fold di run ini: 37,5%â€“55,4%)
+- **PENTING (audit metodologi 2026-09-23):** `HasilEvaluasi`/"Akurasi Model Final" di halaman detail arsitektur adalah metrik **1 FOLD SAJA**, BUKAN metrik CV resmi. Metrik yang boleh dilaporkan (lihat bagian "Evaluasi, Pipeline Ulang, dan Tes") adalah `cv_summary()` (`pred_type='cv'`, hasil "Prediksi CV K-Fold"). **Bug ditemukan & diperbaiki 2026-09-23:** `predict_cv()` selalu crash (`NameError: SimpleNamespace` tidak di-import) sejak awal project â€” errornya senyap (langsung ke-`pop()` sebelum sempat tampil), jadi `pred_type` tidak pernah `'cv'` sampai bug ini ditemukan. Angka resmi TERKINI ada di "Status Akurasi CNN" di atas (47,1% Â± 6,1, 2026-09-24) â€” jangan pakai 45,4% (run 2026-09-23) sebagai acuan lagi, itu sudah digantikan setelah fine-tune diperketat & split jadi near-dup-aware (riwayat lengkap ada di bagian atas). Jangan bandingkan angka `HasilEvaluasi.akurasi` (1 fold) antar-run sebagai indikator naik/turun â€” variansnya besar
 
 **`predict_cv(arsitektur, base_dir)`**
 - K-Fold: setiap foto diprediksi oleh model yang di-train tanpa foto tersebut, dengan TTA (`_predict_with_tta`)

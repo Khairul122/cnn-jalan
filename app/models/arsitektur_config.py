@@ -15,6 +15,11 @@ class ArsitekturConfig(db.Model):
     patience        = db.Column(db.SmallInteger, nullable=False, default=5)
     dropout_rate    = db.Column(db.Float, nullable=False, default=0.3)
     optimizer       = db.Column(db.Enum('adam', 'sgd', 'rmsprop'), nullable=False, default='adam')
+    mixup_alpha     = db.Column(db.Float, nullable=False, default=0)  # 0 = nonaktif (default, tidak ubah perilaku lama)
+    label_smoothing = db.Column(db.Float, nullable=False, default=0)  # 0 = nonaktif (default)
+    dense_units     = db.Column(db.Integer, nullable=False, default=64)   # head Dense(units) — TODO.md P4
+    dense_l2        = db.Column(db.Float, nullable=False, default=1e-4)   # L2 regularizer head — TODO.md P4
+    skip_fine_tuning = db.Column(db.Boolean, nullable=False, default=False)  # Jalur A: backbone beku penuh — TODO.md P4
     split_config_id = db.Column(db.Integer, db.ForeignKey('split_config.id'), nullable=False)
     fold_val        = db.Column(db.SmallInteger, nullable=False, default=0)
     status          = db.Column(db.Enum('draft', 'training', 'selesai', 'gagal'), nullable=False, default='draft')

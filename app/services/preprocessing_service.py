@@ -9,6 +9,19 @@ from PIL import Image, ImageOps, ImageEnhance
 class PreprocessingService:
 
     @staticmethod
+    def _gray_world_white_balance(img):
+        """Koreksi iluminasi gray-world: skalakan tiap kanal RGB supaya mean-nya sama
+        dengan mean abu-abu keseluruhan — mengurangi variasi warna akibat pencahayaan
+        beda antar sesi pemotretan lapangan."""
+        arr = np.array(img, dtype=np.float32)
+        means = arr.reshape(-1, 3).mean(axis=0)
+        gray_mean = means.mean()
+        means = np.where(means == 0, 1, means)   # cegah div/0 pada kanal hitam total
+        scale = gray_mean / means
+        arr = np.clip(arr * scale, 0, 255)
+        return Image.fromarray(arr.astype(np.uint8))
+
+    @staticmethod
     def run_pipeline_steps(img_path, config):
         """
         Jalankan pipeline 5 tahap (resize, crop, normalisasi, denoise, augmentasi) dan simpan hasil tiap tahap secara kumulatif.
@@ -17,9 +30,11 @@ class PreprocessingService:
         """
         results = []
 
-        # ── Step 1: Resize ────────────────────────────────────────────
+        # ── Step 1: Resize (+ koreksi iluminasi opsional sebelum resize) ────
         t0 = time.time()
         img = Image.open(img_path).convert('RGB')
+        if getattr(config, 'illum_correction', False):
+            img = PreprocessingService._gray_world_white_balance(img)
         resample = getattr(Image.Resampling, str(config.resize_method), Image.Resampling.LANCZOS)
         target_w, target_h = int(config.target_width), int(config.target_height)
         if str(getattr(config, 'resize_mode', 'stretch')) == 'letterbox':
@@ -62,6 +77,15 @@ class PreprocessingService:
                 arr = (arr - mean) / std
                 arr = np.clip((arr + 3) / 6 * 255, 0, 255)
             img = Image.fromarray(arr.astype(np.uint8))
+        elif norm == 'clahe':
+            # CLAHE di kanal L (luminance) — kontras lokal naik tanpa merusak kontras
+            # absolut antar foto seperti minmax/zscore global
+            lab = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            l = clahe.apply(l)
+            lab = cv2.merge((l, a, b))
+            img = Image.fromarray(cv2.cvtColor(lab, cv2.COLOR_LAB2RGB))
         # norm == 'none': gambar tetap sama, tetap simpan sebagai checkpoint
         results.append(('normalisasi', img.copy(), int((time.time() - t0) * 1000)))
 

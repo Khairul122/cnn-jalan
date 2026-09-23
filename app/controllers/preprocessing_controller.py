@@ -225,6 +225,7 @@ def _update_config_from_form(cfg, form):
     cfg.target_height  = int(form.get('target_height', 224))
     cfg.resize_method  = form.get('resize_method', 'LANCZOS')
     cfg.resize_mode    = form.get('resize_mode', 'stretch')
+    cfg.illum_correction = bool(form.get('illum_correction'))
     cfg.crop_enabled   = bool(form.get('crop_enabled'))
     cfg.crop_width     = int(form.get('crop_width', 224))
     cfg.crop_height    = int(form.get('crop_height', 224))
@@ -234,7 +235,7 @@ def _update_config_from_form(cfg, form):
     cfg.aug_rotate_deg = float(form.get('aug_rotate_deg', 0))
     cfg.aug_brightness = float(form.get('aug_brightness', 1.0))
     cfg.aug_contrast   = float(form.get('aug_contrast', 1.0))
-    cfg.denoise_method = form.get('denoise_method', 'none')
+    cfg.denoise_method = form.get('denoise_method', 'bilateral')
     cfg.denoise_ksize  = int(form.get('denoise_ksize', 3))
     cfg.is_default     = bool(form.get('is_default'))
 

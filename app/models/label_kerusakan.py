@@ -74,32 +74,48 @@ class LabelKerusakan(db.Model):
         else:
             return 1   # Berat
 
+    # Kalibrasi formula kontinu estimasi_dari_dimensi() (opsi A, diputuskan 2026-09-23
+    # menggantikan tabel diskrit 5-bucket lama — lihat CLAUDE.md untuk rasionalnya).
+    REF_RETAK    = 1.0    # m^2 per 1 poin persen_retak, sebelum dipotong di 100
+    REF_RUTTING  = 4.0    # m^2 per 1 cm kedalaman rutting
+    RUTTING_MAX  = 5.0    # cm, batas atas fisik yang masuk akal
+    AMBANG_LEBAR = 2.0    # m^2 — di atas ini jenis_retak dianggap 'lebar'
+    LUBANG_MAX   = 999    # cap tampilan — F_lubang sendiri sudah jenuh di jumlah_lubang > 50
+
     @staticmethod
     def estimasi_dari_dimensi(panjang, lebar):
-        """Estimasi parameter SDI dari dimensi kerusakan dalam meter (panjang Ã— lebar = area mÂ²).
+        """Estimasi kontinu parameter SDI dari dimensi kerusakan (panjang Ã— lebar = area mÂ²).
 
-        Mapping area â†’ parameter SDI:
-          area â‰¤ 0.5  â†’ SDI ~20  â†’ Ringan
-          area â‰¤ 2    â†’ SDI ~25  â†’ Ringan
-          area â‰¤ 6    â†’ SDI ~75  â†’ Sedang
-          area â‰¤ 12   â†’ SDI ~135 â†’ Sedang
-          area  > 12  â†’ SDI ~195 â†’ Berat
+        Formula dasar dari studi.md:
+          persen_retak      = min(luas / REF_RETAK, 100)
+          jumlah_lubang     = luas / 0,1                 (1 lubang per 0,1 mÂ², studi.md)
+          kedalaman_rutting = min(luas / REF_RUTTING, RUTTING_MAX)
+          jenis_retak       = 'lebar' kalau luas > AMBANG_LEBAR, selain itu 'halus'
+
+        REF_RETAK/REF_RUTTING/AMBANG_LEBAR adalah pilihan kalibrasi (bukan nilai baku Bina
+        Marga) berdasarkan distribusi luas riil dataset (persentil 10â€“95 âˆˆ [1, 60] mÂ², audit
+        2026-09-23) supaya nilai tersebar ke semua bucket F_retak/F_rutting, bukan menumpuk di
+        satu bucket seperti tabel diskrit lama (yang cuma menghasilkan 5 SDI tetap untuk 280
+        foto, tidak pernah dekat ambang 50/150). AMBANG_LEBAR=2 mÂ² mengikuti titik transisi
+        halus->lebar pada tabel lama. Didokumentasikan sebagai keterbatasan metodologis (bukan
+        nilai terukur) di CLAUDE.md/bab pembahasan skripsi.
+
+        jumlah_lubang dipotong di LUBANG_MAX untuk tampilan â€” beberapa baris 'Ukur' di dataset
+        punya panjang dalam ribuan meter (kemungkinan data segmen jalan, bukan patch kerusakan)
+        yang tanpa cap menghasilkan angka jumlah_lubang tidak masuk akal; F_lubang di hitung_sdi
+        sendiri sudah jenuh di jumlah_lubang > 50 jadi hasil SDI tidak berubah.
         """
         p = float(panjang or 1.0)
         l = float(lebar or 0.5)
         area = p * l
 
-        if area <= 0.5:
-            params = dict(persen_retak=5,  jenis_retak='halus', jumlah_lubang=1,  kedalaman_rutting=0.0)
-        elif area <= 2:
-            params = dict(persen_retak=8,  jenis_retak='halus', jumlah_lubang=5,  kedalaman_rutting=0.5)
-        elif area <= 6:
-            params = dict(persen_retak=15, jenis_retak='lebar', jumlah_lubang=8,  kedalaman_rutting=1.5)
-        elif area <= 12:
-            params = dict(persen_retak=18, jenis_retak='lebar', jumlah_lubang=20, kedalaman_rutting=2.0)
-        else:
-            params = dict(persen_retak=25, jenis_retak='lebar', jumlah_lubang=30, kedalaman_rutting=3.5)
+        persen_retak = round(min(area / LabelKerusakan.REF_RETAK, 100), 2)
+        jumlah_lubang = min(int(round(area / 0.1)), LabelKerusakan.LUBANG_MAX)
+        kedalaman_rutting = round(min(area / LabelKerusakan.REF_RUTTING, LabelKerusakan.RUTTING_MAX), 2)
+        jenis_retak = 'lebar' if area > LabelKerusakan.AMBANG_LEBAR else 'halus'
 
+        params = dict(persen_retak=persen_retak, jenis_retak=jenis_retak,
+                      jumlah_lubang=jumlah_lubang, kedalaman_rutting=kedalaman_rutting)
         sdi = LabelKerusakan.hitung_sdi(**params)
         return params, sdi, area
 

@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 
 from .dataset import load_dataset, _group_aware_split
-from .model import build_model, _apply_fine_tuning
+from .model import build_model, _apply_fine_tuning, uses_onehot_labels, N_CLASSES
 
 SEED = 42
 INNER_VAL_FRAC = 0.15   # porsi data training untuk early stopping
@@ -44,8 +44,52 @@ def _is_better_checkpoint(cand_acc, cand_loss, best_acc, best_loss):
     return cand_loss < best_loss
 
 
+def _mixup_dataset(X, y_int, sample_weight, batch_size, alpha, n_classes, seed):
+    """
+    tf.data pipeline Mixup (Zhang et al. 2017, TODO.md P3): campur pasangan gambar+label
+    secara acak dengan rasio lambda ~ Beta(alpha, alpha) di level batch — BUKAN layer
+    preprocessing Keras biasa, karena butuh mencampur DUA sampel (layer Keras cuma
+    transform 1 sampel per panggilan). sample_weight (dari class_weight per label asli)
+    ikut dicampur dengan lambda yang sama, supaya penanganan imbalance kelas tetap jalan
+    meski label sudah jadi soft/campuran (class_weight kwarg biasa tidak berlaku lagi untuk
+    label non-integer). Dipakai lewat generator numpy murni (bukan primitif tf.data acak)
+    karena data sudah di memori dan throughput data BUKAN bottleneck di training CPU-only
+    ini — model forward/backward yang mendominasi waktu.
+    Return tf.data.Dataset tak berujung (caller WAJIB set steps_per_epoch) yang yield
+    (x, y_onehot, sample_weight).
+    """
+    import tensorflow as tf
+
+    y_onehot_all = np.eye(n_classes, dtype=np.float32)[y_int]
+    sw_all = np.asarray(sample_weight, dtype=np.float32)
+    n = len(X)
+
+    def gen():
+        rng = np.random.RandomState(seed)
+        while True:
+            idx1 = rng.permutation(n)
+            idx2 = rng.permutation(n)
+            for start in range(0, n - batch_size + 1, batch_size):
+                i1, i2 = idx1[start:start + batch_size], idx2[start:start + batch_size]
+                lam = rng.beta(alpha, alpha, size=batch_size).astype(np.float32)
+                lam_x = lam.reshape(-1, 1, 1, 1)
+                lam_y = lam.reshape(-1, 1)
+                xb = lam_x * X[i1] + (1 - lam_x) * X[i2]
+                yb = lam_y * y_onehot_all[i1] + (1 - lam_y) * y_onehot_all[i2]
+                wb = lam * sw_all[i1] + (1 - lam) * sw_all[i2]
+                yield xb.astype(np.float32), yb, wb
+
+    sig = (
+        tf.TensorSpec(shape=(batch_size, *X.shape[1:]), dtype=tf.float32),
+        tf.TensorSpec(shape=(batch_size, n_classes), dtype=tf.float32),
+        tf.TensorSpec(shape=(batch_size,), dtype=tf.float32),
+    )
+    return tf.data.Dataset.from_generator(gen, output_signature=sig).prefetch(tf.data.AUTOTUNE)
+
+
 def _fit_phase(model, data, epochs, batch_size, class_weight, patience, lr_patience, min_lr,
-               logger, offset, total_epochs, on_epoch_end, fine_tuning=False):
+               logger, offset, total_epochs, on_epoch_end, fine_tuning=False, mixup_alpha=0,
+               label_smoothing=0):
     """
     Satu fase training. EarlyStopping & ReduceLROnPlateau memantau inner_val_loss (metrik
     stabil untuk kontrol training). Pemilihan BOBOT TERBAIK memakai kriteria
@@ -104,17 +148,46 @@ def _fit_phase(model, data, epochs, batch_size, class_weight, patience, lr_patie
                     'fine_tuning': fine_tuning,
                 })
 
-    model.fit(
-        X_fit, y_fit, validation_data=(X_inner, y_inner),
-        epochs=epochs, batch_size=batch_size, class_weight=class_weight, verbose=0,
-        callbacks=[
-            keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience,
-                                          min_delta=MIN_DELTA, mode='min', verbose=0),
-            keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=lr_patience,
-                                              min_lr=min_lr, verbose=0),
-            _Track(),
-        ],
-    )
+    callbacks = [
+        keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience,
+                                      min_delta=MIN_DELTA, mode='min', verbose=0),
+        keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=lr_patience,
+                                          min_lr=min_lr, verbose=0),
+        _Track(),
+    ]
+
+    if mixup_alpha and mixup_alpha > 0 and len(X_fit) >= batch_size:
+        # Mixup aktif: model dikompilasi dgn CategoricalCrossentropy (lihat model.py::_make_loss)
+        # -> validation_data juga wajib one-hot. class_weight kwarg TIDAK dipakai lagi di sini
+        # karena sudah dibaurkan ke sample_weight per-batch di dalam dataset (lihat _mixup_dataset).
+        sample_weight = np.array([class_weight.get(int(lbl), 1.0) for lbl in y_fit], dtype=np.float32)
+        train_ds = _mixup_dataset(X_fit, y_fit, sample_weight, batch_size, mixup_alpha, N_CLASSES, SEED)
+        steps_per_epoch = len(X_fit) // batch_size
+        y_inner_onehot = np.eye(N_CLASSES, dtype=np.float32)[y_inner]
+        model.fit(
+            train_ds, steps_per_epoch=steps_per_epoch,
+            validation_data=(X_inner, y_inner_onehot),
+            epochs=epochs, verbose=0, callbacks=callbacks,
+        )
+    elif label_smoothing and label_smoothing > 0:
+        # Label smoothing tanpa Mixup: model dikompilasi dgn CategoricalCrossentropy juga
+        # (SparseCategoricalCrossentropy di Keras ini tidak punya param label_smoothing) —
+        # cukup one-hot y_fit/y_inner biasa, TANPA campur-baur antar sampel (beda dari Mixup).
+        # class_weight tetap dipakai lewat sample_weight array biasa (bukan generator).
+        y_fit_onehot = np.eye(N_CLASSES, dtype=np.float32)[y_fit]
+        y_inner_onehot = np.eye(N_CLASSES, dtype=np.float32)[y_inner]
+        sample_weight = np.array([class_weight.get(int(lbl), 1.0) for lbl in y_fit], dtype=np.float32)
+        model.fit(
+            X_fit, y_fit_onehot, validation_data=(X_inner, y_inner_onehot),
+            sample_weight=sample_weight,
+            epochs=epochs, batch_size=batch_size, verbose=0, callbacks=callbacks,
+        )
+    else:
+        model.fit(
+            X_fit, y_fit, validation_data=(X_inner, y_inner),
+            epochs=epochs, batch_size=batch_size, class_weight=class_weight, verbose=0,
+            callbacks=callbacks,
+        )
     if state['weights'] is None:
         state['weights'] = model.get_weights()
     return state['weights'], state['best_loss'], hist, state['best_acc']
@@ -178,39 +251,63 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     total_epochs = arsitektur.epochs + ft_epochs
     data = (X_fit, y_fit, X_inner, y_inner, X_fold, y_fold)
     head = '  Epoch  loss     acc      in_loss  in_acc   in_bal   uji_loss uji_acc  lr'
+    mixup_alpha = getattr(arsitektur, 'mixup_alpha', 0) or 0
+    label_smoothing = getattr(arsitektur, 'label_smoothing', 0) or 0
+    dense_units = getattr(arsitektur, 'dense_units', None) or 64
+    dense_l2 = getattr(arsitektur, 'dense_l2', None) or 1e-4
+    skip_fine_tuning = bool(getattr(arsitektur, 'skip_fine_tuning', False))
+    if mixup_alpha:
+        logger.info(f'  mixup_alpha  : {mixup_alpha} (Mixup aktif — loss CategoricalCrossentropy, class_weight via sample_weight)')
+    if label_smoothing:
+        logger.info(f'  label_smoothing : {label_smoothing}')
+    if skip_fine_tuning:
+        logger.info('  skip_fine_tuning : True (Jalur A — backbone beku penuh, Phase 2 dilewati, TODO.md P4)')
+    if dense_units != 64 or dense_l2 != 1e-4:
+        logger.info(f'  dense_units={dense_units}  dense_l2={dense_l2} (default 64/1e-4, TODO.md P4)')
 
     # ── Phase 1: base frozen ──────────────────────────────────────────
     model = build_model(arsitektur.model_type, arsitektur.input_size,
-                        arsitektur.dropout_rate, arsitektur.optimizer, arsitektur.learning_rate)
+                        arsitektur.dropout_rate, arsitektur.optimizer, arsitektur.learning_rate,
+                        mixup_alpha=mixup_alpha, label_smoothing=label_smoothing,
+                        dense_units=dense_units, dense_l2=dense_l2)
     logger.info(f'PHASE 1  epochs_max={arsitektur.epochs}  patience={patience}')
     logger.info('  [Early stopping/LR: inner_val_loss | Pilihan epoch: inner_val_balanced_acc (loss tiebreaker) | uji_* hanya laporan]')
     logger.info(head)
     p1_weights, p1_loss, h1, p1_bal = _fit_phase(
         model, data, arsitektur.epochs, arsitektur.batch_size, class_weight,
-        patience, patience // 2, 1e-6, logger, 0, total_epochs, on_epoch_end)
+        patience, patience // 2, 1e-6, logger, 0, total_epochs, on_epoch_end,
+        mixup_alpha=mixup_alpha, label_smoothing=label_smoothing)
     logger.info(f'PHASE 1 SELESAI  epoch={len(h1["loss"])}  best_inner_val_bal_acc={p1_bal:.4f}  (loss={p1_loss:.4f})')
 
-    # ── Phase 2: fine-tune layer teratas ──────────────────────────────
-    total_epochs = len(h1['loss']) + ft_epochs   # fase 1 bisa berhenti lebih awal → progress tetap mencapai 100%
-    model.set_weights(p1_weights)
-    model = _apply_fine_tuning(model, arsitektur.model_type,
-                               arsitektur.learning_rate, arsitektur.optimizer)
-    logger.info(f'PHASE 2 (fine-tune)  epochs_max={ft_epochs}  lr={arsitektur.learning_rate / 10:.2e}')
-    logger.info(head)
-    p2_weights, p2_loss, h2, p2_bal = _fit_phase(
-        model, data, ft_epochs, arsitektur.batch_size, class_weight,
-        max(10, patience // 2), max(5, patience // 4), 1e-7,
-        logger, len(h1['loss']), total_epochs, on_epoch_end, fine_tuning=True)
-
-    if _is_better_checkpoint(p2_bal, p2_loss, p1_bal, p1_loss):
-        model.set_weights(p2_weights)
-        pilihan = 'Phase 2 (inner_val_balanced_acc lebih baik)'
-    else:
+    if skip_fine_tuning:
+        # Jalur A (TODO.md P4): backbone beku penuh, tidak ada Phase 2 sama sekali.
         model.set_weights(p1_weights)
-        pilihan = 'Phase 1 (fine-tuning tidak memperbaiki inner_val_balanced_acc)'
-    logger.info(f'PHASE 2 SELESAI  epoch={len(h2["loss"])}  best_inner_val_bal_acc={p2_bal:.4f}  (loss={p2_loss:.4f})  → pakai {pilihan}')
+        history_dict = h1
+        logger.info('PHASE 2 DILEWATI (skip_fine_tuning=True) — pakai bobot Phase 1 apa adanya')
+    else:
+        # ── Phase 2: fine-tune layer teratas ──────────────────────────
+        total_epochs = len(h1['loss']) + ft_epochs   # fase 1 bisa berhenti lebih awal → progress tetap mencapai 100%
+        model.set_weights(p1_weights)
+        model = _apply_fine_tuning(model, arsitektur.model_type, arsitektur.learning_rate,
+                                   arsitektur.optimizer, mixup_alpha=mixup_alpha,
+                                   label_smoothing=label_smoothing)
+        logger.info(f'PHASE 2 (fine-tune)  epochs_max={ft_epochs}  lr={arsitektur.learning_rate / 10:.2e}')
+        logger.info(head)
+        p2_weights, p2_loss, h2, p2_bal = _fit_phase(
+            model, data, ft_epochs, arsitektur.batch_size, class_weight,
+            max(10, patience // 2), max(5, patience // 4), 1e-7,
+            logger, len(h1['loss']), total_epochs, on_epoch_end, fine_tuning=True,
+            mixup_alpha=mixup_alpha, label_smoothing=label_smoothing)
 
-    history_dict = {k: h1[k] + h2[k] for k in h1}
+        if _is_better_checkpoint(p2_bal, p2_loss, p1_bal, p1_loss):
+            model.set_weights(p2_weights)
+            pilihan = 'Phase 2 (inner_val_balanced_acc lebih baik)'
+        else:
+            model.set_weights(p1_weights)
+            pilihan = 'Phase 1 (fine-tuning tidak memperbaiki inner_val_balanced_acc)'
+        logger.info(f'PHASE 2 SELESAI  epoch={len(h2["loss"])}  best_inner_val_bal_acc={p2_bal:.4f}  (loss={p2_loss:.4f})  → pakai {pilihan}')
+
+        history_dict = {k: h1[k] + h2[k] for k in h1}
     logger.info(f'TRAINING SELESAI  total_epoch={len(history_dict["loss"])}  waktu={(time.time() - t_start) / 60:.1f} menit')
     logger.info('=' * 60)
     for handler in logger.handlers:
@@ -233,6 +330,11 @@ def train_final(arsitektur, base_dir, on_epoch_end=None):
         dropout_rate=arsitektur.dropout_rate, optimizer=arsitektur.optimizer,
         learning_rate=arsitektur.learning_rate, batch_size=arsitektur.batch_size,
         epochs=arsitektur.epochs, patience=getattr(arsitektur, 'patience', 5),
+        mixup_alpha=getattr(arsitektur, 'mixup_alpha', 0),
+        label_smoothing=getattr(arsitektur, 'label_smoothing', 0),
+        dense_units=getattr(arsitektur, 'dense_units', None),
+        dense_l2=getattr(arsitektur, 'dense_l2', None),
+        skip_fine_tuning=getattr(arsitektur, 'skip_fine_tuning', False),
     )
     model, _ = train(cfg, base_dir, on_epoch_end=on_epoch_end)
     return model

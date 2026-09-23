@@ -11,13 +11,14 @@ class PreprocessingConfig(db.Model):
     target_width   = db.Column(db.Integer, nullable=False, default=224)
     target_height  = db.Column(db.Integer, nullable=False, default=224)
     resize_method  = db.Column(db.Enum('LANCZOS', 'BILINEAR', 'BICUBIC', 'NEAREST'), nullable=False, default='LANCZOS')
-    resize_mode    = db.Column(db.Enum('stretch', 'letterbox'), nullable=False, default='stretch')
+    resize_mode      = db.Column(db.Enum('stretch', 'letterbox'), nullable=False, default='stretch')
+    illum_correction = db.Column(db.Boolean, nullable=False, default=False)
     # Center Crop
     crop_enabled   = db.Column(db.Boolean, nullable=False, default=False)
     crop_width     = db.Column(db.Integer, nullable=False, default=224)
     crop_height    = db.Column(db.Integer, nullable=False, default=224)
     # Normalisasi
-    norm_method    = db.Column(db.Enum('minmax', 'zscore', 'none'), nullable=False, default='minmax')
+    norm_method    = db.Column(db.Enum('minmax', 'zscore', 'none', 'clahe'), nullable=False, default='minmax')
     # Augmentasi
     aug_flip_h     = db.Column(db.Boolean, nullable=False, default=False)
     aug_flip_v     = db.Column(db.Boolean, nullable=False, default=False)
@@ -25,7 +26,7 @@ class PreprocessingConfig(db.Model):
     aug_brightness = db.Column(db.Numeric(4, 2), nullable=False, default=1.0)
     aug_contrast   = db.Column(db.Numeric(4, 2), nullable=False, default=1.0)
     # Denoise
-    denoise_method = db.Column(db.Enum('none', 'gaussian', 'median', 'bilateral'), nullable=False, default='none')
+    denoise_method = db.Column(db.Enum('none', 'gaussian', 'median', 'bilateral'), nullable=False, default='bilateral')
     denoise_ksize  = db.Column(db.Integer, nullable=False, default=3)
     # Meta
     is_default     = db.Column(db.Boolean, nullable=False, default=False)

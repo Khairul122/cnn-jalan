@@ -222,14 +222,40 @@ def best_model():
     )
 
 
+def _five_crop_flip_views(img_arr, crop_frac=0.875):
+    """
+    5-crop (tengah + 4 sudut) di crop_frac dari ukuran asli, di-resize balik ke ukuran asli,
+    masing-masing digandakan dengan flip horizontal → 10 view. Teknik TTA standar (mis.
+    torchvision FiveCrop) diperluas dengan flip, dipakai _predict_with_tta.
+    """
+    h, w = img_arr.shape[:2]
+    ch, cw = max(1, int(h * crop_frac)), max(1, int(w * crop_frac))
+    positions = [
+        ((h - ch) // 2, (w - cw) // 2),   # tengah
+        (0, 0),                            # kiri atas
+        (0, w - cw),                       # kanan atas
+        (h - ch, 0),                       # kiri bawah
+        (h - ch, w - cw),                  # kanan bawah
+    ]
+    views = []
+    for top, left in positions:
+        crop = img_arr[top:top + ch, left:left + cw]
+        resized = Image.fromarray(crop.astype(np.uint8)).resize((w, h), Image.Resampling.BILINEAR)
+        resized = np.array(resized, dtype=np.float32)
+        views.append(resized)
+        views.append(resized[:, ::-1, :])
+    return views
+
+
 def _predict_with_tta(model, img_arr):
     """
-    Rata-ratakan probabilitas prediksi dari gambar asli + flip horizontal (TTA sederhana).
-    Flip horizontal representatif untuk foto jalan (perspektif kendaraan simetris kiri-kanan),
-    sama seperti augmentasi RandomFlip('horizontal') yang dipakai saat training.
+    Rata-ratakan probabilitas prediksi dari 5-crop (tengah + 4 sudut) × flip horizontal =
+    10 view (diperluas dari flip-only, TODO.md P3). Flip horizontal representatif untuk foto
+    jalan (perspektif kendaraan simetris kiri-kanan), sama seperti augmentasi
+    RandomFlip('horizontal') yang dipakai saat training.
     img_arr: array [H, W, 3] float32 [0,255], belum di-batch. Return: vektor probabilitas [3].
     """
-    batch = np.stack([img_arr, img_arr[:, ::-1, :]])
+    batch = np.stack(_five_crop_flip_views(img_arr))
     probs = model.predict(batch, verbose=0)
     return probs.mean(axis=0)
 

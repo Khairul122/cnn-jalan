@@ -57,6 +57,7 @@ from .prediction import (
     _load_cached,
     _predict_with_tta,
     _predict_probs_with,
+    _five_crop_flip_views,
     _ensemble_models_for,
     _resolve_prediction_models,
 )
