@@ -5,6 +5,7 @@ from app.models.arsitektur_config import ArsitekturConfig
 from app.models.prediksi_model import PrediksiModel
 from app.models.dokumentasi_foto import DokumentasiFoto
 from app.models.hasil_evaluasi import HasilEvaluasi
+from app.services.metrics_service import cv_summary
 
 peta_bp = Blueprint('peta', __name__, url_prefix='/peta')
 
@@ -26,14 +27,27 @@ def index():
         for ev in HasilEvaluasi.query.all()
     }
 
+    # Sama seperti arsitektur_controller.index(): utamakan cv_summary().macro_f1 (metrik
+    # resmi) untuk config pred_type='cv', fallback ke HasilEvaluasi (1 fold) kalau belum di-CV.
+    display_map = {}
+    for cfg in prediksi_configs:
+        if cfg.pred_type == 'cv':
+            cv = cv_summary(cfg)
+            if cv:
+                display_map[cfg.id] = {'akurasi': cv['akurasi'], 'macro_f1': cv['macro_f1'], 'sumber': 'cv'}
+                continue
+        ev = evaluasi_map.get(cfg.id)
+        if ev:
+            display_map[cfg.id] = {'akurasi': ev.akurasi, 'macro_f1': ev.macro_f1, 'sumber': '1fold'}
+
     best_id = None
-    if evaluasi_map:
-        best_id = max(evaluasi_map, key=lambda cid: evaluasi_map[cid].akurasi)
+    if display_map:
+        best_id = max(display_map, key=lambda cid: display_map[cid]['macro_f1'])
 
     return render_template(
         'peta/index.html',
         prediksi_configs=prediksi_configs,
-        evaluasi_map=evaluasi_map,
+        display_map=display_map,
         best_id=best_id,
     )
 

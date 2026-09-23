@@ -137,11 +137,12 @@
                    background:var(--c-surface);outline:none;cursor:pointer;"
             onchange="loadCnnMarkers()">
       {% for c in prediksi_configs %}
+      {% set disp = display_map.get(c.id) %}
       <option value="{{ c.id }}"
               {% if c.id == best_id %}selected{% endif %}>
         {{ c.nama }}
         {% if c.id == best_id %}★ Terbaik{% endif %}
-        {% if evaluasi_map.get(c.id) %}— {{ evaluasi_map[c.id].akurasi }}%{% endif %}
+        {% if disp %}— {{ disp.akurasi }}% ({{ 'CV' if disp.sumber == 'cv' else '1 fold' }}){% endif %}
       </option>
       {% endfor %}
     </select>

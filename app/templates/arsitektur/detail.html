@@ -177,7 +177,9 @@
       <div style="font-size:1.05rem;font-weight:700;color:#10B981;font-variant-numeric:tabular-nums;">
         {{ '%.2f%%'|format(evaluasi.akurasi if evaluasi else best_acc.val_accuracy * 100) }}
       </div>
-      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">{{ 'Akurasi Model Final (fold uji)' if evaluasi else 'Puncak Akurasi Fold Uji' }}</div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
+        {% if evaluasi %}Akurasi Evaluasi <span style="color:var(--c-danger);">(1 fold, bukan metrik resmi)</span>{% else %}Puncak Akurasi Fold Uji{% endif %}
+      </div>
     </div>
   </div>
   <div class="col-6 col-md-3">
@@ -276,6 +278,10 @@
   Hasil Evaluasi Model
   <span style="font-size:.68rem;font-weight:400;color:var(--c-muted);margin-left:.5rem;">
     {{ evaluasi.created_at.strftime('%d %b %Y %H:%M') }}
+  </span>
+  <span style="font-size:.68rem;font-weight:600;color:var(--c-danger);margin-left:.5rem;"
+        title="Diukur dari 1 fold uji saat training tunggal, bukan rata-rata K-Fold — pakai Prediksi CV K-Fold untuk angka resmi">
+    1 fold, bukan metrik resmi
   </span>
 </div>
 

@@ -58,7 +58,7 @@
     <tbody>
       {% for cfg in configs %}
       {% set is_best = (cfg.id == best_id) %}
-      {% set ev = evaluasi_map.get(cfg.id) %}
+      {% set disp = display_map.get(cfg.id) %}
       <tr {% if is_best %}class="row-best"{% endif %}>
         <td style="font-size:.75rem;color:var(--c-muted);">{{ loop.index }}</td>
         <td>
@@ -93,10 +93,17 @@
           </span>
         </td>
         <td style="text-align:center;font-variant-numeric:tabular-nums;">
-          {% if ev %}
+          {% if disp %}
           <span style="font-weight:700;font-size:.85rem;color:{% if is_best %}#F59E0B{% else %}#10B981{% endif %};">
-            {{ ev.akurasi }}%
+            {{ disp.akurasi }}%
           </span>
+          <div style="font-size:.65rem;line-height:1;margin-top:2px;">
+            {% if disp.sumber == 'cv' %}
+            <span style="color:#10B981;font-weight:600;">CV K-Fold</span>
+            {% else %}
+            <span style="color:var(--c-danger);font-weight:600;" title="1 fold saja, bukan metrik resmi — jalankan Prediksi CV K-Fold">1 fold, belum CV</span>
+            {% endif %}
+          </div>
           {% else %}
           <span style="color:var(--c-muted);font-size:.78rem;">—</span>
           {% endif %}

@@ -6,10 +6,48 @@ from app.models.pengguna import Pengguna
 from app.models.label_kerusakan import LabelKerusakan
 from app.models.prediksi_model import PrediksiModel
 from app.models.hasil_evaluasi import HasilEvaluasi
-from app.models.arsitektur_config import ArsitekturConfig
 from app.models.dokumentasi_foto import DokumentasiFoto
 
 dashboard_bp = Blueprint('dashboard', __name__)
+
+
+def _headline_accuracy():
+    """
+    Angka akurasi CNN untuk ditampilkan sebagai headline (dashboard & landing page).
+    Utamakan cv_summary().macro_f1 tertinggi (metrik resmi, rata-rata K-Fold) — SAMA
+    seperti cnn_service.best_model() dan arsitektur_controller.index() — fallback ke
+    HasilEvaluasi (1 fold, ditandai 'sumber': '1fold') hanya kalau belum ada config yang
+    di-CV sama sekali. Cegah headline publik diam-diam pakai metrik 1-fold tanpa label.
+    """
+    from app.services import cnn_service
+    from app.services.metrics_service import cv_summary
+
+    best_cfg = cnn_service.best_model()
+    if not best_cfg:
+        return None
+
+    cv = cv_summary(best_cfg) if best_cfg.pred_type == 'cv' else None
+    if cv:
+        return {
+            'akurasi'       : cv['akurasi'],
+            'recall_berat'  : cv['recall']['berat'],
+            'recall_sedang' : cv['recall']['sedang'],
+            'recall_ringan' : cv['recall']['ringan'],
+            'model_nama'    : best_cfg.nama,
+            'sumber'        : 'cv',
+        }
+
+    ev = HasilEvaluasi.query.filter_by(arsitektur_id=best_cfg.id).first()
+    if not ev:
+        return None
+    return {
+        'akurasi'       : round(ev.akurasi or 0, 1),
+        'recall_berat'  : round(ev.recall_berat or 0, 1),
+        'recall_sedang' : round(ev.recall_sedang or 0, 1),
+        'recall_ringan' : round(ev.recall_ringan or 0, 1),
+        'model_nama'    : best_cfg.nama,
+        'sumber'        : '1fold',
+    }
 
 
 @dashboard_bp.route('/')
@@ -17,32 +55,24 @@ def root():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.index'))
 
-    from app.models.hasil_evaluasi import HasilEvaluasi
-    from app.models.prediksi_model import PrediksiModel
-    from app.models.arsitektur_config import ArsitekturConfig
-
-    best = (HasilEvaluasi.query
-            .join(ArsitekturConfig, HasilEvaluasi.arsitektur_id == ArsitekturConfig.id)
-            .filter(ArsitekturConfig.status == 'selesai')
-            .order_by(HasilEvaluasi.akurasi.desc())
-            .first())
+    headline = _headline_accuracy()
 
     total_pred = PrediksiModel.query.count()
     berat_ct   = PrediksiModel.query.filter_by(prediksi=0).count()
     sedang_ct  = PrediksiModel.query.filter_by(prediksi=1).count()
     ringan_ct  = PrediksiModel.query.filter_by(prediksi=2).count()
 
-    # HasilEvaluasi stores values as percentages (0–100), not fractions (0–1)
     ctx = {
         'total_pred'    : total_pred,
         'berat_ct'      : berat_ct,
         'sedang_ct'     : sedang_ct,
         'ringan_ct'     : ringan_ct,
-        'akurasi'       : round(best.akurasi or 0, 1) if best else None,
-        'recall_berat'  : round(best.recall_berat  or 0, 1) if best else None,
-        'recall_sedang' : round(best.recall_sedang or 0, 1) if best else None,
-        'recall_ringan' : round(best.recall_ringan or 0, 1) if best else None,
-        'model_nama'    : best.arsitektur.nama if best else None,
+        'akurasi'       : headline['akurasi'] if headline else None,
+        'recall_berat'  : headline['recall_berat'] if headline else None,
+        'recall_sedang' : headline['recall_sedang'] if headline else None,
+        'recall_ringan' : headline['recall_ringan'] if headline else None,
+        'model_nama'    : headline['model_nama'] if headline else None,
+        'akurasi_sumber': headline['sumber'] if headline else None,
     }
     return render_template('landing/index.html', **ctx)
 
@@ -100,15 +130,10 @@ def index():
     sedang_label = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=2).count()
     ringan_label = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=3).count()
 
-    best_eval = (HasilEvaluasi.query
-                 .join(ArsitekturConfig, HasilEvaluasi.arsitektur_id == ArsitekturConfig.id)
-                 .filter(ArsitekturConfig.status == 'selesai')
-                 .order_by(HasilEvaluasi.akurasi.desc())
-                 .first())
-
-    akurasi_cnn  = round(best_eval.akurasi, 1) if best_eval else None
-    model_nama   = best_eval.arsitektur.nama if best_eval else None
-    model_status = 'selesai' if best_eval else 'mock'
+    headline     = _headline_accuracy()
+    akurasi_cnn  = headline['akurasi'] if headline else None
+    model_nama   = headline['model_nama'] if headline else None
+    model_status = 'selesai' if headline else 'mock'
 
     stats = {
         'total_lokasi'   : total_lokasi,
@@ -122,5 +147,6 @@ def index():
         'akurasi_cnn'    : akurasi_cnn,
         'model_nama'     : model_nama,
         'model_status'   : model_status,
+        'akurasi_sumber' : headline['sumber'] if headline else None,
     }
     return render_template('dashboard/index.html', stats=stats)

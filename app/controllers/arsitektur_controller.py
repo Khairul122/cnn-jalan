@@ -211,22 +211,36 @@ def index():
     total_selesai = sum(1 for c in configs if c.status == 'selesai')
     total_draft   = sum(1 for c in configs if c.status in ('draft', 'gagal', 'training'))
 
-    # Map config_id â†’ HasilEvaluasi (untuk tampil akurasi di tabel)
     evaluasi_map = {
         ev.arsitektur_id: ev
         for ev in HasilEvaluasi.query.all()
     }
 
-    # Config dengan akurasi evaluasi tertinggi
+    # Angka yang ditampilkan/dibandingkan per config: utamakan cv_summary().macro_f1 (metrik
+    # resmi, rata-rata K-Fold) kalau pred_type='cv'; fallback ke HasilEvaluasi (1 fold) hanya
+    # kalau config itu belum pernah di-CV sama sekali. Konsisten dengan cnn_service.best_model()
+    # yang dipakai untuk klasifikasi foto baru (lihat CLAUDE.md).
+    display_map = {}
+    for cfg in configs:
+        if cfg.pred_type == 'cv':
+            cv = cv_summary(cfg)
+            if cv:
+                display_map[cfg.id] = {'akurasi': cv['akurasi'], 'macro_f1': cv['macro_f1'], 'sumber': 'cv'}
+                continue
+        ev = evaluasi_map.get(cfg.id)
+        if ev:
+            display_map[cfg.id] = {'akurasi': ev.akurasi, 'macro_f1': ev.macro_f1, 'sumber': '1fold'}
+
+    # Config terbaik: macro-F1 tertinggi (CV diutamakan lewat display_map di atas)
     best_id = None
-    if evaluasi_map:
-        best_id = max(evaluasi_map, key=lambda cid: evaluasi_map[cid].akurasi)
+    if display_map:
+        best_id = max(display_map, key=lambda cid: display_map[cid]['macro_f1'])
 
     return render_template('arsitektur/index.html',
                            configs=configs,
                            total_selesai=total_selesai,
                            total_draft=total_draft,
-                           evaluasi_map=evaluasi_map,
+                           display_map=display_map,
                            best_id=best_id)
 
 

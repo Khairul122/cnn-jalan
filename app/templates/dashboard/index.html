@@ -557,8 +557,13 @@
       {% if stats.akurasi_cnn is not none %}
       <p class="kpi-value" style="font-size:1.6rem;">{{ stats.akurasi_cnn }}<span style="font-size:1rem;font-weight:500;color:var(--c-muted);">%</span></p>
       <div class="kpi-meta">
+        {% if stats.akurasi_sumber == 'cv' %}
         <i class="bi bi-check-circle-fill" style="color:var(--c-ok);" aria-hidden="true"></i>
-        <span>Validasi fold terbaik</span>
+        <span>Rata-rata 5-Fold CV</span>
+        {% else %}
+        <i class="bi bi-exclamation-triangle-fill" style="color:#F59E0B;" aria-hidden="true"></i>
+        <span title="Belum ada model yang dijalankan lewat Prediksi CV K-Fold">1 fold, bukan metrik resmi</span>
+        {% endif %}
       </div>
       {% else %}
       <p class="kpi-value" style="color:var(--c-muted);">—</p>

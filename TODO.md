@@ -1,91 +1,111 @@
-﻿# TODO â€” Evaluasi & Perbaikan CNN-Jalan
+﻿# TODO — Rewrite CNN-Jalan Berdasarkan Audit Menyeluruh
 
-Diperbarui: 2026-09-23. Ukuran usaha: **S** < 30 menit Â· **M** 1â€“3 jam Â· **L** > 3 jam.
-Status hasil terakhir (SDI, data lama): 5-fold CV MobileNetV2 = 48,9% Â± 4,5 (baseline mayoritas 42,9%); backbone beku + regresi logistik = Â±56â€“61%.
-**Status hasil CV pertama yang valid (2026-09-23, split & data terbaru, setting lama sebelum perbaikan fine-tuning hari ini):** 45,4% Â± 6,7 (baseline mayoritas 50,4%, model masih **di bawah** baseline). Target 70% belum tercapai (lihat bagian C).
+Disusun: 23 September 2026. Dasar: audit kode aktual (`app/services/cnn_service/`, `app/models/label_kerusakan.py`, `app/controllers/arsitektur_controller.py`, template `arsitektur/`) dibandingkan dengan `studi.md`, `CLAUDE.md`, dan `TODO.md` proyek yang sudah ada, plus tinjauan metodologi machine learning umum.
 
----
+Ukuran usaha: **S** kurang dari 30 menit · **M** 1–3 jam · **L** lebih dari 3 jam · **XL** butuh beberapa sesi kerja.
 
-## âœ… Sudah selesai
-- [x] Perbaiki `.venv` (Python 3.12, TensorFlow 2.21) â€” `.venv_lama` sudah dihapus pada P2
-- [x] Ganti data model dengan `DATA JALAN REVISI.xlsx` (280 lokasi + foto), backup di `D:\flask\cnn_jalan_backup_20260922`
-- [x] `panjang`/`lebar` â†’ DECIMAL meter, kolom baru `keterangan` (`migrate_revisi_lokasi.sql`)
-- [x] `seed_data.py` ditulis ulang (validasi Excel sebelum hapus, `--reset`)
-- [x] Bug `datetime` belum di-import di `lokasi_controller.py`
-- [x] Hapus kode mati: `parse_meter`, `models/kecamatan.py`, rujukan kecamatan di `klasifikasi/upload.html`
-- [x] Auto-label: baris `Estimasi (X)` memakai kelas surveyor; kode `auto_label` tidak lagi duplikat
-- [x] Early stopping memakai inner-val (15% data training), fold uji tidak dipakai memilih epoch, seed tetap, tanpa file sementara
-- [x] SDI, preprocessing, split, training diulang; `CLAUDE.md`/`README.md` bagian import, label, dan training diperbarui
-- [x] (2026-09-22) `load_dataset` train pakai semua tahap non-acak (resize/crop/normalisasi/denoise) sebagai sampel terpisah per foto (~4x data). Inner-val di-split di level foto (`_group_aware_split`) supaya varian tahap dari foto yang sama tidak bocor antara fit dan inner-val.
-- [x] (2026-09-22, revisi keputusan di atas) Val/fold uji IKUT diperbanyak sama seperti train (bukan lagi 1 gambar/foto denoise) â€” `total_data_val`/metrik CV (`evaluate()`) sekarang dihitung dari sampel yang diperbanyak. `predict_all`/`predict_cv` (GIS) & klasifikasi foto baru TIDAK ikut berubah, tetap 1 gambar/foto. **Perlu training + evaluasi CV ulang** untuk lihat dampaknya ke akurasi yang dilaporkan â€” angka akurasi CV lama (48,9% Â± 4,5) tidak lagi apple-to-apple dengan hasil setelah perubahan ini karena basis penghitungan val berubah.
-- [x] (2026-09-22) Bug: tahap 'crop' identik byte-per-byte dgn 'resize' saat `crop_enabled=False` (preprocessing cuma menyalin, tanpa transformasi) â€” dihitung 2x sbg sampel terpisah. Fix: dedup berbasis hash MD5 konten file (`distinct_stage_paths`), dipakai `load_dataset` maupun statistik UI split (`effective_sample_count`). Total sampel efektif turun dari 1.120 â†’ 796 di data produksi (bukan lagi ada duplikat tersembunyi).
-- [x] (2026-09-22) Root-cause dari log training: kriteria pemilihan checkpoint lama (val_loss inner terendah) kadang pilih epoch yang val_loss-nya rendah tapi akurasi fold ujinya JELEK (val_loss turun tanpa akurasi ikut membaik). Fix: `_is_better_checkpoint` sekarang utamakan **balanced accuracy** inner-val (rata-rata recall antar kelas, bukan akurasi mentah yang bias ke Sedang/mayoritas), val_loss cuma tiebreaker. **Dipertahankan** â€” tidak terbukti jadi penyebab regresi berikutnya.
-- [x] (2026-09-22, **dibatalkan 2026-09-23**) Class_weight Ringan sempat di-boost 1.5x tambahan di atas `balanced` (`RINGAN_WEIGHT_BOOST`/`_boost_minority_class_weight`) karena recall-nya pernah cuma 8,3% di 1 fold. **Hasil run berikutnya (split=257, fold=1, reproducible via seed) membuktikan ini overcorrect**: rasio Ringan:Sedang jadi 3,5x â†’ model ganti bias ke Ringan/Berat, recall Sedang anjlok ke 23%, macro-F1 turun ke 37,98 (lebih jelek dari 2 run sebelumnya TANPA boost: 43,07 dan 41,67). Kode boost dicabut sepenuhnya (bukan cuma diturunkan angkanya) karena tidak ada bukti kuat untuk nilai pengganti mana pun â€” kembali ke `compute_class_weight('balanced')` polos.
-- [x] **(2026-09-23) AUDIT PENUH: preprocessing, split, training, metrik evaluasi.** Preprocessing & split: tidak ditemukan bug (pipeline 5 tahap, StratifiedKFold, `_group_aware_split`, deteksi split basi semua benar; `label_basi=0` dikonfirmasi di split aktif). class_weight/confusion_matrix/precision/recall/f1 di `evaluate()` dan `metrics_service.cv_summary()`: rumus benar, urutan label (`labels=[0,1,2]` vs `target_names=['berat','sedang','ringan']`) konsisten. **Temuan kritis:** `ArsitekturConfig.pred_type` belum pernah bernilai `'cv'` sekali pun di seluruh riwayat project â€” fitur "Prediksi CV K-Fold" belum pernah dijalankan sampai selesai. Semua angka akurasi yang dilaporkan sejauh ini (33/45/53/38/36%) berasal dari `HasilEvaluasi` (1 fold saja), BUKAN `cv_summary()` (rata-rata 5 fold) yang menjadi standar pelaporan resmi. **Fix kedua:** val/fold uji di `load_dataset` dikembalikan ke 1 gambar/foto (dibatalkan dari ekspansi 4-tahap yang sempat diaktifkan 2026-09-22) â€” ekspansi val membuat `evaluate()` mengukur sampel berkorelasi, tidak sebanding dengan `cv_summary()`/`predict_cv` yang selalu 1 gambar/foto. **Tindakan wajib Anda:** jalankan "Prediksi CV K-Fold" sampai selesai (5 training run) untuk dapat `cv_summary()` yang valid â€” itu satu-satunya angka yang boleh dibandingkan dengan baseline 48,9% Â± 4,5 atau dilaporkan di skripsi.
-- [x] **(2026-09-23) BUG UTAMA ditemukan & diperbaiki: `predict_cv()` selalu crash `NameError` (`SimpleNamespace` tidak di-import di scope fungsi itu) sejak awal project.** Errornya senyap karena `_cv_progress[config_id]` langsung di-`pop()` di blok `finally` sebelum sempat dibaca frontend â€” diperbaiki juga (error sekarang tetap tersimpan sampai dibaca, `predict-cv` route boleh dicoba ulang kalau attempt sebelumnya error, JS `gis.html` tampilkan `alert()` kalau gagal). **Hasil CV pertama yang valid di seluruh riwayat project:** akurasi 45,4% Â± 6,7, macro-F1 44,6%, baseline mayoritas 50,4% (model masih di bawah baseline; recall Berat/Sedang/Ringan = 50,6/43,3/43,5%, sudah tidak collapse ke 1 kelas).
-- [x] **(2026-09-23) Kurangi overfitting fine-tuning** (bukti: train acc konsisten 70%+ sementara val macet 35-45% di semua log). `_apply_fine_tuning`: layer di-unfreeze MobileNetV2 15â†’8, EfficientNetB0 25â†’12; learning rate fine-tuning lr/5â†’lr/10. **Perlu training + CV ulang untuk lihat dampaknya** â€” run CV 45,4%Â±6,7 di atas masih pakai setting LAMA.
-- [x] **(2026-09-23) Ensemble model fold CV + Test-Time Augmentation (TTA).** `predict_cv()` sekarang menyimpan model tiap fold (`model_{id}_fold{k}.keras`) alih-alih dibuang setelah dipakai. `predict_image()`/`predict_all()` (lewat `_resolve_prediction_models`) otomatis pakai ensemble (rata-rata probabilitas 5 model) kalau tersedia, fallback 1 model kalau belum pernah CV. Semua prediksi (termasuk `predict_cv` sendiri) pakai TTA sederhana (`_predict_with_tta`: rata-rata gambar asli + flip horizontal). `best_model()` diutamakan dari `cv_summary().macro_f1` (bukan `HasilEvaluasi` 1 fold) kalau sudah ada config yang di-CV. Model fold lama dihapus otomatis saat re-train/hapus config (`_remove_fold_models`) supaya ensemble tidak diam-diam pakai model basi.
-- [x] **(2026-09-23) Clean-up struktur folder:** `app/services/cnn_service.py` (~925 baris, 1 file) dipecah jadi package `app/services/cnn_service/` (`dataset.py`, `model.py`, `training.py`, `evaluation.py`, `prediction.py` + `__init__.py` yang re-export semua nama publik) — murni reorganisasi, tanpa mengubah perilaku. Semua pemanggil (`from app.services import cnn_service`) tidak perlu berubah; 2 test yang `mock.patch.object` konstanta/helper (`MIN_TRAIN_SAMPLES`, `_load_cached`) diupdate untuk patch di submodule tempat didefinisikan. Test suite tetap 34/36 lulus (2 gagal pre-existing tidak terkait).
+Status ringkas sebelum perbaikan: akurasi CV resmi pertama yang valid = 45,4% ± 6,7, di bawah baseline kelas mayoritas 50,4%. Target skripsi 70% belum tercapai dan kemungkinan besar tidak tercapai murni dari jalur foto saja, kecuali akar masalah label diperbaiki.
 
 ---
 
-## P0 â€” Keamanan (selesai 2026-09-22, kecuali 2 item yang butuh tindakan Anda)
-- [x] `/auth/register`: field `role` diabaikan, akun baru selalu `viewer`; password minimal 8 karakter (server + form); pilihan role dihapus dari form
-- [x] `admin_required` (`app/auth_utils.py`) di semua route yang mengubah data; viewer hanya bisa membaca (403 â†’ pesan + redirect ke dashboard)
-- [x] CSRF: Flask-WTF `CSRFProtect` + token di semua 30 form POST (tidak ada AJAX POST yang perlu header)
-- [x] Login: parameter `next` hanya menerima path internal
-- [x] Logout via POST (form + token)
-- [x] `SECRET_KEY` dan `DATABASE_URL` wajib dari `.env` (tanpa default hard-coded); `.env.example` disediakan; cookie sesi `HttpOnly` + `SameSite=Lax`
-- [x] `debug` hanya jika `FLASK_DEBUG=1` (di `.env` lokal Anda sudah 1)
-- [x] Tes regresi: `tests/test_security.py` (8 tes; jalankan `python -m unittest discover -s tests -t . -v`)
-- [ ] **Tindakan Anda:** ganti password akun default `admin@gmail.com` (masih `12345678`): `python scripts/create_admin.py --email admin@gmail.com`
-- [ ] **Tindakan Anda:** beri password pada user MySQL `root` lalu isi `DATABASE_URL` di `.env` (sekarang masih `root:` tanpa password, sama seperti sebelumnya)
-- [ ] (opsional, S) Sembunyikan tombol aksi untuk viewer di template; sekarang tombol tetap tampil tetapi ditolak server
+## P0 — Perbaikan Kritis (Kerjakan Dulu, Sebelum Eksperimen Apa Pun)
 
-## P1 â€” Bug fungsional (selesai 2026-09-22)
-- [x] `arsitektur.train`: klaim status atomik, permintaan kedua ditolak; model lama dihapus saat training ulang
-- [x] Status `training` menggantung â†’ `tandai_training_terputus()` dipanggil di `run.py` saat start
-- [x] Progress bar: total epoch dihitung ulang setelah fase 1 berhenti lebih awal
-- [x] `klasifikasi`: inferensi nyata dengan model terbaik; tanpa model â†’ ditolak (tidak ada data acak); jenis dikosongkan
-- [x] `klasifikasi.upload`: validasi lokasi, isi file harus gambar, folder upload dibuat otomatis (`app/uploads.py`, dipakai juga oleh `lokasi`)
-- [x] `split.export`: nama file disanitasi (`secure_filename`)
-- [x] Halaman detail: "Akurasi Model Final" (dari evaluasi) menggantikan "Best Val Accuracy"; label kolom fold uji diperjelas
-- [x] Mode Single: peringatan di halaman GIS; ringkasan CV ditampilkan bila tersedia
+Bagian ini harus selesai dulu supaya semua eksperimen berikutnya diukur dengan angka yang benar dan konsisten.
 
-## P1 â€” Metodologi (selesai 2026-09-22; keputusan pemilik tercatat)
-- [x] **Keputusan:** label semua dari SDI (PÃ—L). Kolom `keterangan` hanya informasi. Konsekuensi (catat di pembahasan): akurasi CNN cenderung mendekati baseline kelas mayoritas (~46â€“52%)
-- [x] **Keputusan:** sistem = klasifikasi **tingkat** kerusakan saja (jenis tidak diklasifikasi; teks login/register/landing/README/CLAUDE.md disesuaikan; tabel `jenis_kerusakan` dibiarkan)
-- [x] **Keputusan:** evaluasi = 5-fold CV (angka utama) + model final pada semua data (`train_final`, tombol di halaman detail, langkah terakhir `run_pipeline.py`)
-- [x] **Keputusan:** preprocessing tetap 5 tahap, 5 file/foto (augmentasi = tahap terakhir, hanya visualisasi)
-- [x] 5-fold CV sebagai metrik utama di UI (`cv_summary`)
-- [x] Augmentasi tidak memengaruhi data training
-- [x] `split_item` basi terdeteksi (banner + training ditolak)
-- [x] Skrip pipeline ulang sekali jalan: `scripts/run_pipeline.py`
-- [ ] **(L, opsional)** Opsi model "backbone beku + regresi logistik" (EfficientNetB0 + ConvNeXtTiny, Â±56â€“61% dengan label surveyor; dengan label SDI Â±46â€“52%)
-
-## P2 â€” Kualitas kode
-- [x] (M) `cnn_service.py`: subquery preprocessing disatukan menjadi `_preprocessed_subquery()`
-- [x] (S) `arsitektur_controller`: logika POST evaluasi disatukan; `_Cfg` diganti `types.SimpleNamespace`
-- [x] (S) Deprecation: API datetime dan `Query.get()` diganti API modern
-- [x] (S) Tes tambahan P2 untuk SDI, `SplitService`, dan `seed_data.read_excel`
-- [ ] **(S)** `git init` + commit awal (project belum berupa repo)
-- [x] (S) Hapus dump SQL lama `database/db_cnn_jalan.sql`
-- [x] (S) Hapus utilitas dan generator data lama yang sudah tidak dipakai
-
-## P2 â€” Housekeeping (butuh izin Anda karena menghapus file)
-- [x] Hapus data Excel/PDF/script lama
-- [x] Hapus generator SQL/data lama
-- [x] Hapus log training lama
-- [x] Hapus `.venv_lama`
-- [x] Hapus backup lama setelah verifikasi
-
-## P2 â€” Dokumentasi
-- [x] (S) `CLAUDE.md`: status akurasi diperbarui dengan hasil CV terbaru
-- [x] (S) `README.md`: struktur folder dan setup diperbarui
-- [x] (S) `studi.md` / `transfer_knowledge.md`: alur lama diperbarui
+- [ ] **Perbaiki inkonsistensi pemilihan "model terbaik" di UI.** `arsitektur_controller.py::index()` masih memilih `best_id` berdasarkan `HasilEvaluasi.akurasi` (metrik 1 fold), bukan `cv_summary().macro_f1`. Ini bertentangan dengan `prediction.py::best_model()` yang sudah benar memprioritaskan metrik CV. Ganti logika di `index()` supaya konsisten pakai `cv_summary().macro_f1` untuk config yang sudah punya `pred_type='cv'`, fallback ke `HasilEvaluasi.akurasi` hanya kalau belum ada CV sama sekali. Update juga label kolom "Akurasi" di `arsitektur/index.html` (baris 54, 98) supaya jelas menyebut sumber angkanya (CV atau 1 fold). **(M)**
+- [ ] **Buat split baru (jangan reuse split lama) sebelum baseline CV berikutnya.** `split_service.py` sekarang group-aware terhadap foto near-duplicate (`dedup_service.py`, average-hash + union-find, baru ditambahkan) — di 280 foto saat ini terdeteksi 31 foto near-duplicate yang split lama (`StratifiedKFold` polos) bisa taruh di fold train dan val berbeda sekaligus (leakage). Split lama yang dibuat sebelum perubahan ini **tidak otomatis diperbaiki** — harus dibuat split baru dari `/split/new` supaya baseline CV di bawah ini bersih dari leakage duplikat sejak awal. **(S)**
+- [ ] **Jalankan ulang "Prediksi CV K-Fold" dengan setting fine-tuning terbaru** (MobileNetV2 8 layer, EfficientNetB0 12 layer, LR fine-tune dibagi 10) sebelum mengubah apa pun lagi. Angka 45,4% ± 6,7 yang ada sekarang masih pakai setting fine-tuning lama, jadi belum mencerminkan perbaikan overfitting yang sudah diterapkan hari ini. **Pastikan pakai split baru (lihat item di atas), bukan split lama.** **(L, butuh 5 training run penuh)**
+- [ ] **Audit ulang semua tempat yang menampilkan atau membandingkan angka akurasi** (dashboard, halaman detail arsitektur, landing page publik) untuk memastikan tidak ada lagi tempat yang diam-diam memakai `HasilEvaluasi.akurasi` sebagai klaim akurasi akhir. Beri label eksplisit "1 fold, bukan metrik resmi" di setiap tempat yang menampilkannya. **(M)**
+- [ ] **Perbaiki dan sinkronkan dokumentasi (`studi.md`, `CLAUDE.md`, `README.md`)** supaya mencerminkan kode yang benar-benar berjalan, bukan snapshot 29 Mei 2026. Setiap kali skema training/preprocessing/arsitektur berubah setelah ini, update dokumentasi di commit yang sama. **(M)**
 
 ---
 
-## Urutan yang disarankan
-1. P0 keamanan (Â±1 hari kerja ringan) â†’ 2. Metodologi: CV sebagai metrik utama + augmentasi ke training + preprocessing ringkas â†’ 3. Bug P1 â†’ 4. Kualitas kode & tes â†’ 5. Housekeeping dan dokumentasi.
+## P1 — Pelabelan (SDI)
 
+- [ ] **Pertahankan `hitung_sdi()` apa adanya.** Sudah 100% sesuai standar Bina Marga (F_retak, F_lubang, F_rutting, threshold Ringan/Sedang/Berat). Tidak perlu diubah.
+- [ ] **Perbaiki `estimasi_dari_dimensi()`.** Implementasi saat ini pakai tabel lookup diskrit 5 kelompok luas (≤0,5 / ≤2 / ≤6 / ≤12 / >12 m²) dengan nilai hardcoded, menyimpang dari formula kontinu yang didokumentasikan di `studi.md` (`persen_retak = min(luas/referensi, 100)`, `jumlah_lubang = luas/0,1`). Pilih salah satu:
+  - **Opsi A:** ganti ke formula kontinu sesuai draft asli di `studi.md`, tentukan nilai `referensi` yang masuk akal dan didokumentasikan alasannya.
+  - **Opsi B:** tetap pakai tabel diskrit, tapi tuliskan justifikasi ambang batas dan nilai parameter di `CLAUDE.md`, idealnya dirujuk ke observasi lapangan atau literatur Bina Marga.
+  
+  **(M)**
+- [ ] **Audit label yang berada dekat ambang batas SDI** (mendekati 50 dan 150). Tandai baris ini di database untuk analisis kesalahan terpisah karena paling rawan salah klasifikasi. **(M)**
+- [ ] **Latih model kedua dengan label surveyor** (kolom `keterangan` pada baris Estimasi) sebagai target, untuk subset data yang punya kedua sumber label. Bandingkan macro-F1 dengan model label SDI. Catatan proyek menunjukkan label surveyor memberi macro-F1 lebih tinggi (~56–61%) dibanding SDI dari P×L (~46–52%). **(L)**
+- [ ] **Laporkan kedua sumber label secara berdampingan di bab pembahasan skripsi**, jangan cuma pilih satu yang hasilnya lebih baik. Jelaskan kenapa SDI dari P×L secara struktural tidak sepenuhnya tampak di foto tanpa skala. **(S, penulisan)**
+
+---
+
+## P2 — Preprocessing
+
+- [ ] **Ganti default denoise dari Gaussian/Median ke Bilateral Filter**, kernel kecil (3 atau 5). Bilateral mempertahankan tepi retak sambil meredam noise di area datar. Uji juga varian tanpa denoise sama sekali sebagai pembanding ablation, karena blur berisiko menghilangkan retak halus yang jadi sinyal utama kelas. **(M)**
+- [ ] **Tambahkan opsi CLAHE (Contrast Limited Adaptive Histogram Equalization)** di kanal luminance sebagai pilihan baru di `norm_method`, selain minmax/zscore/none. CLAHE menonjolkan kontras lokal tanpa merusak kontras absolut antar foto seperti minmax global. **(M)**
+- [ ] **Ganti center crop generik dengan ROI-aware crop.** Anotasi bounding box area kerusakan untuk 280 foto (pakai LabelImg atau Roboflow, kerja satu kali), lalu crop ke area itu sebelum masuk pipeline. Sediakan fallback ke center crop kalau anotasi belum tersedia untuk foto tertentu. **(L, kerja anotasi manual)**
+- [ ] **Tambahkan tahap koreksi iluminasi** (gray-world white balance atau histogram matching ke satu foto referensi), sebelum atau sesudah resize, untuk mengurangi variasi pencahayaan antar sesi pemotretan lapangan. **(M)**
+- [ ] **Perbaiki urutan pipeline supaya konsisten dengan dokumentasi**, atau perbarui dokumentasi supaya sesuai urutan kode saat ini (Resize → Crop → Normalisasi → Denoise → Augmentasi). Pastikan `studi.md` dan `CLAUDE.md` menyebut urutan yang sama. **(S)**
+- [ ] **(Eksperimen opsional) Tambahkan edge map (Canny/Sobel) sebagai kanal ke-4 input**, digabung dengan RGB, untuk memberi sinyal eksplisit lokasi tepi retak ke model. **(L, perlu ubah arsitektur input)**
+
+---
+
+## P3 — Augmentasi
+
+- [ ] **Pertahankan pembatasan yang sudah benar**: flip vertikal tetap dihapus, rotasi tetap dibatasi kecil (sekitar ±18 derajat). Jangan diubah, karena jalan terbalik atau miring ekstrem tidak realistis.
+- [ ] **Tambahkan color jitter** (variasi hue dan saturasi ringan) di layer augmentasi model, selain brightness dan contrast yang sudah ada. **(S)**
+- [ ] **Implementasikan Mixup atau CutMix** di level batch lewat `tf.data`, bukan layer Keras preprocessing biasa (layer bawaan Keras tidak mendukung ini). Campur dua foto dan label secara proporsional untuk membuat sampel sintetis baru. **(M)**
+- [ ] **Tambahkan Cutout / Random Erasing** dengan patch kecil (di bawah 10% luas gambar) saat training, supaya model tidak terlalu bergantung pada satu titik kerusakan paling mencolok. **(M)**
+- [ ] **Tambahkan noise sintetis ringan** (Gaussian noise) setelah tahap denoise saat training, melatih model tahan terhadap variasi sensor kamera lapangan. **(S)**
+- [ ] **Perluas Test-Time Augmentation** di `prediction.py::_predict_with_tta` dari sekadar flip horizontal menjadi kombinasi flip horizontal dan multi-crop (5-crop: tengah + 4 sudut), dirata-ratakan. **(M)**
+
+---
+
+## P4 — Arsitektur Model
+
+- [ ] **Uji Jalur A (foto saja, backbone beku penuh).** Coba matikan Phase 2 fine-tuning sepenuhnya, bandingkan dengan Phase 1+2 seperti sekarang. Catatan proyek menyebut backbone beku + classifier sederhana sudah mengalahkan CNN fine-tuned pada eksperimen sebelumnya (~56–61% dengan label surveyor). **(M)**
+- [ ] **Sederhanakan kepala klasifikasi.** Turunkan `Dense(64)` ke `Dense(32)`, atau naikkan L2 regularizer dari `1e-4` ke `1e-3` di `model.py::build_model`. Dataset kecil (224 foto per fold) rawan overfit pada kepala yang terlalu besar. **(S)**
+- [ ] **(Eksperimen, dilaporkan sebagai pembanding) Bangun Jalur B: model hybrid foto + tabular.** Tambahkan cabang input numerik untuk panjang, lebar, dan jenis kerusakan, digabung dengan embedding CNN sebelum dense layer terakhir. Laporkan sebagai ablation study terpisah dengan catatan metodologis: jalur ini menunjukkan batas atas performa ketika model diberi akses langsung ke faktor penentu label, bukan murni belajar dari visual. **(L)**
+- [ ] **Cari bobot pretrained yang lebih dekat ke domain jalan** (dataset publik seperti CRACK500 atau GAPs), pakai sebagai titik awal alih-alih ImageNet murni. **(L, riset + integrasi)**
+- [ ] **Tambahkan label smoothing** pada loss function (`SparseCategoricalCrossentropy(label_smoothing=...)`), membantu mengurangi rasa percaya diri berlebih pada label yang berada dekat ambang batas SDI. **(S)**
+
+---
+
+## P5 — Training
+
+- [ ] **Jalankan CV dengan setting fine-tuning terbaru sebagai baseline baru** sebelum menambahkan perubahan lain (lihat P0). **(L)**
+- [ ] **Pertimbangkan ulang strategi ekspansi data training.** `dataset.py::load_dataset` memakai output tiap tahap preprocessing (resize/crop/normalisasi/denoise) sebagai sampel terpisah untuk foto yang sama. Sampel-sampel ini sangat berkorelasi (bukan variasi independen), berisiko memberi ilusi dataset lebih besar tanpa menambah informasi baru. Uji ablation: bandingkan performa dengan dan tanpa ekspansi ini. **(M, eksperimen)**
+- [ ] **Perbesar proporsi atau perbanyak inner-validation** jika memungkinkan. Saat ini cuma 15% dari sekitar 224 foto (~34 foto), terlalu kecil untuk keputusan EarlyStopping/ReduceLROnPlateau yang stabil. Pertimbangkan naikkan `INNER_VAL_FRAC` atau pakai nested CV untuk estimasi yang lebih stabil. **(M)**
+- [ ] **Jalankan CV berulang (repeated stratified k-fold)**, misalnya 3 pengulangan dengan `random_state` berbeda, untuk mengurangi noise pada estimasi akurasi. Standar deviasi 6,7 poin pada satu putaran CV terlalu besar untuk disimpulkan dengan percaya diri. **(XL, butuh banyak training run)**
+- [ ] **Setiap perubahan (preprocessing, augmentasi, arsitektur) diuji satu per satu lewat CV penuh**, bukan digabung sekaligus. Catat hasil `cv_summary()` setiap eksperimen di tabel terpisah supaya kontribusi tiap perubahan jelas. **(Aturan kerja, bukan tugas satu kali)**
+
+---
+
+## P6 — Evaluasi dan Metrik
+
+- [ ] **Tetapkan `cv_summary()` sebagai satu-satunya angka resmi** yang boleh dilaporkan di skripsi. `HasilEvaluasi` (1 fold) hanya untuk debugging internal, tidak untuk klaim akurasi akhir. **(Aturan kerja)**
+- [ ] **Setiap laporan angka akurasi wajib menyertakan**: rata-rata, standar deviasi antar fold, baseline kelas mayoritas, macro-F1, dan confusion matrix. Tidak cukup cuma satu angka akurasi tunggal. **(S, template laporan)**
+- [ ] **Tambahkan analisis pola kesalahan dari confusion matrix**, khususnya seberapa sering kesalahan terjadi antar kelas berdekatan (Berat–Sedang, Sedang–Ringan) dibanding antar kelas jauh (Berat–Ringan). Kelas kerusakan bersifat berjenjang (ordinal), jadi pola ini relevan untuk pembahasan. **(M, analisis)**
+- [ ] **Tambahkan analisis tambahan klasifikasi 2 kelas** (perlu perbaikan segera vs tidak), sebagai pembanding granularitas kasar terhadap 3 kelas asli. **(M)**
+- [ ] **(Opsional, eksperimen) Coba pendekatan ordinal** (ordinal loss atau regresi SDI langsung lalu threshold) alih-alih softmax 3-kelas nominal biasa, untuk memanfaatkan struktur berjenjang antar kelas. **(L)**
+
+---
+
+## P7 — Dokumentasi dan Kualitas Kode
+
+- [ ] Perbarui `studi.md` seluruhnya supaya mencerminkan skema yang benar-benar dipakai setelah semua perbaikan di atas selesai, bukan snapshot lama. **(M)**
+- [ ] Perbarui `CLAUDE.md` bagian "Status Akurasi CNN" setiap kali ada hasil CV baru yang valid. **(S, berulang)**
+- [ ] Tambahkan test regresi untuk `LabelKerusakan.hitung_sdi()` dan `estimasi_dari_dimensi()` (setelah diperbaiki di P1) di `tests/`, supaya perubahan berikutnya tidak diam-diam menyimpang lagi dari skema yang didokumentasikan. **(M)**
+- [ ] Tambahkan test regresi untuk `metrics_service.cv_summary()` memastikan urutan label (`labels=[0,1,2]` vs `KELAS = ('berat','sedang','ringan')`) tetap konsisten kalau ada refactor. **(S)**
+
+---
+
+## Rencana Eksekusi yang Disarankan
+
+Kerjakan berurutan, jangan lompat, supaya setiap angka yang dihasilkan bisa dipercaya untuk dibandingkan dengan angka sebelumnya:
+
+1. P0 seluruhnya (perbaikan kritis dan baseline CV baru yang valid dengan setting hari ini)
+2. P1 (pelabelan) — ini akar masalah paling besar, kerjakan sebelum tuning model lebih jauh
+3. P2 dan P3 (preprocessing dan augmentasi), diuji satu per satu lewat ablation
+4. P4 dan P5 (arsitektur dan training), termasuk perbandingan Jalur A vs Jalur B
+5. P6 (evaluasi) diterapkan di sepanjang proses, bukan cuma di akhir
+6. P7 (dokumentasi) diperbarui berkelanjutan, bukan ditumpuk di akhir
+
+## Catatan Kejujuran Akademik
+
+Target akurasi di atas 70% kemungkinan besar tidak tercapai murni dari Jalur A (foto saja), berapa pun perbaikan preprocessing dan augmentasi yang dilakukan, karena akar masalahnya di ketersediaan informasi pada foto, bukan di kapasitas model. Jalur B (model hybrid dengan data tabular) berpotensi melewati 70%, tapi itu karena model diberi akses langsung ke faktor penentu label. Sampaikan ini secara eksplisit di bab pembahasan sebagai temuan, bukan disembunyikan. Ini kontribusi ilmiah yang valid: menunjukkan seberapa besar peran informasi non-visual dalam menentukan tingkat kerusakan jalan, dan seberapa jauh CNN murni bisa mendekati itu hanya dari foto.

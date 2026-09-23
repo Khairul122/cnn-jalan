@@ -296,7 +296,9 @@ tailwind.config = {
           {% else %}
           <span class="text-on-surface-variant font-headline-xl text-headline-xl">—</span>
           {% endif %}
-          <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Akurasi Rata-rata CNN</p>
+          <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
+            {% if akurasi_sumber == 'cv' %}Akurasi Rata-rata 5-Fold CV{% else %}Akurasi CNN{% endif %}
+          </p>
         </div>
         <div class="mt-md h-1 bg-surface-container rounded-full overflow-hidden">
           <div class="h-full bg-primary transition-all duration-1000"
@@ -306,6 +308,9 @@ tailwind.config = {
         {% if model_nama %}
         <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">
           Model: <strong>{{ model_nama }}</strong>
+          {% if akurasi_sumber and akurasi_sumber != 'cv' %}
+          <span class="text-error" title="Belum ada model yang dijalankan lewat Prediksi CV K-Fold">(1 fold, bukan metrik resmi)</span>
+          {% endif %}
         </p>
         {% endif %}
       </div>

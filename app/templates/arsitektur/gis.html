@@ -21,8 +21,10 @@
         {{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}
       </span>
       <span style="font-size:.72rem;color:var(--c-muted);">{{ cfg.nama }}</span>
-      {% if evaluasi %}
-      <span style="font-size:.72rem;color:#10B981;font-weight:600;">Akurasi evaluasi: {{ evaluasi.akurasi }}%</span>
+      {% if cfg.pred_type != 'cv' and evaluasi %}
+      <span style="font-size:.72rem;color:var(--c-danger);font-weight:600;" title="1 fold, bukan metrik resmi — jalankan Prediksi CV K-Fold">
+        Akurasi evaluasi: {{ evaluasi.akurasi }}% (1 fold)
+      </span>
       {% endif %}
     </div>
   </div>
