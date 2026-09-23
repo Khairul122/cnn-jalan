@@ -1,7 +1,8 @@
-import os
-from datetime import datetime
+﻿import os
+from app import utcnow
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
+from app.auth_utils import admin_required
 from app import db
 from app.models.preprocessing_config import PreprocessingConfig
 from app.models.hasil_preprocessing import HasilPreprocessing
@@ -19,7 +20,7 @@ def _preprocessed_folder():
     return base
 
 
-# ── Index ─────────────────────────────────────────────────────────────────────
+# â”€â”€ Index â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @preprocessing_bp.route('/')
 @login_required
@@ -35,10 +36,10 @@ def index():
                            total_config=total_config)
 
 
-# ── Config baru ───────────────────────────────────────────────────────────────
+# â”€â”€ Config baru â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @preprocessing_bp.route('/config/new', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def config_new():
     if request.method == 'POST':
         cfg = _config_from_form(request.form)
@@ -50,10 +51,10 @@ def config_new():
     return render_template('preprocessing/config_form.html', config=None, action='new')
 
 
-# ── Edit config ───────────────────────────────────────────────────────────────
+# â”€â”€ Edit config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @preprocessing_bp.route('/config/<int:config_id>/edit', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def config_edit(config_id):
     cfg = PreprocessingConfig.query.get_or_404(config_id)
     if request.method == 'POST':
@@ -64,10 +65,10 @@ def config_edit(config_id):
     return render_template('preprocessing/config_form.html', config=cfg, action='edit')
 
 
-# ── Hapus config ──────────────────────────────────────────────────────────────
+# â”€â”€ Hapus config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @preprocessing_bp.route('/config/<int:config_id>/delete', methods=['POST'])
-@login_required
+@admin_required
 def config_delete(config_id):
     cfg = PreprocessingConfig.query.get_or_404(config_id)
     nama = cfg.nama_config
@@ -77,10 +78,10 @@ def config_delete(config_id):
     return redirect(url_for('preprocessing.index'))
 
 
-# ── Jalankan pipeline ─────────────────────────────────────────────────────────
+# â”€â”€ Jalankan pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @preprocessing_bp.route('/run/<int:config_id>', methods=['POST'])
-@login_required
+@admin_required
 def run(config_id):
     cfg       = PreprocessingConfig.query.get_or_404(config_id)
     foto_list = DokumentasiFoto.query.all()
@@ -101,7 +102,7 @@ def run(config_id):
         try:
             steps = PreprocessingService.run_pipeline_steps(img_path, cfg)
             for step_key, step_img, durasi_ms in steps:
-                ts       = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+                ts       = utcnow().strftime('%Y%m%d%H%M%S%f')
                 out_name = f'{ts}_{step_key}_{foto.nama_file}'
                 out_path = os.path.join(out_folder, out_name)
                 rel_path = f'uploads/preprocessed/{out_name}'
@@ -138,16 +139,16 @@ def run(config_id):
             db.session.commit()
 
     db.session.commit()
-    total_gambar = berhasil * 5
-    flash(f'Preprocessing selesai — {berhasil} foto berhasil ({total_gambar} gambar dari 5 tahap), {gagal} gagal.',
+    total_gambar = berhasil * 5   # 5 tahap per foto
+    flash(f'Preprocessing selesai â€” {berhasil} foto berhasil ({total_gambar} gambar dari 5 tahap), {gagal} gagal.',
           'success' if gagal == 0 else 'warning')
     return redirect(url_for('preprocessing.hasil'))
 
 
-# ── Reset semua hasil ────────────────────────────────────────────────────────
+# â”€â”€ Reset semua hasil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @preprocessing_bp.route('/hasil/reset', methods=['POST'])
-@login_required
+@admin_required
 def hasil_reset():
     # Hapus file fisik terlebih dahulu sebelum delete record DB
     hasil_list = HasilPreprocessing.query.filter(
@@ -167,11 +168,11 @@ def hasil_reset():
 
     jumlah = HasilPreprocessing.query.delete()
     db.session.commit()
-    flash(f'Reset selesai — {jumlah} record dan {hapus_file} file dihapus.', 'info')
+    flash(f'Reset selesai â€” {jumlah} record dan {hapus_file} file dihapus.', 'info')
     return redirect(url_for('preprocessing.hasil'))
 
 
-# ── Hasil ─────────────────────────────────────────────────────────────────────
+# â”€â”€ Hasil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @preprocessing_bp.route('/hasil')
 @login_required
@@ -196,7 +197,7 @@ def hasil():
     total_pages = max(1, (total + per_page - 1) // per_page)
 
     step_counts = {s: build_q(s).count()
-                   for s in ('semua', 'resize', 'crop', 'normalisasi', 'augmentasi', 'denoise')}
+                   for s in ('semua', 'resize', 'crop', 'normalisasi', 'denoise', 'augmentasi')}
 
     return render_template('preprocessing/hasil.html',
                            hasil_list=hasil_list,
@@ -210,7 +211,7 @@ def hasil():
                            per_page=per_page)
 
 
-# ── Helper ────────────────────────────────────────────────────────────────────
+# â”€â”€ Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _config_from_form(form):
     cfg = PreprocessingConfig()
@@ -235,3 +236,4 @@ def _update_config_from_form(cfg, form):
     cfg.denoise_method = form.get('denoise_method', 'none')
     cfg.denoise_ksize  = int(form.get('denoise_ksize', 3))
     cfg.is_default     = bool(form.get('is_default'))
+

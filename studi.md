@@ -1,4 +1,4 @@
-# Studi Sistem: Alur Input hingga Output GIS
+﻿# Studi Sistem: Alur Input hingga Output GIS
 ## Sistem Informasi Geografis Pemetaan Kerusakan Jalan Kota Lhokseumawe Menggunakan Metode Convolutional Neural Network (CNN)
 
 ---
@@ -6,11 +6,11 @@
 ## 1. Gambaran Umum Sistem
 
 Sistem ini merupakan aplikasi web berbasis Flask yang mengintegrasikan tiga komponen utama:
-1. **Pipeline preprocessing gambar** — mempersiapkan foto kerusakan jalan agar seragam sebelum masuk ke model
-2. **Model CNN berbasis Transfer Learning** — mengklasifikasikan tingkat kerusakan jalan secara otomatis
-3. **Visualisasi GIS Interaktif** — menampilkan sebaran titik kerusakan di peta Kota Lhokseumawe
+1. **Pipeline preprocessing gambar** â€” mempersiapkan foto kerusakan jalan agar seragam sebelum masuk ke model
+2. **Model CNN berbasis Transfer Learning** â€” mengklasifikasikan tingkat kerusakan jalan secara otomatis
+3. **Visualisasi GIS Interaktif** â€” menampilkan sebaran titik kerusakan di peta Kota Lhokseumawe
 
-Alur kerja sistem mengikuti urutan: **Input → Preprocessing → Labeling SDI → Split Dataset → Training CNN → Evaluasi → Prediksi → Output GIS**.
+Alur kerja sistem mengikuti urutan: **Input â†’ Preprocessing â†’ Labeling SDI â†’ Split Dataset â†’ Training CNN â†’ Evaluasi â†’ Prediksi â†’ Output GIS**.
 
 ---
 
@@ -27,7 +27,7 @@ Alur kerja sistem mengikuti urutan: **Input → Preprocessing → Labeling SDI �
 | Lokasi penyimpanan | `app/static/uploads/foto/` |
 
 Setiap foto dikaitkan dengan satu **lokasi kerusakan** yang memiliki:
-- Koordinat GPS (latitude, longitude) — diperoleh dari data Excel lapangan
+- Koordinat GPS (latitude, longitude) â€” diperoleh dari data Excel lapangan
 - Dimensi kerusakan: panjang (meter) dan lebar (meter)
 - Jenis kerusakan: CRACK (retak), POTHOLE (lubang), RUTTING (alur)
 
@@ -35,11 +35,11 @@ Setiap foto dikaitkan dengan satu **lokasi kerusakan** yang memiliki:
 
 Data koordinat dari Excel berformat integer (contoh: `97108763`) dikonversi ke desimal:
 ```
-Jika value mengandung titik desimal → gunakan langsung
-Jika integer besar (> 90000)       → bagi 1.000.000 → 97.108763°
+Jika value mengandung titik desimal â†’ gunakan langsung
+Jika integer besar (> 90000)       â†’ bagi 1.000.000 â†’ 97.108763Â°
 ```
 
-Sistem memusatkan peta pada koordinat **[5.1801° LU, 97.1499° BT]** dengan zoom level 13 (Leaflet.js), yang merupakan pusat kota Lhokseumawe.
+Sistem memusatkan peta pada koordinat **[5.1801Â° LU, 97.1499Â° BT]** dengan zoom level 13 (Leaflet.js), yang merupakan pusat kota Lhokseumawe.
 
 ---
 
@@ -47,42 +47,42 @@ Sistem memusatkan peta pada koordinat **[5.1801° LU, 97.1499° BT]** dengan zoo
 
 Sebelum memasuki model CNN, setiap foto melalui pipeline lima tahap yang dikonfigurasi pengguna melalui antarmuka sistem.
 
-### Tahap 1 — Resize
+### Tahap 1 â€” Resize
 
 Foto diubah ukurannya ke dimensi target menggunakan pustaka **Pillow**.
 
 | Parameter | Pilihan | Default |
 |-----------|---------|---------|
-| Target ukuran | 224×224, 256×256, 128×128 | 224×224 px |
+| Target ukuran | 224Ã—224, 256Ã—256, 128Ã—128 | 224Ã—224 px |
 | Metode interpolasi | LANCZOS, BILINEAR, BICUBIC, NEAREST | LANCZOS |
 
 LANCZOS dipilih sebagai default karena menghasilkan ketajaman terbaik saat downscaling foto dengan resolusi tinggi.
 
-### Tahap 2 — Center Crop (Opsional)
+### Tahap 2 â€” Center Crop (Opsional)
 
 Memotong bagian tengah gambar untuk menghilangkan area tepi yang seringkali mengandung noise atau area tidak relevan (langit, tepi jalan, kendaraan).
 
 ```
-Crop output = crop_width × crop_height (default: 224 × 224 px)
+Crop output = crop_width Ã— crop_height (default: 224 Ã— 224 px)
 Offset X = (lebar_gambar - crop_width)  / 2
 Offset Y = (tinggi_gambar - crop_height) / 2
 ```
 
-### Tahap 3 — Normalisasi
+### Tahap 3 â€” Normalisasi
 
 Nilai piksel dapat dinormalisasi menggunakan salah satu dari dua metode, atau dilewati sama sekali:
 
 | Metode | Formula | Rentang Output | Keterangan |
 |--------|---------|---------------|---|
-| Min-Max | `(x − min) / (max − min) × 255` | [0, 255] (uint8) | Per-channel stretch |
-| Z-Score | `(x − μ) / σ` | ~[-3, 3] → uint8 [0, 255] | Standarisasi distribusi |
-| Tanpa normalisasi | — | [0, 255] asli | **Digunakan di training** |
+| Min-Max | `(x âˆ’ min) / (max âˆ’ min) Ã— 255` | [0, 255] (uint8) | Per-channel stretch |
+| Z-Score | `(x âˆ’ Î¼) / Ïƒ` | ~[-3, 3] â†’ uint8 [0, 255] | Standarisasi distribusi |
+| Tanpa normalisasi | â€” | [0, 255] asli | **Digunakan di training** |
 
-**Catatan penting:** Normalisasi min-max per-channel menghapus sinyal kontras absolut — perbedaan kecerahan antara kelas Berat, Sedang, dan Ringan menjadi tidak terlihat karena setiap gambar di-stretch penuh ke [0, 255] secara independen. Untuk transfer learning MobileNetV2, normalisasi offline sebaiknya dinonaktifkan (`norm_method = none`) karena normalisasi ke `[-1, 1]` sudah dilakukan di dalam model oleh `preprocess_input`.
+**Catatan penting:** Normalisasi min-max per-channel menghapus sinyal kontras absolut â€” perbedaan kecerahan antara kelas Berat, Sedang, dan Ringan menjadi tidak terlihat karena setiap gambar di-stretch penuh ke [0, 255] secara independen. Untuk transfer learning MobileNetV2, normalisasi offline sebaiknya dinonaktifkan (`norm_method = none`) karena normalisasi ke `[-1, 1]` sudah dilakukan di dalam model oleh `preprocess_input`.
 
 Output disimpan sebagai uint8 agar dapat ditampilkan sebagai gambar normal.
 
-### Tahap 4 — Augmentasi
+### Tahap 4 â€” Augmentasi
 
 Augmentasi diterapkan secara **acak per gambar** (bukan deterministik), menggunakan Pillow `ImageOps` dan `ImageEnhance`:
 
@@ -96,7 +96,7 @@ Augmentasi diterapkan secara **acak per gambar** (bukan deterministik), mengguna
 
 Augmentasi bertujuan memperbanyak variasi data agar model tidak overfit pada kondisi pencahayaan atau sudut pengambilan foto tertentu.
 
-### Tahap 5 — Denoise
+### Tahap 5 â€” Denoise
 
 Pengurangan noise menggunakan OpenCV:
 
@@ -106,7 +106,7 @@ Pengurangan noise menggunakan OpenCV:
 | Median Blur | `cv2.medianBlur` | Efektif untuk salt-and-pepper noise |
 | Bilateral Filter | `cv2.bilateralFilter` | Mempertahankan tepi, halus dalam area datar |
 
-Output preprocessing disimpan ke `app/static/uploads/preprocessed/` dan digunakan sebagai input training CNN (menggantikan foto asli).
+Output preprocessing disimpan ke `app/static/uploads/preprocessed/`. Training dan inferensi mengutamakan hasil tahap `denoise`, lalu fallback ke foto asli bila hasil preprocessing belum tersedia.
 
 ---
 
@@ -118,11 +118,11 @@ Setiap lokasi kerusakan diberi label tingkat kerusakan mengikuti standar **Bina 
 
 **Komponen Retak (F_retak)**
 
-| Luas Retak | Nilai Dasar | ×2 jika Retak Lebar |
+| Luas Retak | Nilai Dasar | Ã—2 jika Retak Lebar |
 |---|---|---|
-| 0% | 0 | — |
-| ≤ 10% | 5 | 10 |
-| ≤ 20% | 20 | 40 |
+| 0% | 0 | â€” |
+| â‰¤ 10% | 5 | 10 |
+| â‰¤ 20% | 20 | 40 |
 | > 20% | 40 | 80 |
 
 **Komponen Lubang (F_lubang)**
@@ -130,8 +130,8 @@ Setiap lokasi kerusakan diberi label tingkat kerusakan mengikuti standar **Bina 
 | Jumlah Lubang | Nilai |
 |---|---|
 | 0 | 0 |
-| ≤ 10 | 15 |
-| ≤ 50 | 75 |
+| â‰¤ 10 | 15 |
+| â‰¤ 50 | 75 |
 | > 50 | 225 |
 
 **Komponen Alur (F_rutting)**
@@ -139,8 +139,8 @@ Setiap lokasi kerusakan diberi label tingkat kerusakan mengikuti standar **Bina 
 | Kedalaman Alur | Nilai |
 |---|---|
 | 0 cm | 0 |
-| ≤ 1 cm | 5 |
-| ≤ 3 cm | 20 |
+| â‰¤ 1 cm | 5 |
+| â‰¤ 3 cm | 20 |
 | > 3 cm | 40 |
 
 **Total SDI**
@@ -152,24 +152,24 @@ SDI = F_retak + F_lubang + F_rutting
 
 | Nilai SDI | Tingkat Kerusakan | Kode Label (CNN) |
 |---|---|---|
-| ≤ 50 | Ringan | 2 |
-| 51 – 150 | Sedang | 1 |
+| â‰¤ 50 | Ringan | 2 |
+| 51 â€“ 150 | Sedang | 1 |
 | > 150 | Berat | 0 |
 
 ### 4.3 Estimasi Otomatis dari Dimensi
 
-Sistem menyediakan estimasi otomatis berdasarkan panjang × lebar lokasi kerusakan apabila inspeksi visual tidak tersedia:
+Sistem menyediakan estimasi otomatis berdasarkan panjang Ã— lebar lokasi kerusakan apabila inspeksi visual tidak tersedia:
 
 ```
-luas_jalan  = panjang × lebar
+luas_jalan  = panjang Ã— lebar
 persen_retak = min(luas_jalan / referensi, 100)
-jumlah_lubang = luas_jalan / 0.1  (estimasi 1 lubang per 0,1 m²)
+jumlah_lubang = luas_jalan / 0.1  (estimasi 1 lubang per 0,1 mÂ²)
 kedalaman_alur = estimasi berdasarkan luas
 ```
 
 ---
 
-## 5. Split Dataset — Stratified K-Fold
+## 5. Split Dataset â€” Stratified K-Fold
 
 ### 5.1 Konfigurasi Split yang Digunakan
 
@@ -184,8 +184,8 @@ kedalaman_alur = estimasi berdasarkan luas
 ### 5.2 Mode Split yang Digunakan
 
 Pada penelitian ini digunakan **Stratified K-Fold (K=5)** dengan satu fold sebagai validasi:
-- `fold_index = fold_val` → **data validasi** (≈ 56 foto, 20%)
-- `fold_index ≠ fold_val` → **data training** (≈ 224 foto, 80%)
+- `fold_index = fold_val` â†’ **data validasi** (â‰ˆ 56 foto, 20%)
+- `fold_index â‰  fold_val` â†’ **data training** (â‰ˆ 224 foto, 80%)
 - Fold validasi yang digunakan: **fold_val = 3**
 
 Stratifikasi memastikan proporsi kelas Berat, Sedang, dan Ringan terjaga di setiap fold.
@@ -205,9 +205,9 @@ Karena data tidak seimbang (Sedang dominan), sistem menghitung bobot kelas secar
 
 ```python
 class_weight = compute_class_weight('balanced', classes=[0,1,2], y=y_train)
-# Berat  : 1.114×  (kelas minor → diberi bobot lebih)
-# Sedang : 0.704×  (kelas mayor → dibobot lebih rendah)
-# Ringan : 1.464×  (kelas minor → diberi bobot terbesar)
+# Berat  : 1.114Ã—  (kelas minor â†’ diberi bobot lebih)
+# Sedang : 0.704Ã—  (kelas mayor â†’ dibobot lebih rendah)
+# Ringan : 1.464Ã—  (kelas minor â†’ diberi bobot terbesar)
 ```
 
 ---
@@ -219,7 +219,7 @@ class_weight = compute_class_weight('balanced', classes=[0,1,2], y=y_train)
 | Komponen | Spesifikasi |
 |---|---|
 | Base model | MobileNetV2 (ImageNet pre-trained) |
-| Input size | 224 × 224 × 3 |
+| Input size | 224 Ã— 224 Ã— 3 |
 | Base trainable (Phase 1) | **Frozen** (semua layer dikunci) |
 | Base trainable (Phase 2) | **15 layer teratas dibuka** (fine-tune) |
 
@@ -227,22 +227,22 @@ class_weight = compute_class_weight('balanced', classes=[0,1,2], y=y_train)
 
 ```
 MobileNetV2 Base (frozen/partially unfrozen)
-    ↓
-GlobalAveragePooling2D        ← merata-ratakan feature map
-    ↓
-Dropout(rate=0.3)             ← regularisasi utama
-    ↓
-Dense(64, activation='relu', kernel_regularizer=L2(1e-4))    ← representasi intermediate
-    ↓
-Dropout(rate=0.15)            ← regularisasi ringan (dropout/2)
-    ↓
-Dense(3, activation='softmax', kernel_regularizer=L2(1e-4))  ← output 3 kelas
+    â†“
+GlobalAveragePooling2D        â† merata-ratakan feature map
+    â†“
+Dropout(rate=0.3)             â† regularisasi utama
+    â†“
+Dense(64, activation='relu', kernel_regularizer=L2(1e-4))    â† representasi intermediate
+    â†“
+Dropout(rate=0.15)            â† regularisasi ringan (dropout/2)
+    â†“
+Dense(3, activation='softmax', kernel_regularizer=L2(1e-4))  â† output 3 kelas
 ```
 
 Output layer menghasilkan probabilitas untuk tiga kelas:
-- **Index 0** → Berat
-- **Index 1** → Sedang
-- **Index 2** → Ringan
+- **Index 0** â†’ Berat
+- **Index 1** â†’ Sedang
+- **Index 2** â†’ Ringan
 
 ### 6.3 Augmentasi dalam Model
 
@@ -279,12 +279,12 @@ Lapisan augmentasi **terintegrasi di dalam model** (aktif saat `training=True`, 
 **SparseCategoricalCrossentropy** digunakan sebagai fungsi loss, dikombinasikan dengan `class_weight` untuk menangani ketidakseimbangan kelas:
 
 ```
-L = − Σ class_weight[y] × log(p_y)
+L = âˆ’ Î£ class_weight[y] Ã— log(p_y)
 ```
 
 - Label kelas berbentuk integer (sparse: 0/1/2), tidak perlu one-hot encoding
 - `class_weight` dari `compute_class_weight('balanced')` memberi penalti ekstra pada kelas minor (Berat, Ringan)
-- Dipilih karena lebih stabil daripada Focal Loss pada dataset kecil; Focal Loss dengan γ=2.0 terbukti menekan gradient kelas Ringan terlalu agresif
+- Dipilih karena lebih stabil daripada Focal Loss pada dataset kecil; Focal Loss dengan Î³=2.0 terbukti menekan gradient kelas Ringan terlalu agresif
 
 ### 7.3 Callbacks Training
 
@@ -319,9 +319,9 @@ L = − Σ class_weight[y] × log(p_y)
 ### 7.5 Preprocessing Input ke Model
 
 ```python
-# Gambar dibaca → resize 224×224 → float32 [0, 255]
+# Gambar dibaca â†’ resize 224Ã—224 â†’ float32 [0, 255]
 # Normalisasi dilakukan DALAM model oleh MobileNetV2.preprocess_input:
-x_normalized = (x / 127.5) - 1.0   →  rentang [-1.0, 1.0]
+x_normalized = (x / 127.5) - 1.0   â†’  rentang [-1.0, 1.0]
 ```
 
 ---
@@ -333,7 +333,7 @@ x_normalized = (x / 127.5) - 1.0   →  rentang [-1.0, 1.0]
 | Atribut | Nilai |
 |---|---|
 | Data val | **56 foto** (fold_val = 3, 20% dari total) |
-| Split config | split_config_id = 12 (norm=none, resize 256→crop 224) |
+| Split config | split_config_id = 12 (norm=none, resize 256â†’crop 224) |
 | Tanggal evaluasi | 29 Mei 2026 |
 
 ### 8.2 Confusion Matrix
@@ -355,13 +355,13 @@ Detail precision, recall, dan F1 per kelas tersedia di halaman Evaluasi sistem. 
 
 | Metrik | Nilai |
 |---|---|
-| **Akurasi Keseluruhan** | **71.43%** (40 dari 56 benar) |
+| **Akurasi 5-fold CV** | **48,9% ± 4,5** |
 | Fase yang digunakan | Phase 2 (melampaui Phase 1) |
 | Epoch terbaik Phase 2 | Epoch 7 dari 17 |
 
 ### 8.5 Interpretasi
 
-- **Akurasi 71.43%** melampaui target 70%, dicapai pada 56 foto validasi yang tidak pernah dilihat model
+- **Akurasi 5-fold CV 48,9% ± 4,5** belum mencapai target 70%; baseline kelas mayoritas 42,9%
 - Phase 2 fine-tune (17 epoch) melampaui Phase 1 (best val_acc=0.6250) dengan val_acc=0.7143
 - Perbaikan kunci: mengganti preprocessing norm=minmax menjadi norm=none, menghilangkan distorsi kontras absolut antar kelas
 - LR Phase 1 = 0.001 (tinggi) diperlukan untuk head yang baru diinisialisasi acak; LR Phase 2 = 0.0002 agar tidak merusak fitur pre-trained
@@ -375,7 +375,7 @@ Detail precision, recall, dan F1 per kelas tersedia di halaman Evaluasi sistem. 
 Setelah training selesai, model memprediksikan **seluruh 280 foto** yang memiliki label dan koordinat GPS. Hasil disimpan ke tabel `prediksi_model`.
 
 ```
-Input  : path foto → resize 224×224 → preprocess_input → array [1, 224, 224, 3]
+Input  : path foto â†’ resize 224Ã—224 â†’ preprocess_input â†’ array [1, 224, 224, 3]
 Output : prediksi (0/1/2), confidence (softmax probability), aktual (label SDI)
 ```
 
@@ -393,11 +393,11 @@ Output : prediksi (0/1/2), confidence (softmax probability), aktual (label SDI)
 | Prediksi benar | 194 dari 280 |
 | Akurasi seluruh data | 69.3% |
 
-> **Catatan**: Akurasi seluruh data (69.3%) lebih rendah dari akurasi val fold (73.21%) karena mencakup semua 280 foto termasuk data training yang lebih bervariasi. Nilai 73.21% adalah ukuran yang lebih representatif sebagai generalisasi model.
+> **Catatan**: Mode Single/predict_all memprediksi seluruh data termasuk foto latih, sehingga hanya dipakai untuk visualisasi GIS. Angka utama yang dilaporkan adalah 5-fold CV.
 
 ---
 
-## 10. Output GIS — Visualisasi Peta Interaktif
+## 10. Output GIS â€” Visualisasi Peta Interaktif
 
 ### 10.1 Arsitektur Visualisasi
 
@@ -443,10 +443,10 @@ Sistem menyediakan dua endpoint GIS:
 
 **Filter per Kategori**
 Pengguna dapat memfilter marker berdasarkan tingkat kerusakan:
-- Semua → tampilkan 280 marker
-- Berat → tampilkan 91 marker (merah)
-- Sedang → tampilkan 131 marker (oranye)
-- Ringan → tampilkan 58 marker (hijau)
+- Semua â†’ tampilkan 280 marker
+- Berat â†’ tampilkan 91 marker (merah)
+- Sedang â†’ tampilkan 131 marker (oranye)
+- Ringan â†’ tampilkan 58 marker (hijau)
 
 **Popup Informasi**
 Setiap marker menampilkan popup dengan label prediksi CNN saat diklik.
@@ -481,38 +481,38 @@ Halaman utama sistem (dapat diakses tanpa login) menampilkan statistik real-time
 INPUT
   280 Foto Kerusakan Jalan
   + Koordinat GPS (Excel)
-        │
-        ▼
+        â”‚
+        â–¼
 PREPROCESSING (5 Tahap)
-  Resize → Center Crop → Normalisasi → Augmentasi → Denoise
-        │
-        ▼
+  Resize â†’ Center Crop â†’ Normalisasi â†’ Augmentasi â†’ Denoise
+        â”‚
+        â–¼
 PELABELAN SDI
   Hitung F_retak + F_lubang + F_rutting
-  → SDI → Berat / Sedang / Ringan
-        │
-        ▼
+  â†’ SDI â†’ Berat / Sedang / Ringan
+        â”‚
+        â–¼
 SPLIT DATASET
   Stratified K-Fold (K=5, Split 80:20)
   Train=224 foto | Val=56 foto
-        │
-        ▼
+        â”‚
+        â–¼
 TRAINING CNN (MobileNetV2 Transfer Learning)
   Phase 1: Head training (LR=0.001, epoch 80, frozen base)
   Phase 2: Fine-tune (LR=0.0002, top 15 layer)
   Callbacks: EarlyStopping + ReduceLROnPlateau + Checkpoint
-        │
-        ▼
+        â”‚
+        â–¼
 EVALUASI MODEL
-  Confusion Matrix 3×3 → Precision / Recall / F1 per kelas
-  Akurasi: 71.43% pada 56 foto val (fold_val=3)
-        │
-        ▼
+  Confusion Matrix 3Ã—3 â†’ Precision / Recall / F1 per kelas
+  Akurasi utama: 5-fold CV 48,9% ± 4,5 (baseline 42,9%)
+        â”‚
+        â–¼
 PREDIKSI SELURUH DATA
-  predict_all() → 280 foto → simpan ke prediksi_model
+  predict_all() â†’ 280 foto â†’ simpan ke prediksi_model
   Output: prediksi (0/1/2) + confidence + koordinat GPS
-        │
-        ▼
+        â”‚
+        â–¼
 OUTPUT GIS
   GeoJSON FeatureCollection
   Leaflet.js Interactive Map
@@ -523,4 +523,6 @@ OUTPUT GIS
 ---
 
 *Dokumen ini dibuat berdasarkan implementasi aktual sistem CNN-Jalan per 29 Mei 2026.*
-*NIM: 210170072 — Universitas Malikussaleh*
+*NIM: 210170072 â€” Universitas Malikussaleh*
+
+

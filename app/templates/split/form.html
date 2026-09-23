@@ -50,8 +50,8 @@
               border-radius:var(--r-input);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);
               font-size:.75rem;color:#10B981;">
     <i class="bi bi-check-circle-fill" style="flex-shrink:0;"></i>
-    <span>Preprocessing selesai — semua <strong>{{ total_berlabel }}</strong> foto sudah diproses (tahap Denoise).
-    Training akan menggunakan gambar preprocessed.</span>
+    <span>Preprocessing selesai — semua <strong>{{ total_berlabel }}</strong> foto sudah diproses lengkap (resize, crop, normalisasi, denoise).
+    Training akan memakai <strong>{{ total_sampel }}</strong> sampel efektif (gambar dari semua tahap); validasi/fold uji tetap 1 gambar/foto (tahap denoise) supaya sebanding dengan evaluasi CV.</span>
   </div>
   {% elif total_prep > 0 %}
   <div style="display:flex;align-items:center;gap:.5rem;padding:.5rem .875rem;margin-bottom:.75rem;
@@ -71,7 +71,7 @@
   {% endif %}
 
   <!-- Form card -->
-  <form method="POST" action="{{ url_for('split.new') }}">
+  <form method="POST" action="{{ url_for('split.new') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="sf-card mb-3">
 
       <div class="sf-field">

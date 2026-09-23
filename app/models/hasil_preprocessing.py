@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from app import utcnow
 from app import db
 
 
@@ -15,9 +15,10 @@ class HasilPreprocessing(db.Model):
     durasi_ms       = db.Column(db.Integer, nullable=True)
     status          = db.Column(db.Enum('selesai', 'gagal'), nullable=False, default='selesai')
     catatan         = db.Column(db.Text, nullable=True)
-    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at      = db.Column(db.DateTime, default=utcnow)
 
     dokumentasi = db.relationship('DokumentasiFoto', backref='preprocessing_list', lazy=True)
 
     def __repr__(self):
         return f'<HasilPreprocessing doc={self.dokumentasi_id} status={self.status}>'
+

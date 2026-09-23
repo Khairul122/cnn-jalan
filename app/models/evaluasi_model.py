@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from app import utcnow
 from app import db
 
 
@@ -19,7 +19,8 @@ class EvaluasiModel(db.Model):
     tn                 = db.Column(db.Integer, nullable=False)
     fn                 = db.Column(db.Integer, nullable=False)
     catatan            = db.Column(db.Text, nullable=True)
-    created_at         = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at         = db.Column(db.DateTime, default=utcnow)
 
     def __repr__(self):
         return f'<EvaluasiModel {self.nama_model} v{self.versi} acc={self.akurasi}>'
+

@@ -9,6 +9,13 @@
 {% endblock %}
 
 {% block content %}
+{% if label_basi %}
+<div class="alert alert-warning" role="alert" style="font-size:.8rem;">
+  <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+  <strong>Kelas di split ini sudah tidak sama dengan label terbaru</strong> ({{ label_basi }} foto berubah kelas
+  atau tidak berlabel). Reset atau buat split baru sebelum training.
+</div>
+{% endif %}
 
 <!-- Header -->
 <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-4">
@@ -33,7 +40,7 @@
       <i class="bi bi-arrow-counterclockwise"></i> Reset
     </button>
     {% endif %}
-    <form method="POST" action="{{ url_for('split.delete', config_id=config.id) }}">
+    <form method="POST" action="{{ url_for('split.delete', config_id=config.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="button" class="sd-btn-del" title="Hapus Split"
               onclick="showConfirmForm(this,
                 'Hapus Split',
@@ -52,7 +59,7 @@
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem;">
     <span style="font-size:.75rem;font-weight:600;color:var(--c-text);display:flex;align-items:center;gap:.35rem;">
       <i class="bi bi-filter-circle-fill" style="color:#F472B6;"></i>
-      Preprocessing (Denoise) — Semua Fold
+      Preprocessing (Semua Tahap) — Semua Fold
     </span>
     <span style="font-size:.78rem;font-weight:700;
                  color:{% if prep_pct==100 %}#10B981{% elif prep_pct>0 %}#F59E0B{% else %}#94a3b8{% endif %};">
@@ -66,13 +73,16 @@
   </div>
   <p style="font-size:.68rem;color:var(--c-muted);margin:0;">
     {% if prep_pct == 100 %}
-      Semua foto sudah terpreproses — training K-Fold akan menggunakan gambar denoise di setiap fold.
+      Semua foto sudah terpreproses — training akan menggunakan gambar dari semua tahap (resize, crop, normalisasi, denoise); validasi/fold uji tetap 1 gambar/foto (tahap denoise) di setiap fold.
     {% elif prep_pct > 0 %}
-      {{ prep_coverage.grand_total - prep_coverage.total }} foto belum diproses akan menggunakan gambar asli saat training.
+      {{ prep_coverage.grand_total - prep_coverage.total }} foto belum diproses lengkap akan menggunakan gambar asli saat training.
     {% else %}
       Belum ada preprocessing — training akan menggunakan foto asli.
     {% endif %}
-    Dalam K-Fold, setiap foto berperan sebagai <em>train</em> (K-1 fold) dan <em>val</em> (1 fold) secara bergantian.
+    Dalam K-Fold, setiap foto berperan sebagai <em>train</em> (K-1 fold, diperluas ke semua tahap) dan
+    <em>val</em> (1 fold, tetap 1 gambar/foto tahap denoise) secara bergantian.
+    Total sampel training efektif (seluruh foto, kalau semuanya jadi train): <strong>{{ prep_coverage.sampel }}</strong>
+    (dari {{ prep_coverage.grand_total }} foto, augmentasi tidak dihitung).
   </p>
 </div>
 
@@ -96,8 +106,9 @@
               <span style="color:{{ col }};">{{ t.nama_tingkat }}</span>
             </th>
             {% endfor %}
-            <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">Total</th>
+            <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">Total Foto</th>
             <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">%</th>
+            <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;color:#F59E0B;font-weight:600;border-bottom:1px solid var(--c-border);" title="Jumlah gambar dari fold ini kalau dipakai sebagai TRAINING (diperluas ke tahap resize/crop/normalisasi/denoise). Saat fold ini jadi VAL, tetap 1 gambar/foto (denoise).">Sampel Efektif (Train)</th>
           </tr>
         </thead>
         <tbody>
@@ -121,6 +132,9 @@
             <td style="text-align:center;padding:.4rem .6rem;color:var(--c-muted);font-variant-numeric:tabular-nums;">
               {% if total_dataset > 0 %}{{ '%.1f'|format(ft / total_dataset * 100) }}%{% else %}—{% endif %}
             </td>
+            <td style="text-align:center;padding:.4rem .6rem;font-weight:600;color:#F59E0B;font-variant-numeric:tabular-nums;">
+              {{ prep_coverage.per_fold.get(fi, {}).get('sampel', ft) }}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -134,6 +148,7 @@
             {% endfor %}
             <td style="text-align:center;padding:.4rem .6rem;font-weight:700;font-variant-numeric:tabular-nums;">{{ total_dataset }}</td>
             <td style="text-align:center;padding:.4rem .6rem;color:var(--c-muted);">100%</td>
+            <td style="text-align:center;padding:.4rem .6rem;font-weight:700;color:#F59E0B;font-variant-numeric:tabular-nums;">{{ prep_coverage.sampel }}</td>
           </tr>
         </tfoot>
       </table>
@@ -195,7 +210,7 @@
                      background:transparent;color:var(--c-muted);border:1px solid var(--c-border);cursor:pointer;">
         Batal
       </button>
-      <form method="POST" action="{{ url_for('split.reset_items', config_id=config.id) }}" style="margin:0;">
+      <form method="POST" action="{{ url_for('split.reset_items', config_id=config.id) }}" style="margin:0;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
                 style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
                        background:#F59E0B;color:#1C1917;border:none;cursor:pointer;

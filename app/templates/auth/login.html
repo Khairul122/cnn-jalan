@@ -28,7 +28,7 @@ body { margin: 0; padding: 0; overflow: hidden; }
     <div class="auth-brand-features">
       <div class="auth-brand-feature">
         <i class="bi bi-cpu" aria-hidden="true"></i>
-        <span>Klasifikasi CNN — Crack, Pothole, Rutting</span>
+        <span>Klasifikasi CNN — Tingkat Kerusakan Jalan</span>
       </div>
       <div class="auth-brand-feature">
         <i class="bi bi-geo-alt" aria-hidden="true"></i>
@@ -61,7 +61,7 @@ body { margin: 0; padding: 0; overflow: hidden; }
       </div>
 
       <!-- Form -->
-      <form method="POST" action="{{ url_for('auth.login') }}" novalidate id="login-form">
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate id="login-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <!-- Email -->
         <div class="auth-field">

@@ -1,8 +1,10 @@
-import os
+﻿import os
 import traceback
 import threading
+from types import SimpleNamespace
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
+from app.auth_utils import admin_required, require_admin
 from app import db
 from app.models.arsitektur_config import ArsitekturConfig
 from app.models.hasil_training import HasilTraining
@@ -10,7 +12,8 @@ from app.models.hasil_evaluasi import HasilEvaluasi
 from app.models.prediksi_model import PrediksiModel
 from app.models.split_config import SplitConfig
 from app.models.dokumentasi_foto import DokumentasiFoto
-from app.models.lokasi_kerusakan import LokasiKerusakan
+from app.services.metrics_service import cv_summary
+from app.services.split_service import jumlah_label_basi
 
 arsitektur_bp = Blueprint('arsitektur', __name__, url_prefix='/arsitektur')
 
@@ -18,8 +21,10 @@ arsitektur_bp = Blueprint('arsitektur', __name__, url_prefix='/arsitektur')
 _progress    = {}
 # CV predict progress: {config_id: {fold, total_folds, epoch, total_epochs, pct}}
 _cv_progress = {}
-# Error store: {config_id: error_message} — persists after training ends for UI display
+# Error store: {config_id: error_message} â€” persists after training ends for UI display
 _errors      = {}
+# Model final yang sedang dilatih: {config_id: True}
+_final_progress = {}
 
 
 def _save_evaluasi(config_id, result):
@@ -46,12 +51,29 @@ def _save_evaluasi(config_id, result):
     db.session.commit()
 
 
+def _rerun_evaluasi(config_id, cfg):
+    from app.services import cnn_service
+
+    if cfg.status != 'selesai' or not cfg.model_path:
+        flash('Model belum selesai dilatih.', 'warning')
+        return
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    try:
+        result = cnn_service.evaluate(cfg, base_dir)
+        _save_evaluasi(config_id, result)
+        flash('Evaluasi berhasil diperbarui.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Evaluasi gagal: {e}', 'danger')
+
+
 def _run_training(app, config_id, base_dir):
-    """Background thread: training → auto evaluasi → DB write."""
+    """Background thread: training â†’ auto evaluasi â†’ DB write."""
     with app.app_context():
         from app.services import cnn_service
 
-        cfg = ArsitekturConfig.query.get(config_id)
+        cfg = db.session.get(ArsitekturConfig, config_id)
         if not cfg:
             return
 
@@ -85,9 +107,7 @@ def _run_training(app, config_id, base_dir):
             }
 
         try:
-            class _Cfg:
-                pass
-            cfg_obj = _Cfg()
+            cfg_obj = SimpleNamespace()
             for k, v in _cfg_snapshot.items():
                 setattr(cfg_obj, k, v)
 
@@ -113,7 +133,7 @@ def _run_training(app, config_id, base_dir):
             db.session.commit()
             db.session.remove()
 
-            # ── Auto evaluasi ──────────────────────────────────────
+            # â”€â”€ Auto evaluasi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _progress[config_id] = {'phase': 'evaluating', 'pct': 100}
 
             cfg_obj.model_path = model_path
@@ -121,7 +141,7 @@ def _run_training(app, config_id, base_dir):
             _save_evaluasi(config_id, eval_result)
             db.session.remove()
 
-            # ── Auto prediksi GIS ───────────────────────────────────
+            # â”€â”€ Auto prediksi GIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             _progress[config_id] = {'phase': 'predicting', 'pct': 100}
 
             predict_results = cnn_service.predict_all(cfg_obj, base_dir)
@@ -134,7 +154,7 @@ def _run_training(app, config_id, base_dir):
                     aktual         = r['aktual'],
                     confidence     = r['confidence'],
                 ))
-            # Semua proses selesai — baru set status 'selesai'
+            # Semua proses selesai â€” baru set status 'selesai'
             ArsitekturConfig.query.filter_by(id=config_id).update({
                 'status':    'selesai',
                 'pred_type': 'single',
@@ -158,6 +178,32 @@ def _run_training(app, config_id, base_dir):
             db.session.remove()
 
 
+def tandai_training_terputus():
+    """Dipanggil saat server start: thread training tidak selamat dari restart, jadi tandai 'gagal'."""
+    n = ArsitekturConfig.query.filter_by(status='training').update({'status': 'gagal'}, synchronize_session=False)
+    db.session.commit()
+    return n
+
+
+def _remove_fold_models(config_id, base_dir):
+    """
+    Hapus semua model_{config_id}_fold*.keras (disimpan cnn_service.predict_cv untuk
+    ensemble). Wajib dipanggil saat re-train atau hapus config — kalau tidak, model fold
+    lama yang sudah tidak sesuai split/data terbaru bisa ikut kepakai sebagai ensemble.
+    """
+    folder = os.path.join(base_dir, 'app', 'static', 'models')
+    k = 0
+    while True:
+        path = os.path.join(folder, f'model_{config_id}_fold{k}.keras')
+        if not os.path.isfile(path):
+            break
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        k += 1
+
+
 @arsitektur_bp.route('/')
 @login_required
 def index():
@@ -165,7 +211,7 @@ def index():
     total_selesai = sum(1 for c in configs if c.status == 'selesai')
     total_draft   = sum(1 for c in configs if c.status in ('draft', 'gagal', 'training'))
 
-    # Map config_id → HasilEvaluasi (untuk tampil akurasi di tabel)
+    # Map config_id â†’ HasilEvaluasi (untuk tampil akurasi di tabel)
     evaluasi_map = {
         ev.arsitektur_id: ev
         for ev in HasilEvaluasi.query.all()
@@ -185,7 +231,7 @@ def index():
 
 
 @arsitektur_bp.route('/new', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def new():
     split_list = SplitConfig.query.order_by(SplitConfig.created_at.desc()).all()
 
@@ -208,9 +254,9 @@ def new():
             flash('Pilih split config terlebih dahulu.', 'warning')
             return redirect(url_for('arsitektur.new'))
 
-        split_cfg = SplitConfig.query.get(split_config_id)
+        split_cfg = db.session.get(SplitConfig, split_config_id)
         if fold_val >= split_cfg.n_splits:
-            flash(f'Fold val harus 0–{split_cfg.n_splits - 1}.', 'warning')
+            flash(f'Fold val harus 0â€“{split_cfg.n_splits - 1}.', 'warning')
             return redirect(url_for('arsitektur.new'))
 
         cfg = ArsitekturConfig(
@@ -241,7 +287,9 @@ def detail(config_id):
     return render_template('arsitektur/detail.html',
                            cfg=cfg, hasil=hasil,
                            best_acc=best_acc, best_loss=best_loss,
-                           evaluasi=evaluasi, total_prediksi=total_prediksi)
+                           evaluasi=evaluasi, total_prediksi=total_prediksi,
+                           cv=cv_summary(cfg), label_basi=jumlah_label_basi(cfg.split_config_id),
+                           final_running=config_id in _final_progress)
 
 
 @arsitektur_bp.route('/<int:config_id>/progress')
@@ -261,7 +309,7 @@ def progress(config_id):
 
 
 @arsitektur_bp.route('/<int:config_id>/train', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def train(config_id):
     from flask import current_app
 
@@ -270,13 +318,34 @@ def train(config_id):
     if request.method == 'GET':
         return redirect(url_for('arsitektur.detail', config_id=config_id))
 
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    if jumlah_label_basi(cfg.split_config_id):
+        flash('Label berubah sejak split dibuat. Buat split baru sebelum training agar kelas '
+              'tiap fold sesuai label terbaru.', 'danger')
+        return redirect(url_for('arsitektur.detail', config_id=config_id))
+
+    # Klaim atomik: hanya satu permintaan yang bisa mengubah status menjadi 'training'
+    model_lama = [m for m in (cfg.model_path, cfg.final_model_path) if m]
+    diklaim = (ArsitekturConfig.query
+               .filter(ArsitekturConfig.id == config_id, ArsitekturConfig.status != 'training')
+               .update({'status': 'training', 'model_path': None, 'final_model_path': None, 'pred_type': 'none'},
+                       synchronize_session=False))
+    if not diklaim:
+        db.session.rollback()
+        flash('Training untuk konfigurasi ini sedang berjalan.', 'warning')
+        return redirect(url_for('arsitektur.detail', config_id=config_id))
+
     HasilTraining.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
     HasilEvaluasi.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
     PrediksiModel.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
-    ArsitekturConfig.query.filter_by(id=config_id).update({'status': 'training', 'model_path': None, 'pred_type': 'none'})
     db.session.commit()
-
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    for rel in model_lama:
+        try:
+            os.remove(os.path.join(base_dir, 'app', 'static', rel))
+        except OSError:
+            pass
+    _remove_fold_models(config_id, base_dir)
     app      = current_app._get_current_object()
 
     t = threading.Thread(target=_run_training, args=(app, config_id, base_dir), daemon=True)
@@ -286,24 +355,11 @@ def train(config_id):
 
 
 @arsitektur_bp.route('/<int:config_id>/re-evaluate', methods=['POST'])
-@login_required
+@admin_required
 def re_evaluate(config_id):
     """Re-run evaluasi manual jika diperlukan."""
-    from app.services import cnn_service
-
     cfg = ArsitekturConfig.query.get_or_404(config_id)
-    if cfg.status != 'selesai' or not cfg.model_path:
-        flash('Model belum selesai dilatih.', 'warning')
-        return redirect(url_for('arsitektur.detail', config_id=config_id))
-
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    try:
-        result = cnn_service.evaluate(cfg, base_dir)
-        _save_evaluasi(config_id, result)
-        flash('Evaluasi berhasil diperbarui.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Evaluasi gagal: {e}', 'danger')
+    _rerun_evaluasi(config_id, cfg)
 
     return redirect(url_for('arsitektur.detail', config_id=config_id))
 
@@ -311,33 +367,22 @@ def re_evaluate(config_id):
 @arsitektur_bp.route('/<int:config_id>/evaluate', methods=['GET', 'POST'])
 @login_required
 def evaluate(config_id):
-    """Alias route for evaluasi.html — GET shows detail, POST re-runs evaluation."""
-    from app.services import cnn_service
-
+    """Alias route for evaluasi.html â€” GET shows detail, POST re-runs evaluation."""
+    if request.method == 'POST':
+        require_admin()
     cfg = ArsitekturConfig.query.get_or_404(config_id)
 
     if request.method == 'GET':
         evaluasi = HasilEvaluasi.query.filter_by(arsitektur_id=config_id).first()
         return render_template('arsitektur/evaluasi.html', cfg=cfg, evaluasi=evaluasi)
 
-    if cfg.status != 'selesai' or not cfg.model_path:
-        flash('Model belum selesai dilatih.', 'warning')
-        return redirect(url_for('arsitektur.detail', config_id=config_id))
-
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    try:
-        result = cnn_service.evaluate(cfg, base_dir)
-        _save_evaluasi(config_id, result)
-        flash('Evaluasi berhasil diperbarui.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Evaluasi gagal: {e}', 'danger')
+    _rerun_evaluasi(config_id, cfg)
 
     return redirect(url_for('arsitektur.evaluate', config_id=config_id))
 
 
 @arsitektur_bp.route('/<int:config_id>/evaluasi-delete', methods=['POST'])
-@login_required
+@admin_required
 def evaluasi_delete(config_id):
     """Hapus data HasilEvaluasi untuk config tertentu."""
     ArsitekturConfig.query.get_or_404(config_id)
@@ -361,7 +406,7 @@ def gis(config_id):
     return render_template(
         'arsitektur/gis.html',
         cfg=cfg, evaluasi=evaluasi, total_prediksi=total,
-        cv_running=cv_running, split_cfg=split_cfg,
+        cv_running=cv_running, split_cfg=split_cfg, cv=cv_summary(cfg),
     )
 
 
@@ -408,7 +453,7 @@ def gis_json(config_id):
 
 
 @arsitektur_bp.route('/<int:config_id>/predict', methods=['POST'])
-@login_required
+@admin_required
 def predict(config_id):
     from app.services import cnn_service
 
@@ -432,7 +477,7 @@ def predict(config_id):
             ))
         cfg.pred_type = 'single'
         db.session.commit()
-        flash(f'Prediksi selesai — {len(results)} foto diproses.', 'success')
+        flash(f'Prediksi selesai â€” {len(results)} foto diproses.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Prediksi gagal: {e}', 'danger')
@@ -445,11 +490,11 @@ def _run_cv_predict(app, config_id, base_dir):
     with app.app_context():
         from app.services import cnn_service
 
-        cfg = ArsitekturConfig.query.get(config_id)
+        cfg = db.session.get(ArsitekturConfig, config_id)
         if not cfg:
             return
 
-        split_cfg = SplitConfig.query.get(cfg.split_config_id)
+        split_cfg = db.session.get(SplitConfig, cfg.split_config_id)
         n_splits  = split_cfg.n_splits
 
         _cfg_snapshot = dict(
@@ -484,9 +529,7 @@ def _run_cv_predict(app, config_id, base_dir):
             }
 
         try:
-            class _Cfg:
-                pass
-            cfg_obj = _Cfg()
+            cfg_obj = SimpleNamespace()
             for k, v in _cfg_snapshot.items():
                 setattr(cfg_obj, k, v)
 
@@ -503,17 +546,20 @@ def _run_cv_predict(app, config_id, base_dir):
                 ))
             ArsitekturConfig.query.filter_by(id=config_id).update({'pred_type': 'cv'})
             db.session.commit()
+            _cv_progress.pop(config_id, None)
 
         except Exception as e:
             db.session.rollback()
+            # JANGAN langsung pop — biarkan cv_progress_route menampilkan error ini
+            # ke frontend dulu (sebelumnya error di sini langsung hilang sebelum
+            # sempat dibaca, jadi kegagalan selalu senyap).
             _cv_progress[config_id] = {'error': str(e)}
         finally:
-            _cv_progress.pop(config_id, None)
             db.session.remove()
 
 
 @arsitektur_bp.route('/<int:config_id>/predict-cv', methods=['POST'])
-@login_required
+@admin_required
 def predict_cv_route(config_id):
     from flask import current_app
 
@@ -523,8 +569,11 @@ def predict_cv_route(config_id):
         return redirect(url_for('arsitektur.gis', config_id=config_id))
 
     if config_id in _cv_progress:
-        flash('Prediksi CV sedang berjalan.', 'warning')
-        return redirect(url_for('arsitektur.gis', config_id=config_id))
+        if 'error' in _cv_progress[config_id]:
+            _cv_progress.pop(config_id, None)   # percobaan gagal sebelumnya — boleh dicoba ulang
+        else:
+            flash('Prediksi CV sedang berjalan.', 'warning')
+            return redirect(url_for('arsitektur.gis', config_id=config_id))
 
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     app      = current_app._get_current_object()
@@ -544,19 +593,74 @@ def cv_progress_route(config_id):
     return jsonify({'running': False})
 
 
+def _run_final_training(app, config_id, base_dir):
+    """Background thread: latih model final pada semua data lalu simpan path-nya."""
+    with app.app_context():
+        from app.services import cnn_service
+
+        cfg = db.session.get(ArsitekturConfig, config_id)
+        if not cfg:
+            _final_progress.pop(config_id, None)
+            return
+        snapshot = SimpleNamespace(
+            id=cfg.id, split_config_id=cfg.split_config_id, input_size=cfg.input_size,
+            model_type=cfg.model_type, dropout_rate=cfg.dropout_rate, optimizer=cfg.optimizer,
+            learning_rate=cfg.learning_rate, batch_size=cfg.batch_size, epochs=cfg.epochs,
+            patience=cfg.patience,
+        )
+        db.session.remove()
+        try:
+            model = cnn_service.train_final(snapshot, base_dir)
+            path = cnn_service.save_model(model, config_id, base_dir, suffix='_final')
+            ArsitekturConfig.query.filter_by(id=config_id).update({'final_model_path': path})
+            db.session.commit()
+        except Exception as e:
+            traceback.print_exc()
+            db.session.rollback()
+            _errors[('final', config_id)] = str(e)
+        finally:
+            _final_progress.pop(config_id, None)
+            db.session.remove()
+
+
+@arsitektur_bp.route('/<int:config_id>/train-final', methods=['POST'])
+@admin_required
+def train_final(config_id):
+    from flask import current_app
+
+    cfg = ArsitekturConfig.query.get_or_404(config_id)
+    if cfg.status != 'selesai':
+        flash('Latih dan evaluasi model dulu sebelum melatih model final.', 'warning')
+    elif config_id in _final_progress:
+        flash('Model final sedang dilatih.', 'warning')
+    elif jumlah_label_basi(cfg.split_config_id):
+        flash('Label berubah sejak split dibuat. Buat split baru dan latih ulang terlebih dahulu.', 'danger')
+    else:
+        _final_progress[config_id] = True
+        _errors.pop(('final', config_id), None)
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        app = current_app._get_current_object()
+        threading.Thread(target=_run_final_training, args=(app, config_id, base_dir), daemon=True).start()
+        flash('Model final dilatih di background (beberapa menit). Muat ulang halaman untuk melihat statusnya.', 'info')
+    return redirect(url_for('arsitektur.detail', config_id=config_id))
+
+
 @arsitektur_bp.route('/<int:config_id>/delete', methods=['POST'])
-@login_required
+@admin_required
 def delete(config_id):
     cfg  = ArsitekturConfig.query.get_or_404(config_id)
     nama = cfg.nama
 
-    if cfg.model_path:
-        base_dir   = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        model_file = os.path.join(base_dir, 'app', 'static', cfg.model_path)
-        if os.path.isfile(model_file):
-            os.remove(model_file)
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    for rel in (cfg.model_path, cfg.final_model_path):
+        if rel:
+            model_file = os.path.join(base_dir, 'app', 'static', rel)
+            if os.path.isfile(model_file):
+                os.remove(model_file)
+    _remove_fold_models(config_id, base_dir)
 
     db.session.delete(cfg)
     db.session.commit()
     flash(f'Konfigurasi "{nama}" dihapus.', 'success')
     return redirect(url_for('arsitektur.index'))
+

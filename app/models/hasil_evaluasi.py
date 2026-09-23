@@ -1,5 +1,5 @@
-import json
-from datetime import datetime
+﻿import json
+from app import utcnow
 from app import db
 
 
@@ -23,9 +23,10 @@ class HasilEvaluasi(db.Model):
     macro_precision  = db.Column(db.Float, nullable=False)
     macro_recall     = db.Column(db.Float, nullable=False)
     macro_f1         = db.Column(db.Float, nullable=False)
-    created_at       = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at       = db.Column(db.DateTime, default=utcnow)
 
     arsitektur = db.relationship('ArsitekturConfig', backref=db.backref('evaluasi_list', cascade='all, delete-orphan'))
 
     def get_cm(self):
         return json.loads(self.confusion_matrix)
+

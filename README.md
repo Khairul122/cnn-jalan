@@ -1,4 +1,4 @@
-# CNN-Jalan — GIS Pemetaan Kerusakan Jalan Kota Lhokseumawe
+﻿# CNN-Jalan â€” GIS Pemetaan Kerusakan Jalan Kota Lhokseumawe
 
 Sistem informasi geografis (GIS) berbasis web untuk pemetaan kerusakan jalan menggunakan metode **Convolutional Neural Network (CNN)**. Dibangun dengan **Flask** (Python) menggunakan arsitektur **MVC**. Dikembangkan sebagai bagian dari skripsi (NIM 210170072).
 
@@ -7,16 +7,16 @@ Sistem informasi geografis (GIS) berbasis web untuk pemetaan kerusakan jalan men
 ## Fitur
 
 - Manajemen data lokasi kerusakan jalan (CRUD + upload foto + mini-map Leaflet)
-- Klasifikasi jenis (CRACK / POTHOLE / RUTTING) & tingkat kerusakan (Berat / Sedang / Ringan) via CNN
+- Klasifikasi tingkat kerusakan (Berat / Sedang / Ringan) via CNN
 - Labeling SDI (Surface Distress Index) sesuai standar Bina Marga, dengan auto-estimasi dari dimensi kerusakan
-- Pipeline preprocessing gambar 5 tahap: Resize → Center Crop → Normalisasi → Augmentasi → Denoise (OpenCV + Pillow)
+- Pipeline preprocessing gambar: Resize → Center Crop → Normalisasi → Denoise (OpenCV + Pillow); augmentasi hanya aktif saat training model
 - Split dataset Stratified K-Fold (scikit-learn) untuk persiapan training CNN, dengan distribusi kelas & export CSV
 - Konfigurasi & training arsitektur CNN (MobileNetV2 / EfficientNetB0, transfer learning) dengan progress live
-- Evaluasi model otomatis: confusion matrix 3×3, precision/recall/F1 per kelas, macro avg
-- Prediksi GIS — mode Single (`predict_all`) dan K-Fold Cross-Validation (`predict_cv`)
+- Evaluasi model otomatis: confusion matrix 3Ã—3, precision/recall/F1 per kelas, macro avg
+- Prediksi GIS â€” mode Single (`predict_all`) dan K-Fold Cross-Validation (`predict_cv`)
 - Visualisasi peta interaktif dengan **Leaflet.js** + filter status pemetaan
 - Evaluasi model CNN secara manual (input metrik, tabel perbandingan)
-- Autentikasi pengguna (Admin & Viewer) — Flask-Login, password bcrypt (Werkzeug)
+- Autentikasi pengguna (Admin & Viewer) â€” Flask-Login, password bcrypt (Werkzeug)
 
 ---
 
@@ -24,7 +24,7 @@ Sistem informasi geografis (GIS) berbasis web untuk pemetaan kerusakan jalan men
 
 | Komponen | Teknologi |
 |----------|-----------|
-| Backend | Python 3.10+, Flask 3.0 |
+| Backend | Python 3.12, Flask 3.0 |
 | ORM | Flask-SQLAlchemy |
 | Database | MySQL (utf8mb4) |
 | Auth | Flask-Login |
@@ -38,7 +38,7 @@ Sistem informasi geografis (GIS) berbasis web untuk pemetaan kerusakan jalan men
 
 ## Persyaratan
 
-- Python 3.10 atau lebih baru
+- Python 3.12
 - MySQL Server (XAMPP / standalone)
 - Git (opsional)
 
@@ -79,13 +79,7 @@ pip install -r requirements.txt
 
 ### 4. Buat database MySQL
 
-Pastikan MySQL sudah berjalan, lalu import skema lengkap:
-
-```powershell
-mysql -u root -p < db_cnn_jalan.sql
-```
-
-Jika sudah punya database dari versi sebelumnya, jalankan migration tambahan **secara berurutan** (lihat tabel di bagian Migrasi Database).
+Pastikan MySQL sudah berjalan dan database kosong `db_cnn_jalan` sudah dibuat. Dump lengkap `database/dump SQL lama` sudah dihapus karena berisi skema/data lama; gunakan migration SQL di `scripts/` sesuai urutan pada bagian Migrasi Database.
 
 ### 5. Konfigurasi koneksi database
 
@@ -113,58 +107,58 @@ Buka browser: [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 ```
 cnn-jalan/
-├── .venv/                          # Virtual environment (tidak di-commit)
-├── app/
-│   ├── __init__.py                 # App factory (create_app, registrasi blueprint)
-│   ├── models/                     # Model SQLAlchemy (M)
-│   │   ├── pengguna.py
-│   │   ├── jenis_kerusakan.py
-│   │   ├── tingkat_kerusakan.py
-│   │   ├── lokasi_kerusakan.py
-│   │   ├── dokumentasi_foto.py
-│   │   ├── hasil_klasifikasi_cnn.py
-│   │   ├── peta_kerusakan.py
-│   │   ├── label_kerusakan.py
-│   │   ├── preprocessing_config.py
-│   │   ├── hasil_preprocessing.py
-│   │   ├── split_config.py / split_item.py
-│   │   ├── arsitektur_config.py / hasil_training.py
-│   │   ├── hasil_evaluasi.py / prediksi_model.py
-│   │   └── evaluasi_model.py
-│   ├── controllers/                # Blueprint / Controller (C)
-│   │   ├── auth_controller.py
-│   │   ├── dashboard_controller.py
-│   │   ├── lokasi_controller.py
-│   │   ├── klasifikasi_controller.py
-│   │   ├── label_controller.py
-│   │   ├── preprocessing_controller.py
-│   │   ├── split_controller.py
-│   │   ├── arsitektur_controller.py
-│   │   ├── peta_controller.py
-│   │   └── evaluasi_controller.py
-│   ├── services/                   # Business logic / pipeline
-│   │   ├── preprocessing_service.py
-│   │   ├── split_service.py
-│   │   └── cnn_service.py
-│   ├── templates/                  # Template Jinja2 / View (V)
-│   │   ├── base.html, components/
-│   │   ├── auth/, dashboard/, lokasi/, klasifikasi/, label/
-│   │   ├── preprocessing/, split/, arsitektur/, peta/, evaluasi/
-│   └── static/
-│       ├── css/style.css
-│       ├── js/peta.js, js/toast.js
-│       ├── models/                 # Model CNN terlatih (model_{id}.keras)
-│       └── uploads/
-│           ├── foto/               # Foto lapangan asli
-│           └── preprocessed/       # Hasil preprocessing
-├── config.py                       # Konfigurasi aplikasi
-├── db_cnn_jalan.sql                # Skema lengkap (fresh install)
-├── migrate_*.sql                   # Migration tambahan (lihat tabel di bawah)
-├── seed_data.py                    # Import 280 data dari Excel + foto
-├── restore_foto.py                 # Utility pemulihan foto yang terhapus
-├── requirements.txt
-├── run.py                          # Entry point
-└── README.md
+â”œâ”€â”€ .venv/                          # Virtual environment (tidak di-commit)
+â”œâ”€â”€ app/
+â”‚   â”œâ”€â”€ __init__.py                 # App factory (create_app, registrasi blueprint)
+â”‚   â”œâ”€â”€ models/                     # Model SQLAlchemy (M)
+â”‚   â”‚   â”œâ”€â”€ pengguna.py
+â”‚   â”‚   â”œâ”€â”€ jenis_kerusakan.py
+â”‚   â”‚   â”œâ”€â”€ tingkat_kerusakan.py
+â”‚   â”‚   â”œâ”€â”€ lokasi_kerusakan.py
+â”‚   â”‚   â”œâ”€â”€ dokumentasi_foto.py
+â”‚   â”‚   â”œâ”€â”€ hasil_klasifikasi_cnn.py
+â”‚   â”‚   â”œâ”€â”€ peta_kerusakan.py
+â”‚   â”‚   â”œâ”€â”€ label_kerusakan.py
+â”‚   â”‚   â”œâ”€â”€ preprocessing_config.py
+â”‚   â”‚   â”œâ”€â”€ hasil_preprocessing.py
+â”‚   â”‚   â”œâ”€â”€ split_config.py / split_item.py
+â”‚   â”‚   â”œâ”€â”€ arsitektur_config.py / hasil_training.py
+â”‚   â”‚   â”œâ”€â”€ hasil_evaluasi.py / prediksi_model.py
+â”‚   â”‚   â””â”€â”€ evaluasi_model.py
+â”‚   â”œâ”€â”€ controllers/                # Blueprint / Controller (C)
+â”‚   â”‚   â”œâ”€â”€ auth_controller.py
+â”‚   â”‚   â”œâ”€â”€ dashboard_controller.py
+â”‚   â”‚   â”œâ”€â”€ lokasi_controller.py
+â”‚   â”‚   â”œâ”€â”€ klasifikasi_controller.py
+â”‚   â”‚   â”œâ”€â”€ label_controller.py
+â”‚   â”‚   â”œâ”€â”€ preprocessing_controller.py
+â”‚   â”‚   â”œâ”€â”€ split_controller.py
+â”‚   â”‚   â”œâ”€â”€ arsitektur_controller.py
+â”‚   â”‚   â”œâ”€â”€ peta_controller.py
+â”‚   â”‚   â””â”€â”€ evaluasi_controller.py
+â”‚   â”œâ”€â”€ services/                   # Business logic / pipeline
+â”‚   â”‚   â”œâ”€â”€ preprocessing_service.py
+â”‚   â”‚   â”œâ”€â”€ split_service.py
+â”‚   â”‚   â””â”€â”€ cnn_service.py
+â”‚   â”œâ”€â”€ templates/                  # Template Jinja2 / View (V)
+â”‚   â”‚   â”œâ”€â”€ base.html, components/
+â”‚   â”‚   â”œâ”€â”€ auth/, dashboard/, lokasi/, klasifikasi/, label/
+â”‚   â”‚   â”œâ”€â”€ preprocessing/, split/, arsitektur/, peta/, evaluasi/
+â”‚   â””â”€â”€ static/
+â”‚       â”œâ”€â”€ css/style.css
+â”‚       â”œâ”€â”€ js/peta.js, js/toast.js
+â”‚       â”œâ”€â”€ models/                 # Model CNN terlatih (model_{id}.keras)
+â”‚       â””â”€â”€ uploads/
+â”‚           â”œâ”€â”€ foto/               # Foto lapangan asli
+â”‚           â””â”€â”€ preprocessed/       # Hasil preprocessing
+â”œâ”€â”€ config.py                       # Konfigurasi aplikasi
+â”œâ”€â”€ dump SQL lama                # Skema lengkap (fresh install)
+â”œâ”€â”€ migrate_*.sql                   # Migration tambahan (lihat tabel di bawah)
+â”œâ”€â”€ seed_data.py                    # Reset data model + import Excel revisi + foto (--reset)
+â”œâ”€â”€ restore_foto.py                 # Utility pemulihan foto yang terhapus
+â”œâ”€â”€ requirements.txt
+â”œâ”€â”€ run.py                          # Entry point
+â””â”€â”€ README.md
 ```
 
 ---
@@ -213,7 +207,7 @@ Untuk pipeline training, evaluasi, dan prediksi GIS otomatis, lihat `app/service
 
 ## Migrasi Database
 
-Jalankan **berurutan** pada database yang sudah ada (setelah `db_cnn_jalan.sql`):
+Jalankan migration yang diperlukan secara berurutan pada database Anda. Tidak ada lagi `database/dump SQL lama`; migration adalah sumber perubahan schema yang dipertahankan.
 
 | File | Fungsi |
 |---|---|
@@ -225,9 +219,18 @@ Jalankan **berurutan** pada database yang sudah ada (setelah `db_cnn_jalan.sql`)
 | `migrate_add_patience.sql` | Tambah kolom `patience` di `arsitektur_config` |
 | `migrate_add_prediksi_model.sql` | Tambah tabel `prediksi_model` |
 | `migrate_add_pred_type.sql` | Tambah kolom `pred_type` di `arsitektur_config` |
+| `migrate_revisi_lokasi.sql` | P/L jadi DECIMAL meter + kolom `keterangan` di `lokasi_kerusakan` |
 
 ```powershell
-Get-Content migrate_add_preprocessing.sql | & mysql -u root db_cnn_jalan
+Get-Content scripts/migrate_add_preprocessing.sql | & mysql -u root db_cnn_jalan
+```
+
+### Import data model
+
+Siapkan Excel revisi dengan kolom `Citra`, `x`, `y`, `P`, `L`, `Ket`, lalu jalankan validasi dan reset/import:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\seed_data.py --excel "DATA JALAN REVISI.xlsx" --reset
 ```
 
 ---
@@ -248,4 +251,7 @@ deactivate
 | **NIM** | 210170072 |
 | **Database** | `db_cnn_jalan` |
 | **Framework** | Flask (Python) |
-| **Arsitektur** | MVC (Model–View–Controller dengan Blueprints) |
+| **Arsitektur** | MVC (Modelâ€“Viewâ€“Controller dengan Blueprints) |
+
+
+

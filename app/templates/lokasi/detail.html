@@ -45,11 +45,15 @@
         {% include 'components/detail_row.html' %}
 
         {% set dr_label = 'Panjang (P)' %}
-        {% set dr_value = lokasi.panjang or '-' %}
+        {% set dr_value = (lokasi.panjang ~ ' m') if lokasi.panjang is not none else '-' %}
         {% include 'components/detail_row.html' %}
 
         {% set dr_label = 'Lebar (L)' %}
-        {% set dr_value = lokasi.lebar or '-' %}
+        {% set dr_value = (lokasi.lebar ~ ' m') if lokasi.lebar is not none else '-' %}
+        {% include 'components/detail_row.html' %}
+
+        {% set dr_label = 'Keterangan' %}
+        {% set dr_value = lokasi.keterangan or '-' %}
         {% include 'components/detail_row.html' %}
 
         {% set dr_label = 'Sumber Data' %}
@@ -108,7 +112,7 @@
                                background:rgba(5,150,105,.9);color:#fff;
                                font-size:.65rem;font-weight:600;padding:.15rem .45rem;
                                border-radius:.25rem;">
-                    {{ foto.hasil_klasifikasi.jenis_kerusakan.kode }}
+                    {{ foto.hasil_klasifikasi.tingkat_kerusakan.nama_tingkat }}
                     {{ (foto.hasil_klasifikasi.confidence_score * 100) | round(1) }}%
                   </span>
                   {% endif %}

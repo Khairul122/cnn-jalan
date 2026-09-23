@@ -1,12 +1,19 @@
-from flask import Flask
+from flask import Flask, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFError, CSRFProtect
+from datetime import datetime, timezone
 from config import Config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
+csrf = CSRFProtect()
+
+
+def utcnow():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Silakan login terlebih dahulu.'
@@ -20,6 +27,7 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
 
     from app.controllers.auth_controller import auth_bp
     from app.controllers.dashboard_controller import dashboard_bp
@@ -42,5 +50,15 @@ def create_app():
     app.register_blueprint(preprocessing_bp)
     app.register_blueprint(split_bp)
     app.register_blueprint(arsitektur_bp)
+
+    @app.errorhandler(403)
+    def forbidden(_):
+        flash('Anda tidak memiliki izin untuk aksi ini. Hubungi admin.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    @app.errorhandler(CSRFError)
+    def csrf_error(_):
+        flash('Sesi form kedaluwarsa atau tidak valid. Muat ulang halaman lalu coba lagi.', 'warning')
+        return redirect(url_for('dashboard.index'))
 
     return app

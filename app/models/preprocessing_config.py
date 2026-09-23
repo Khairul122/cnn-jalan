@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from app import utcnow
 from app import db
 
 
@@ -29,10 +29,11 @@ class PreprocessingConfig(db.Model):
     # Meta
     is_default     = db.Column(db.Boolean, nullable=False, default=False)
     pengguna_id    = db.Column(db.Integer, db.ForeignKey('pengguna.id'), nullable=False)
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at     = db.Column(db.DateTime, default=utcnow)
 
     hasil_list = db.relationship('HasilPreprocessing', backref='config', lazy=True, cascade='all, delete-orphan')
     pengguna   = db.relationship('Pengguna', backref='preprocessing_config_list', lazy=True)
 
     def __repr__(self):
         return f'<PreprocessingConfig {self.nama_config}>'
+

@@ -16,7 +16,7 @@
 <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
             box-shadow:var(--shadow-card);overflow:hidden;">
   <div style="padding:1.5rem;">
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="row g-3">
 
         <!-- Nama Citra -->
@@ -49,18 +49,29 @@
         <!-- Panjang -->
         <div class="col-md-3">
           <div class="form-floating">
-            <input type="text" id="panjang" name="panjang"
-                   class="form-control" placeholder="contoh: 2.5 M">
-            <label for="panjang">Panjang (P)</label>
+            <input type="number" id="panjang" name="panjang"
+                   class="form-control" step="0.01" min="0" placeholder="0">
+            <label for="panjang">Panjang (P) — meter</label>
           </div>
         </div>
 
         <!-- Lebar -->
         <div class="col-md-3">
           <div class="form-floating">
-            <input type="text" id="lebar" name="lebar"
-                   class="form-control" placeholder="contoh: 50 CM">
-            <label for="lebar">Lebar (L)</label>
+            <input type="number" id="lebar" name="lebar"
+                   class="form-control" step="0.01" min="0" placeholder="0">
+            <label for="lebar">Lebar (L) — meter</label>
+          </div>
+        </div>
+
+        <!-- Keterangan -->
+        <div class="col-md-6">
+          <div class="form-floating">
+            <select id="keterangan" name="keterangan" class="form-select">
+              <option value="">—</option>
+              {% for k in keterangan_list %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
+            </select>
+            <label for="keterangan">Keterangan Dimensi</label>
           </div>
         </div>
 

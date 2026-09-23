@@ -65,7 +65,7 @@
   </div>
 </div>
 
-<form method="POST" id="configForm">
+<form method="POST" id="configForm"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="row g-3">
 
   <!-- Kolom kiri: form -->

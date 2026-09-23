@@ -1,0 +1,30 @@
+{# Ringkasan K-Fold CV. Butuh variabel: cv (dict dari metrics_service.cv_summary) #}
+{% if cv %}
+<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+            padding:.875rem 1rem;margin-bottom:1rem;box-shadow:var(--shadow-card);">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.25rem;margin-bottom:.625rem;">
+    <strong style="font-size:.85rem;">Hasil {{ cv.per_fold | length }}-Fold Cross Validation</strong>
+    <span style="font-size:.7rem;color:var(--c-muted);">{{ cv.n }} foto, tiap foto diprediksi model yang tidak melihatnya saat training</span>
+  </div>
+  <div class="row g-2">
+    {% for label, value, color in [
+        ('Akurasi (rata-rata ± std)', cv.akurasi ~ '% ± ' ~ cv.std, '#10B981'),
+        ('Macro-F1', cv.macro_f1 ~ '%', '#38BDF8'),
+        ('Baseline kelas mayoritas', cv.baseline ~ '%', '#94A3B8'),
+        ('Selisih dari baseline', ('+' if cv.selisih_baseline >= 0 else '') ~ cv.selisih_baseline ~ ' poin', '#F59E0B'),
+    ] %}
+    <div class="col-6 col-md-3">
+      <div style="padding:.5rem .75rem;border:1px solid var(--c-border);border-radius:var(--r-card);text-align:center;">
+        <div style="font-size:1rem;font-weight:700;color:{{ color }};font-variant-numeric:tabular-nums;">{{ value }}</div>
+        <div style="font-size:.66rem;color:var(--c-muted);">{{ label }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <p style="font-size:.72rem;color:var(--c-muted);margin:.625rem 0 0;">
+    Recall — Berat {{ cv.recall.berat }}% · Sedang {{ cv.recall.sedang }}% · Ringan {{ cv.recall.ringan }}%
+    &nbsp;|&nbsp; Akurasi per fold:
+    {% for f in cv.per_fold %}{{ f.akurasi }}%{{ ' · ' if not loop.last }}{% endfor %}
+  </p>
+</div>
+{% endif %}

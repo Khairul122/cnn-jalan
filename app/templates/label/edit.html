@@ -27,7 +27,7 @@
 {% set ph_back_url = url_for('label.index') %}
 {% include 'components/page_header.html' %}
 
-<form method="POST" id="labelForm">
+<form method="POST" id="labelForm"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="row g-3">
 
   <!-- ── Kolom kiri: foto + peta ── -->
@@ -83,7 +83,7 @@
                 border-radius:var(--r-card);padding:.875rem 1rem;box-shadow:var(--shadow-card);">
       <p style="font-size:.72rem;font-weight:600;color:var(--c-muted);text-transform:uppercase;
                 letter-spacing:.05em;margin:0 0 .5rem;">Info Lokasi</p>
-      {% for lbl_txt, val in [('Panjang (P)', lokasi.panjang or '—'), ('Lebar (L)', lokasi.lebar or '—'), ('Sumber', lokasi.sumber_data)] %}
+      {% for lbl_txt, val in [('Panjang (P)', (lokasi.panjang ~ ' m') if lokasi.panjang is not none else '—'), ('Lebar (L)', (lokasi.lebar ~ ' m') if lokasi.lebar is not none else '—'), ('Keterangan', lokasi.keterangan or '—'), ('Sumber', lokasi.sumber_data)] %}
       <div style="display:flex;justify-content:space-between;padding:.3rem 0;
                   border-bottom:1px solid var(--c-border);font-size:.78rem;">
         <span style="color:var(--c-muted);">{{ lbl_txt }}</span>

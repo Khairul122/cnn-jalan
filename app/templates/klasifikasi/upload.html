@@ -13,7 +13,7 @@
 <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
             box-shadow:var(--shadow-card);max-width:560px;overflow:hidden;">
   <div style="padding:1.5rem;">
-    <form method="POST" enctype="multipart/form-data" id="klasifikasi-form">
+    <form method="POST" enctype="multipart/form-data" id="klasifikasi-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <!-- Pilih Lokasi -->
       <div class="mb-3">
@@ -22,7 +22,7 @@
                   aria-label="Pilih lokasi kerusakan jalan">
             <option value="">-- Pilih Lokasi --</option>
             {% for lok in lokasi_list %}
-              <option value="{{ lok.id }}">{{ lok.nama_citra }} — {{ lok.kecamatan.nama_kecamatan }}</option>
+              <option value="{{ lok.id }}">{{ lok.nama_citra }}</option>
             {% endfor %}
           </select>
           <label for="lokasi_id">Pilih Lokasi</label>

@@ -135,7 +135,7 @@
         <td style="text-align:center;">
           <div class="d-flex align-items-center justify-content-center gap-1 flex-wrap">
             <!-- Jalankan -->
-            <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}">
+            <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" title="Jalankan"
                       style="display:inline-flex;align-items:center;gap:.3rem;
                              padding:.35rem .7rem;border-radius:var(--r-input);
@@ -157,7 +157,7 @@
               <i class="bi bi-pencil-fill"></i>
             </a>
             <!-- Hapus -->
-            <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}">
+            <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" title="Hapus"
                       style="display:inline-flex;align-items:center;justify-content:center;
                              width:30px;height:30px;border-radius:var(--r-input);

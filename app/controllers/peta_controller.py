@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required
 from app.models.peta_kerusakan import PetaKerusakan
-from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.arsitektur_config import ArsitekturConfig
 from app.models.prediksi_model import PrediksiModel
 from app.models.dokumentasi_foto import DokumentasiFoto

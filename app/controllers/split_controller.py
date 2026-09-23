@@ -1,7 +1,11 @@
 import io
+import os
 import csv
 from flask import Blueprint, render_template, redirect, url_for, request, flash, Response
 from flask_login import login_required, current_user
+from sqlalchemy import func
+from werkzeug.utils import secure_filename
+from app.auth_utils import admin_required
 from app import db
 from app.models.split_config import SplitConfig
 from app.models.split_item import SplitItem
@@ -11,28 +15,47 @@ from app.models.label_kerusakan import LabelKerusakan
 from app.models.arsitektur_config import ArsitekturConfig
 from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.models.hasil_preprocessing import HasilPreprocessing
-from app.services.split_service import SplitService
+from app.services import cnn_service
+from app.services.cnn_service import TRAIN_EXPAND_STEPS
+from app.services.split_service import SplitService, jumlah_label_basi
 
 split_bp = Blueprint('split', __name__, url_prefix='/split')
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 def _prep_coverage(doc_ids):
-    """Return set of dokumentasi_id yang sudah punya hasil step 'denoise'."""
+    """
+    Return set of dokumentasi_id yang SEMUA tahap non-acaknya (TRAIN_EXPAND_STEPS = resize,
+    crop, normalisasi, denoise) sudah selesai — ini yang dipakai cnn_service.load_dataset
+    untuk ekspansi train & val (bukan cuma tahap 'denoise' lagi).
+    """
     if not doc_ids:
         return set()
     rows = (
-        HasilPreprocessing.query
+        db.session.query(HasilPreprocessing.dokumentasi_id)
         .filter(
             HasilPreprocessing.dokumentasi_id.in_(list(doc_ids)),
-            HasilPreprocessing.step_name == 'denoise',
+            HasilPreprocessing.step_name.in_(TRAIN_EXPAND_STEPS),
             HasilPreprocessing.status == 'selesai',
             HasilPreprocessing.path_output != '',
         )
-        .with_entities(HasilPreprocessing.dokumentasi_id)
-        .distinct()
+        .group_by(HasilPreprocessing.dokumentasi_id)
+        .having(func.count(func.distinct(HasilPreprocessing.step_name)) == len(TRAIN_EXPAND_STEPS))
         .all()
     )
-    return {r.dokumentasi_id for r in rows}
+    return {r[0] for r in rows}
+
+
+def _expanded_sample_count(doc_ids):
+    """
+    Estimasi total sampel training+validasi setelah ekspansi cnn_service.load_dataset,
+    termasuk dedup tahap yang kontennya identik (mis. crop_enabled=False membuat 'crop'
+    sama persis dengan 'resize') — selalu konsisten dengan apa yang benar-benar dimuat
+    load_dataset. Nilai ini sama untuk setiap fold, karena train dan val diperlakukan
+    seragam (lihat load_dataset).
+    """
+    return cnn_service.effective_sample_count(doc_ids, BASE_DIR)
 
 
 def _get_labeled_items():
@@ -73,18 +96,20 @@ def index():
     total_berlabel = len(items)
     doc_ids        = {i['dokumentasi_id'] for i in items}
     total_prep     = len(_prep_coverage(doc_ids))
+    total_sampel   = _expanded_sample_count(doc_ids)
     tingkat_list   = TingkatKerusakan.query.order_by(TingkatKerusakan.id).all()
     return render_template(
         'split/index.html',
         configs=configs,
         total_berlabel=total_berlabel,
         total_prep=total_prep,
+        total_sampel=total_sampel,
         tingkat_list=tingkat_list,
     )
 
 
 @split_bp.route('/new', methods=['GET', 'POST'])
-@login_required
+@admin_required
 def new():
     tingkat_list = TingkatKerusakan.query.order_by(TingkatKerusakan.id).all()
     items        = _get_labeled_items()
@@ -93,6 +118,7 @@ def new():
     kelas_count  = Counter(i['label_id'] for i in items)
     doc_ids      = {i['dokumentasi_id'] for i in items}
     total_prep   = len(_prep_coverage(doc_ids))
+    total_sampel = _expanded_sample_count(doc_ids)
 
     if request.method == 'POST':
         nama         = request.form.get('nama', '').strip()
@@ -148,6 +174,7 @@ def new():
         tingkat_list=tingkat_list,
         total_berlabel=len(items),
         total_prep=total_prep,
+        total_sampel=total_sampel,
         kelas_count=kelas_count,
     )
 
@@ -195,12 +222,17 @@ def detail(config_id):
     fold_prep    = {}
     for fi in fold_indices:
         fold_ids      = {r.dokumentasi_id for r in items if r.fold_index == fi}
-        fold_prep[fi] = {'total': len(fold_ids), 'prep': len(prep_ids & fold_ids)}
+        fold_prep[fi] = {
+            'total':  len(fold_ids),
+            'prep':   len(prep_ids & fold_ids),
+            'sampel': _expanded_sample_count(fold_ids),
+        }
 
     prep_coverage = {
         'total':       len(prep_ids),
         'grand_total': len(all_doc_ids),
         'per_fold':    fold_prep,
+        'sampel':      _expanded_sample_count(all_doc_ids),
     }
 
     return render_template(
@@ -211,11 +243,12 @@ def detail(config_id):
         dist=dist,
         prep_coverage=prep_coverage,
         fold_indices=fold_indices,
+        label_basi=jumlah_label_basi(config_id),
     )
 
 
 @split_bp.route('/<int:config_id>/delete', methods=['POST'])
-@login_required
+@admin_required
 def delete(config_id):
     config = SplitConfig.query.get_or_404(config_id)
     nama   = config.nama
@@ -236,7 +269,7 @@ def delete(config_id):
 
 
 @split_bp.route('/<int:config_id>/reset', methods=['POST'])
-@login_required
+@admin_required
 def reset_items(config_id):
     config = SplitConfig.query.get_or_404(config_id)
 
@@ -293,7 +326,7 @@ def export(config_id):
             r.longitude,
         ])
 
-    filename = f"split_{config.nama.replace(' ', '_')}_K{config.n_splits}.csv"
+    filename = f"split_{secure_filename(config.nama) or config.id}_K{config.n_splits}.csv"
     return Response(
         buf.getvalue(),
         mimetype='text/csv',

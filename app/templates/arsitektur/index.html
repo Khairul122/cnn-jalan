@@ -106,7 +106,7 @@
             <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>
-            <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}">
+            <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" class="btn-action-del" title="Hapus"
                       onclick="showConfirmForm(this,
                         'Hapus Arsitektur CNN',

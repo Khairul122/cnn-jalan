@@ -11,7 +11,7 @@ class PreprocessingService:
     @staticmethod
     def run_pipeline_steps(img_path, config):
         """
-        Jalankan pipeline 5 tahap dan simpan hasil tiap tahap secara kumulatif.
+        Jalankan pipeline 5 tahap (resize, crop, normalisasi, denoise, augmentasi) dan simpan hasil tiap tahap secara kumulatif.
         Kembalikan list of (step_key, PIL.Image, durasi_ms).
         Setiap gambar adalah hasil penerapan semua step sebelumnya + step ini.
         """
@@ -55,7 +55,23 @@ class PreprocessingService:
         # norm == 'none': gambar tetap sama, tetap simpan sebagai checkpoint
         results.append(('normalisasi', img.copy(), int((time.time() - t0) * 1000)))
 
-        # ── Step 4: Augmentasi (random per gambar) ────────────────────
+        # ── Step 4: Denoise (OpenCV) — keluaran tahap ini yang dipakai training ──────────────────────────────────
+        t0 = time.time()
+        method = str(config.denoise_method)
+        if method != 'none':
+            k = int(config.denoise_ksize or 3)
+            k = k if k % 2 == 1 else k + 1
+            cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+            if method == 'gaussian':
+                cv_img = cv2.GaussianBlur(cv_img, (k, k), 0)
+            elif method == 'median':
+                cv_img = cv2.medianBlur(cv_img, k)
+            elif method == 'bilateral':
+                cv_img = cv2.bilateralFilter(cv_img, k, 75, 75)
+            img = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
+        results.append(('denoise', img.copy(), int((time.time() - t0) * 1000)))
+
+        # ── Step 5: Augmentasi (random per gambar; hanya visualisasi, TIDAK dipakai training) ────────────────────
         t0 = time.time()
         if config.aug_flip_h and random.random() < 0.5:
             img = ImageOps.mirror(img)
@@ -74,22 +90,6 @@ class PreprocessingService:
             factor = random.uniform(1.0 / contrast, contrast)
             img = ImageEnhance.Contrast(img).enhance(factor)
         results.append(('augmentasi', img.copy(), int((time.time() - t0) * 1000)))
-
-        # ── Step 5: Denoise (OpenCV) ──────────────────────────────────
-        t0 = time.time()
-        method = str(config.denoise_method)
-        if method != 'none':
-            k = int(config.denoise_ksize or 3)
-            k = k if k % 2 == 1 else k + 1
-            cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-            if method == 'gaussian':
-                cv_img = cv2.GaussianBlur(cv_img, (k, k), 0)
-            elif method == 'median':
-                cv_img = cv2.medianBlur(cv_img, k)
-            elif method == 'bilateral':
-                cv_img = cv2.bilateralFilter(cv_img, k, 75, 75)
-            img = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
-        results.append(('denoise', img.copy(), int((time.time() - t0) * 1000)))
 
         return results
 

@@ -31,7 +31,7 @@
       <i class="bi bi-arrow-left"></i> Kembali
     </a>
     {% if cfg.status == 'selesai' %}
-    <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}">
+    <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="ev-btn ev-btn-primary">
         <i class="bi bi-play-circle-fill"></i>
         {{ 'Jalankan Ulang' if hasil else 'Jalankan Evaluasi' }}
@@ -39,7 +39,7 @@
     </form>
     {% endif %}
     {% if hasil %}
-    <form method="POST" action="{{ url_for('arsitektur.evaluasi_delete', config_id=cfg.id) }}">
+    <form method="POST" action="{{ url_for('arsitektur.evaluasi_delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="button" class="ev-btn ev-btn-danger"
               onclick="showConfirmForm(this,
                 'Hapus Hasil Evaluasi',
@@ -62,7 +62,7 @@
     Klik "Jalankan Evaluasi" untuk menghitung confusion matrix dan metrik per kelas.
   </p>
   {% if cfg.status == 'selesai' %}
-  <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}" style="display:inline;">
+  <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="ev-btn ev-btn-primary">
       <i class="bi bi-play-circle-fill"></i> Jalankan Evaluasi
     </button>

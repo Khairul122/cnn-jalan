@@ -9,6 +9,13 @@
 {% endblock %}
 
 {% block content %}
+{% if label_basi %}
+<div class="alert alert-warning" role="alert" style="font-size:.8rem;">
+  <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+  <strong>Split ini sudah tidak sesuai label terbaru</strong> ({{ label_basi }} foto berubah kelas atau tidak berlabel).
+  Buat split baru sebelum melatih ulang.
+</div>
+{% endif %}
 
 <!-- Header -->
 <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-4">
@@ -38,7 +45,7 @@
   </div>
   <div class="d-flex gap-2 align-items-center flex-wrap">
     {% if cfg.status != 'training' %}
-    <form method="POST" action="{{ url_for('arsitektur.train', config_id=cfg.id) }}">
+    <form method="POST" action="{{ url_for('arsitektur.train', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if cfg.status == 'selesai' %}
       <button type="button" class="btn-train"
               onclick="showConfirmForm(this,
@@ -62,7 +69,7 @@
       <i class="bi bi-hourglass-split"></i> Training…
     </button>
     {% endif %}
-    <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}">
+    <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="button" class="btn-del-sm" title="Hapus"
               onclick="showConfirmForm(this,
                 'Hapus Konfigurasi CNN',
@@ -111,8 +118,8 @@
     {% for mid, mlabel, mcolor in [
         ('mLoss',  'Train Loss',   '#EF4444'),
         ('mAcc',   'Train Acc',    '#38BDF8'),
-        ('mVLoss', 'Val Loss',     '#F59E0B'),
-        ('mVAcc',  'Val Accuracy', '#10B981'),
+        ('mVLoss', 'Loss Fold Uji', '#F59E0B'),
+        ('mVAcc',  'Akurasi Fold Uji', '#10B981'),
     ] %}
     <div class="col-6 col-md-3">
       <div style="padding:.5rem .75rem;background:var(--c-bg);border:1px solid var(--c-border);
@@ -137,15 +144,40 @@
 {% else %}
 
 <!-- ===== TRAINING RESULTS ===== -->
+{% include 'components/cv_summary.html' %}
+{% if cfg.status == 'selesai' %}
+<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+            padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;
+            gap:.75rem;flex-wrap:wrap;">
+  <div style="font-size:.78rem;">
+    <strong>Model Final (semua data)</strong>
+    <div style="color:var(--c-muted);font-size:.72rem;margin-top:.15rem;">
+      Dilatih pada 100% data setelah CV, dipakai untuk klasifikasi foto baru. Akurasi tetap dilaporkan dari K-Fold CV.
+    </div>
+  </div>
+  {% if cfg.final_model_path %}
+    <span class="badge" style="background:#10B981;">Siap: {{ cfg.final_model_path }}</span>
+  {% elif final_running %}
+    <span style="font-size:.75rem;color:#F59E0B;"><i class="bi bi-hourglass-split"></i> Sedang dilatih… muat ulang halaman nanti</span>
+  {% elif current_user.is_admin() %}
+    <form method="POST" action="{{ url_for('arsitektur.train_final', config_id=cfg.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-cnn-primary">Latih Model Final</button>
+    </form>
+  {% else %}
+    <span style="font-size:.75rem;color:var(--c-muted);">Belum dilatih</span>
+  {% endif %}
+</div>
+{% endif %}
 {% if best_acc %}
 <div class="row g-2 mb-3">
   <div class="col-6 col-md-3">
     <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
                 border-radius:var(--r-card);text-align:center;">
       <div style="font-size:1.05rem;font-weight:700;color:#10B981;font-variant-numeric:tabular-nums;">
-        {{ '%.2f%%'|format(best_acc.val_accuracy * 100) }}
+        {{ '%.2f%%'|format(evaluasi.akurasi if evaluasi else best_acc.val_accuracy * 100) }}
       </div>
-      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">Best Val Accuracy</div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">{{ 'Akurasi Model Final (fold uji)' if evaluasi else 'Puncak Akurasi Fold Uji' }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
@@ -155,7 +187,7 @@
         {{ '%.4f'|format(best_loss.val_loss) }}
       </div>
       <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
-        Min Val Loss
+        Loss Fold Uji Terendah
         <span style="font-size:.62rem;color:var(--c-muted);"> (epoch {{ best_loss.epoch }})</span>
       </div>
     </div>
@@ -166,7 +198,7 @@
       <div style="font-size:1.05rem;font-weight:700;color:#A78BFA;font-variant-numeric:tabular-nums;">
         {{ best_acc.epoch }}
       </div>
-      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">Best Epoch (Val Acc)</div>
+      <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">Epoch Puncak Fold Uji (info)</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
@@ -176,7 +208,7 @@
         {{ '%.2f%%'|format(best_acc.accuracy * 100) }}
       </div>
       <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
-        Train Acc
+        Akurasi Training
         <span style="font-size:.62rem;color:var(--c-muted);"> (@ Best Epoch)</span>
       </div>
     </div>

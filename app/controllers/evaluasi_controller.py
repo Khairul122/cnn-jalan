@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
+from app.auth_utils import admin_required
 from app import db
 from app.models.evaluasi_model import EvaluasiModel
 
@@ -14,7 +15,7 @@ def index():
 
 
 @evaluasi_bp.route('/create', methods=['POST'])
-@login_required
+@admin_required
 def create():
     try:
         ev = EvaluasiModel(
@@ -42,7 +43,7 @@ def create():
 
 
 @evaluasi_bp.route('/<int:ev_id>/delete', methods=['POST'])
-@login_required
+@admin_required
 def delete(ev_id):
     ev = EvaluasiModel.query.get_or_404(ev_id)
     db.session.delete(ev)

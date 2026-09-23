@@ -47,8 +47,8 @@
   ('resize',      'Resize',       'bi-arrows-angle-contract',  '#A78BFA'),
   ('crop',        'Center Crop',  'bi-crop',                   '#F59E0B'),
   ('normalisasi', 'Normalisasi',  'bi-sliders',                '#10B981'),
-  ('augmentasi',  'Augmentasi',   'bi-images',                 '#3B82F6'),
-  ('denoise',     'Denoise',      'bi-droplet-half',           '#F472B6'),
+  ('denoise',     'Denoise (dipakai training)', 'bi-droplet-half',    '#F472B6'),
+  ('augmentasi',  'Augmentasi (visual)',        'bi-images',           '#3B82F6'),
 ] %}
 <div style="display:flex;gap:.25rem;flex-wrap:wrap;margin-bottom:.875rem;
             background:var(--c-surface);border:1px solid var(--c-border);
@@ -394,7 +394,7 @@
                      background:transparent;color:var(--c-muted);border:1px solid var(--c-border);cursor:pointer;">
         Batal
       </button>
-      <form method="POST" action="{{ url_for('preprocessing.hasil_reset') }}" style="margin:0;">
+      <form method="POST" action="{{ url_for('preprocessing.hasil_reset') }}" style="margin:0;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
                 style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
                        background:#DC2626;color:#fff;border:none;cursor:pointer;

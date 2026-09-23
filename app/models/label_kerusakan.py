@@ -1,5 +1,4 @@
-import re
-from datetime import datetime
+﻿from app import utcnow
 from app import db
 
 
@@ -16,8 +15,8 @@ class LabelKerusakan(db.Model):
     tingkat_kerusakan_id = db.Column(db.Integer, db.ForeignKey('tingkat_kerusakan.id'), nullable=False)
     catatan              = db.Column(db.Text, nullable=True)
     pengguna_id          = db.Column(db.Integer, db.ForeignKey('pengguna.id'), nullable=False)
-    created_at           = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at           = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at           = db.Column(db.DateTime, default=utcnow)
+    updated_at           = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     tingkat = db.relationship('TingkatKerusakan', backref='label_list', lazy=True)
     pengguna = db.relationship('Pengguna', backref='label_list', lazy=True)
@@ -76,33 +75,18 @@ class LabelKerusakan(db.Model):
             return 1   # Berat
 
     @staticmethod
-    def parse_meter(val):
-        """Konversi string dimensi ('1,5 M', '70 CM', '3') ke float meter."""
-        if val is None:
-            return None
-        s = str(val).strip().upper()
-        match = re.search(r'[\d,\.]+', s)
-        if not match:
-            return None
-        try:
-            num = float(match.group().replace(',', '.'))
-        except ValueError:
-            return None
-        return round(num / 100 if 'CM' in s else num, 4)
+    def estimasi_dari_dimensi(panjang, lebar):
+        """Estimasi parameter SDI dari dimensi kerusakan dalam meter (panjang Ã— lebar = area mÂ²).
 
-    @staticmethod
-    def estimasi_dari_dimensi(panjang_str, lebar_str):
-        """Estimasi parameter SDI dari dimensi kerusakan (panjang × lebar = area m²).
-
-        Mapping area → parameter SDI:
-          area ≤ 0.5  → SDI ~20  → Ringan
-          area ≤ 2    → SDI ~25  → Ringan
-          area ≤ 6    → SDI ~75  → Sedang
-          area ≤ 12   → SDI ~135 → Sedang
-          area  > 12  → SDI ~195 → Berat
+        Mapping area â†’ parameter SDI:
+          area â‰¤ 0.5  â†’ SDI ~20  â†’ Ringan
+          area â‰¤ 2    â†’ SDI ~25  â†’ Ringan
+          area â‰¤ 6    â†’ SDI ~75  â†’ Sedang
+          area â‰¤ 12   â†’ SDI ~135 â†’ Sedang
+          area  > 12  â†’ SDI ~195 â†’ Berat
         """
-        p = LabelKerusakan.parse_meter(panjang_str) or 1.0
-        l = LabelKerusakan.parse_meter(lebar_str)   or 0.5
+        p = float(panjang or 1.0)
+        l = float(lebar or 0.5)
         area = p * l
 
         if area <= 0.5:
@@ -121,3 +105,4 @@ class LabelKerusakan(db.Model):
 
     def __repr__(self):
         return f'<LabelKerusakan lokasi={self.lokasi_id} sdi={self.sdi_score}>'
+

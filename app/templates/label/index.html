@@ -78,7 +78,7 @@
                      background:transparent;color:var(--c-muted);border:1px solid var(--c-border);cursor:pointer;">
         Batal
       </button>
-      <form method="POST" action="{{ url_for('label.hapus_semua') }}" style="margin:0;">
+      <form method="POST" action="{{ url_for('label.hapus_semua') }}" style="margin:0;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
                 style="padding:.45rem 1rem;border-radius:var(--r-input);font-size:.82rem;font-weight:600;
                        background:#DC2626;color:#fff;border:none;cursor:pointer;
@@ -150,7 +150,7 @@
       </label>
 
       <div style="display:flex;gap:.5rem;">
-        <form method="POST" action="{{ url_for('label.auto_label') }}" style="flex:1;">
+        <form method="POST" action="{{ url_for('label.auto_label') }}" style="flex:1;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="mode" id="modeInput" value="pending">
           <button type="submit"
                   style="width:100%;padding:.6rem;border-radius:var(--r-input);font-size:.85rem;
@@ -268,7 +268,7 @@
                                    background:#0369A1;color:#fff;text-decoration:none;font-size:.8rem;">
               <i class="bi bi-pencil-fill"></i>
             </a>
-            <form method="POST" action="{{ url_for('label.delete', lokasi_id=lok.id) }}" style="margin:0;">
+            <form method="POST" action="{{ url_for('label.delete', lokasi_id=lok.id) }}" style="margin:0;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" title="Hapus"
                       style="display:inline-flex;align-items:center;justify-content:center;
                              width:30px;height:30px;border-radius:var(--r-input);

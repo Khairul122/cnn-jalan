@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from app import utcnow
 from app import db
 
 LABEL_MAP = {0: 'Berat', 1: 'Sedang', 2: 'Ringan'}
@@ -14,7 +14,7 @@ class PrediksiModel(db.Model):
     prediksi       = db.Column(db.SmallInteger, nullable=False)
     aktual         = db.Column(db.SmallInteger, nullable=True)
     confidence     = db.Column(db.Float, nullable=False)
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at     = db.Column(db.DateTime, default=utcnow)
 
     arsitektur  = db.relationship('ArsitekturConfig', backref=db.backref('prediksi_list', cascade='all, delete-orphan'))
     dokumentasi = db.relationship('DokumentasiFoto')
@@ -34,3 +34,4 @@ class PrediksiModel(db.Model):
     @property
     def benar(self):
         return self.aktual is not None and self.prediksi == self.aktual
+

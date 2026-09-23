@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from app import utcnow
 from app import db
 
 
@@ -19,9 +19,10 @@ class ArsitekturConfig(db.Model):
     fold_val        = db.Column(db.SmallInteger, nullable=False, default=0)
     status          = db.Column(db.Enum('draft', 'training', 'selesai', 'gagal'), nullable=False, default='draft')
     model_path      = db.Column(db.String(500), nullable=True)
+    final_model_path = db.Column(db.String(500), nullable=True)   # dilatih pada semua data
     pred_type       = db.Column(db.String(10), nullable=False, default='none')  # none | single | cv
     pengguna_id     = db.Column(db.Integer, db.ForeignKey('pengguna.id'), nullable=False)
-    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at      = db.Column(db.DateTime, default=utcnow)
 
     split_config  = db.relationship('SplitConfig', backref=db.backref('arsitektur_list', lazy=True, passive_deletes=True), lazy=True)
     pengguna      = db.relationship('Pengguna', backref='arsitektur_list', lazy=True)
@@ -30,3 +31,4 @@ class ArsitekturConfig(db.Model):
 
     def __repr__(self):
         return f'<ArsitekturConfig {self.nama} {self.model_type}>'
+

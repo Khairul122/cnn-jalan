@@ -1,167 +1,165 @@
 """
-seed_data.py — Import data lokasi dari Excel + gambar ke database
+seed_data.py — Ganti seluruh data model dengan isi Excel + foto asli.
 
-Cara pakai:
-  1. Pastikan MySQL berjalan dan db_cnn_jalan sudah ada (sudah dimigrasi)
-  2. Pastikan ada user di tabel pengguna (PENGGUNA_ID di bawah)
-  3. Edit TANGGAL_SURVEI sesuai tanggal survei data Anda
-  4. Jalankan: python seed_data.py
+Langkah:
+  1. (--reset) Kosongkan tabel data model + hapus file upload, preprocessed, dan model .keras
+  2. Baca Excel (kolom: Citra, x, y, P, L, Ket) -> lokasi_kerusakan
+  3. Salin foto dari data/jalan/ ke app/static/uploads/foto/ -> dokumentasi_foto
+
+Pemakaian (dari root project, pakai venv):
+  .\\.venv\\Scripts\\python.exe scripts\\seed_data.py --reset
+  .\\.venv\\Scripts\\python.exe scripts\\seed_data.py --excel "data\\DATA JALAN REVISI.xlsx" --reset
+
+Tabel master (pengguna, jenis/tingkat kerusakan, preprocessing_config, evaluasi_model manual)
+tidak disentuh.
 """
 
+import argparse
+import glob
 import os
 import shutil
-from datetime import datetime, date
+import sys
+from datetime import datetime
 
-# ── Konfigurasi — ubah sesuai kebutuhan ─────────────────────────────────────
-PENGGUNA_ID    = 1               # id pengguna di tabel pengguna
-SUMBER_DATA    = 'primer'        # 'primer' atau 'sekunder'
-BATCH_SIZE     = 50              # commit tiap N baris
-# ─────────────────────────────────────────────────────────────────────────────
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, BASE_DIR)
 
-BASE_DIR   = os.path.abspath(os.path.dirname(__file__))
-EXCEL_PATH = os.path.join(BASE_DIR, 'data', 'Data_jalan_rusak_FINAL (1).xlsx')
-IMG_DIR    = os.path.join(BASE_DIR, 'data', 'jalan')
-UPLOAD_DIR = os.path.join(BASE_DIR, 'app', 'static', 'uploads', 'foto')
+DEFAULT_EXCEL = os.path.join(BASE_DIR, 'data', 'DATA JALAN REVISI.xlsx')
+IMG_DIR       = os.path.join(BASE_DIR, 'data', 'jalan')
+STATIC_DIR    = os.path.join(BASE_DIR, 'app', 'static')
+UPLOAD_DIR    = os.path.join(STATIC_DIR, 'uploads', 'foto')
+PREPROC_DIR   = os.path.join(STATIC_DIR, 'uploads', 'preprocessed')
+MODEL_DIR     = os.path.join(STATIC_DIR, 'models')
+
+PENGGUNA_ID = 1
+SUMBER_DATA = 'primer'
+HEADER      = ('Citra', 'x', 'y', 'P', 'L', 'Ket')
+IMG_EXT     = ('jpg', 'jpeg', 'png', 'webp')
+
+# Urutan aman terhadap FK (anak dulu, induk belakangan)
+TABEL_DATA_MODEL = (
+    'hasil_training', 'hasil_evaluasi', 'prediksi_model', 'arsitektur_config',
+    'split_item', 'split_config', 'hasil_preprocessing', 'label_kerusakan',
+    'peta_kerusakan', 'hasil_klasifikasi_cnn', 'dokumentasi_foto', 'lokasi_kerusakan',
+)
 
 
-def normalize_coord(val):
-    """Konversi koordinat dari Excel.
-    - Nilai string dengan titik ('97.108763') → pakai langsung
-    - Nilai integer tanpa titik (97109566) → bagi 1_000_000
-    """
-    if val is None:
-        return None
-    s = str(val).strip().replace(',', '.')
-    if '.' in s:
+def read_excel(path):
+    """Baca Excel -> list of dict. Berhenti dengan ValueError jika ada baris tidak valid."""
+    import openpyxl
+
+    workbook = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    ws = workbook.active
+    rows = ws.iter_rows(values_only=True)
+    header = tuple(str(c).strip() if c is not None else '' for c in next(rows)[:len(HEADER)])
+    if header != HEADER:
+        workbook.close()
+        raise ValueError(f'Header Excel harus {HEADER}, ditemukan {header}')
+
+    data, errors, seen = [], [], set()
+    for no, (citra, x, y, p, l, ket, *_) in enumerate(rows, start=2):
+        if not citra:
+            continue
+        citra = str(citra).strip()
         try:
-            return round(float(s), 7)
-        except (ValueError, TypeError):
-            return None
-    try:
-        i = int(s)
-    except (ValueError, TypeError):
-        return None
-    if abs(i) > 1000:
-        return round(i / 1_000_000, 7)
-    return round(float(i), 7)
+            item = dict(nama_citra=citra, latitude=float(x), longitude=float(y),
+                        panjang=float(p), lebar=float(l),
+                        keterangan=str(ket).strip() if ket else None)
+        except (TypeError, ValueError):
+            errors.append(f'baris {no} ({citra}): x/y/P/L bukan angka')
+            continue
+        if citra in seen:
+            errors.append(f'baris {no}: nama citra "{citra}" duplikat')
+        seen.add(citra)
+        data.append(item)
+
+    if errors:
+        workbook.close()
+        raise ValueError('Excel tidak valid:\n  ' + '\n  '.join(errors))
+    workbook.close()
+    return data
 
 
-def normalize_str(val):
-    """Pastikan nilai P/L tersimpan sebagai string atau None."""
-    if val is None:
-        return None
-    return str(val).strip() or None
-
-
-def find_image(citra_name):
-    """Cari file gambar berdasarkan nama citra dari Excel (case-insensitive)."""
-    # Nama di Excel: 'Gambar 1' → cari 'gambar 1.jpg' atau 'gambar 1.jpeg'
-    base = citra_name.lower()   # 'gambar 1'
-    for ext in ('jpg', 'jpeg', 'png', 'webp'):
-        path = os.path.join(IMG_DIR, f'{base}.{ext}')
+def find_image(nama_citra):
+    for ext in IMG_EXT:
+        path = os.path.join(IMG_DIR, f'{nama_citra.lower()}.{ext}')
         if os.path.isfile(path):
             return path
     return None
 
 
-def copy_image(src_path):
-    """Salin gambar ke folder upload dengan prefix timestamp, kembalikan (nama_file, path_file)."""
+def copy_image(src):
+    """Salin ke uploads/foto dengan prefix timestamp -> (nama_file, path_file, ukuran_kb)."""
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    ext       = os.path.splitext(src_path)[1].lower()
-    basename  = os.path.basename(src_path)
-    timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
-    fname     = f'{timestamp}_{basename}'
-    dst_path  = os.path.join(UPLOAD_DIR, fname)
-    shutil.copy2(src_path, dst_path)
-    ukuran_kb = os.path.getsize(dst_path) // 1024
-    return fname, f'uploads/foto/{fname}', ukuran_kb
+    fname = f'{datetime.now():%Y%m%d%H%M%S%f}_{os.path.basename(src)}'
+    dst = os.path.join(UPLOAD_DIR, fname)
+    shutil.copy2(src, dst)
+    return fname, f'uploads/foto/{fname}', os.path.getsize(dst) // 1024
 
 
-def main():
-    try:
-        import openpyxl
-    except ImportError:
-        print('ERROR: openpyxl belum terinstall. Jalankan: pip install openpyxl')
-        return
+def clear_dir(folder, pattern='*'):
+    files = [f for f in glob.glob(os.path.join(folder, pattern)) if os.path.isfile(f)
+             and os.path.basename(f) != '.gitkeep']
+    for f in files:
+        os.remove(f)
+    return len(files)
 
-    from app import create_app, db
+
+def reset_data(db):
+    from sqlalchemy import text
+
+    db.session.execute(text('SET FOREIGN_KEY_CHECKS = 0'))
+    for tabel in TABEL_DATA_MODEL:
+        db.session.execute(text(f'TRUNCATE TABLE `{tabel}`'))
+    db.session.execute(text('SET FOREIGN_KEY_CHECKS = 1'))
+    db.session.commit()
+
+    print(f'  tabel dikosongkan : {len(TABEL_DATA_MODEL)}')
+    print(f'  foto dihapus      : {clear_dir(UPLOAD_DIR)}')
+    print(f'  preprocessed      : {clear_dir(PREPROC_DIR)}')
+    print(f'  model .keras      : {clear_dir(MODEL_DIR, "*.keras")}')
+
+
+def import_rows(db, rows):
     from app.models.lokasi_kerusakan import LokasiKerusakan
     from app.models.dokumentasi_foto import DokumentasiFoto
 
-    app = create_app()
+    tanpa_foto = []
+    for row in rows:
+        lokasi = LokasiKerusakan(sumber_data=SUMBER_DATA, pengguna_id=PENGGUNA_ID, **row)
+        db.session.add(lokasi)
+        db.session.flush()
 
-    with app.app_context():
-        wb = openpyxl.load_workbook(EXCEL_PATH)
-        ws = wb.active
+        src = find_image(row['nama_citra'])
+        if src is None:
+            tanpa_foto.append(row['nama_citra'])
+            continue
+        nama_file, path_file, ukuran_kb = copy_image(src)
+        db.session.add(DokumentasiFoto(lokasi_id=lokasi.id, nama_file=nama_file,
+                                       path_file=path_file, ukuran_kb=ukuran_kb))
+    db.session.commit()
+    return tanpa_foto
 
-        total_ok    = 0
-        total_skip  = 0
-        errors      = []
 
-        for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-            citra, x_raw, y_raw, p_raw, l_raw, *_ = row
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--excel', default=DEFAULT_EXCEL, help='path file Excel')
+    ap.add_argument('--reset', action='store_true', help='kosongkan data model + file sebelum import')
+    args = ap.parse_args()
 
-            if not citra:
-                break   # baris kosong = akhir data
+    rows = read_excel(args.excel)          # validasi dulu, sebelum ada yang dihapus
+    print(f'Excel valid: {len(rows)} baris ({args.excel})')
 
-            lat = normalize_coord(x_raw)
-            lon = normalize_coord(y_raw)
+    from app import create_app, db
+    with create_app().app_context():
+        if args.reset:
+            print('Reset data model:')
+            reset_data(db)
+        tanpa_foto = import_rows(db, rows)
 
-            if lat is None or lon is None:
-                errors.append(f'  Baris {i} ({citra}): koordinat tidak valid (x={x_raw}, y={y_raw})')
-                total_skip += 1
-                continue
-
-            # Cari gambar
-            img_path = find_image(citra)
-
-            try:
-                lokasi = LokasiKerusakan(
-                    nama_citra=str(citra).strip(),
-                    latitude=lat,
-                    longitude=lon,
-                    panjang=normalize_str(p_raw),
-                    lebar=normalize_str(l_raw),
-                    sumber_data=SUMBER_DATA,
-                    pengguna_id=PENGGUNA_ID,
-                )
-                db.session.add(lokasi)
-                db.session.flush()   # dapatkan lokasi.id
-
-                if img_path:
-                    fname, path_file, ukuran_kb = copy_image(img_path)
-                    foto = DokumentasiFoto(
-                        lokasi_id=lokasi.id,
-                        nama_file=fname,
-                        path_file=path_file,
-                        ukuran_kb=ukuran_kb,
-                    )
-                    db.session.add(foto)
-                else:
-                    errors.append(f'  Baris {i} ({citra}): gambar tidak ditemukan di {IMG_DIR}')
-
-                total_ok += 1
-
-                if total_ok % BATCH_SIZE == 0:
-                    db.session.commit()
-                    print(f'  [{total_ok} lokasi tersimpan...]')
-
-            except Exception as e:
-                db.session.rollback()
-                errors.append(f'  Baris {i} ({citra}): {e}')
-                total_skip += 1
-                continue
-
-        db.session.commit()
-
-    print()
-    print('=' * 50)
-    print(f'Selesai! Berhasil: {total_ok} lokasi | Dilewati: {total_skip}')
-    if errors:
-        print('\nPeringatan/error:')
-        for e in errors:
-            print(e)
-    print('=' * 50)
+    print(f'Import selesai: {len(rows)} lokasi, {len(rows) - len(tanpa_foto)} foto')
+    if tanpa_foto:
+        print('Tanpa foto:', ', '.join(tanpa_foto))
 
 
 if __name__ == '__main__':

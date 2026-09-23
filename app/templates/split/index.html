@@ -24,8 +24,9 @@
 <div class="row g-2 mb-4">
   {% for lbl, val, color, icon in [
       ('Konfigurasi',   configs|length,     '#A78BFA', 'bi-diagram-3-fill'),
-      ('Data Berlabel', total_berlabel,      '#38BDF8', 'bi-images'),
+      ('Data Berlabel (Foto)', total_berlabel, '#38BDF8', 'bi-images'),
       ('Kelas',         tingkat_list|length, '#10B981', 'bi-layers-fill'),
+      ('Sampel Training Efektif', total_sampel, '#F59E0B', 'bi-collection-fill'),
   ] %}
   <div class="col">
     <div class="split-stat-card">
@@ -44,7 +45,7 @@
         <i class="bi bi-filter-circle-fill" style="color:#F472B6;font-size:1rem;flex-shrink:0;"></i>
         <div style="flex:1;">
           <div class="split-stat-val">{{ total_prep }}<span style="font-size:.72rem;font-weight:400;color:var(--c-muted);"> / {{ total_berlabel }}</span></div>
-          <div class="split-stat-lbl">Terpreproses (Denoise)</div>
+          <div class="split-stat-lbl">Terpreproses (Semua Tahap)</div>
         </div>
       </div>
       {% if total_berlabel > 0 %}
@@ -58,6 +59,15 @@
     </div>
   </div>
 </div>
+
+<p style="font-size:.7rem;color:var(--c-muted);margin:-.75rem 0 1rem;">
+  <i class="bi bi-info-circle"></i>
+  Fold K-Fold ditentukan per <strong>foto</strong> ({{ total_berlabel }}) supaya tidak ada kebocoran data antar fold.
+  "Sampel Training Efektif" ({{ total_sampel }}) adalah jumlah gambar training yang benar-benar dimuat,
+  setelah tiap foto diperluas ke hingga 4 tahap preprocessing non-acak (resize, crop, normalisasi, denoise —
+  augmentasi tidak dipakai karena acak). Validasi/fold uji TETAP 1 gambar/foto (tahap denoise), tidak ikut diperluas —
+  supaya sebanding dengan evaluasi CV.
+</p>
 
 {% if configs %}
 <div class="split-table-wrap">
@@ -100,7 +110,7 @@
             <a href="{{ url_for('split.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat Detail">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>
-            <form method="POST" action="{{ url_for('split.delete', config_id=cfg.id) }}">
+            <form method="POST" action="{{ url_for('split.delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" class="btn-action-del" title="Hapus"
                       onclick="showConfirmForm(this,
                         'Hapus Split',

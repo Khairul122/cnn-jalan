@@ -28,7 +28,7 @@ body { margin: 0; padding: 0; overflow: hidden; }
     <div class="auth-brand-features">
       <div class="auth-brand-feature">
         <i class="bi bi-cpu" aria-hidden="true"></i>
-        <span>Deteksi otomatis CNN — Crack, Pothole, Rutting</span>
+        <span>Klasifikasi CNN — Tingkat Kerusakan Jalan</span>
       </div>
       <div class="auth-brand-feature">
         <i class="bi bi-geo-alt" aria-hidden="true"></i>
@@ -61,7 +61,7 @@ body { margin: 0; padding: 0; overflow: hidden; }
       </div>
 
       <!-- Form -->
-      <form method="POST" action="{{ url_for('auth.register') }}" novalidate id="register-form">
+      <form method="POST" action="{{ url_for('auth.register') }}" novalidate id="register-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <!-- Nama Lengkap -->
         <div class="auth-field">
@@ -102,9 +102,9 @@ body { margin: 0; padding: 0; overflow: hidden; }
           <div class="auth-input-wrap">
             <input type="password" id="password" name="password"
                    class="auth-input has-toggle"
-                   placeholder="Minimal 6 karakter"
+                   placeholder="Minimal 8 karakter"
                    autocomplete="new-password"
-                   required minlength="6">
+                   required minlength="8">
             <i class="bi bi-lock auth-ico" aria-hidden="true"></i>
             <button type="button" class="auth-eye"
                     onclick="togglePwd('password','eye1')"
@@ -118,7 +118,7 @@ body { margin: 0; padding: 0; overflow: hidden; }
                id="pwd-strength-container">
             <div id="pwd-strength-bar" class="auth-strength-bar"></div>
           </div>
-          <p id="pwd-hint" class="auth-strength-hint" aria-live="polite">Minimal 6 karakter</p>
+          <p id="pwd-hint" class="auth-strength-hint" aria-live="polite">Minimal 8 karakter</p>
         </div>
 
         <!-- Konfirmasi Password -->
@@ -142,28 +142,9 @@ body { margin: 0; padding: 0; overflow: hidden; }
           <p id="confirm-hint" class="auth-confirm-hint" aria-live="polite"></p>
         </div>
 
-        <!-- Role -->
-        <fieldset style="border:none;padding:0;">
-          <legend class="auth-label" style="margin-bottom:.5rem;">
-            Role Akun <span style="color:var(--c-danger)" aria-hidden="true">*</span>
-          </legend>
-          <div class="auth-role-group">
-            <label class="auth-role-label selected" id="lbl-viewer">
-              <input type="radio" name="role" value="viewer" checked>
-              <div>
-                <p class="role-title">Viewer</p>
-                <p class="role-desc">Lihat data &amp; peta saja</p>
-              </div>
-            </label>
-            <label class="auth-role-label" id="lbl-admin">
-              <input type="radio" name="role" value="admin">
-              <div>
-                <p class="role-title">Admin</p>
-                <p class="role-desc">Kelola lokasi &amp; klasifikasi</p>
-              </div>
-            </label>
-          </div>
-        </fieldset>
+        <p class="auth-confirm-hint" style="margin:0 0 1rem;">
+          Akun baru berperan <strong>Viewer</strong> (lihat data &amp; peta). Hak admin diberikan oleh administrator.
+        </p>
 
         <!-- Submit -->
         <button type="submit" id="register-btn" class="btn-auth-primary">
@@ -197,14 +178,6 @@ function togglePwd(inputId, iconId) {
   btn.setAttribute('aria-label', inp.type === 'password' ? 'Tampilkan password' : 'Sembunyikan password');
 }
 
-function selectRole(role) {
-  document.getElementById('lbl-viewer').classList.toggle('selected', role === 'viewer');
-  document.getElementById('lbl-admin').classList.toggle('selected', role === 'admin');
-}
-document.querySelectorAll('[name="role"]').forEach(function (radio) {
-  radio.addEventListener('change', function () { selectRole(this.value); });
-});
-
 function validatePassword() {
   var val  = document.getElementById('password').value;
   var bar  = document.getElementById('pwd-strength-bar');
@@ -212,10 +185,10 @@ function validatePassword() {
   var hint = document.getElementById('pwd-hint');
   if (!val) {
     bar.style.width = '0%'; cont.setAttribute('aria-valuenow', '0');
-    hint.textContent = 'Minimal 6 karakter'; hint.style.color = ''; return;
+    hint.textContent = 'Minimal 8 karakter'; hint.style.color = ''; return;
   }
   var score = 0;
-  if (val.length >= 6)          score++;
+  if (val.length >= 8)          score++;
   if (val.length >= 10)         score++;
   if (/[A-Z]/.test(val))        score++;
   if (/[0-9]/.test(val))        score++;

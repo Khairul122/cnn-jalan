@@ -31,13 +31,13 @@
       <i class="bi bi-arrow-left"></i> Kembali
     </a>
     {% if not cv_running %}
-    <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}">
+    <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="gis-btn gis-btn-primary" title="Prediksi model tunggal pada semua foto berkoordinat">
         <i class="bi bi-cpu-fill"></i>
         {{ 'Perbarui' if total_prediksi else 'Jalankan Prediksi' }}
       </button>
     </form>
-    <form method="POST" action="{{ url_for('arsitektur.predict_cv_route', config_id=cfg.id) }}">
+    <form method="POST" action="{{ url_for('arsitektur.predict_cv_route', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="button" class="gis-btn gis-btn-cv"
               title="Tiap foto diprediksi oleh model yang dilatih tanpa fold-nya — akurasi lebih jujur"
               onclick="showConfirmForm(this,
@@ -55,6 +55,15 @@
     {% endif %}
   </div>
 </div>
+
+{% if cfg.pred_type == 'single' %}
+<div class="alert alert-warning" role="alert" style="font-size:.8rem;">
+  <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+  <strong>Prediksi model tunggal ikut memprediksi foto yang dipakai training</strong>, jadi akurasi di peta tampak
+  lebih tinggi dari kemampuan sebenarnya. Untuk angka yang jujur gunakan <strong>Prediksi CV K-Fold</strong>.
+</div>
+{% endif %}
+{% include 'components/cv_summary.html' %}
 
 {% if cv_running %}
 <!-- CV Progress Banner -->
@@ -169,7 +178,7 @@
   <p style="font-size:.78rem;color:var(--c-muted);margin:0 0 1.25rem;">
     Klik "Jalankan Prediksi" untuk menjalankan inferensi pada semua 280 foto.
   </p>
-  <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}" style="display:inline;">
+  <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="gis-btn gis-btn-primary">
       <i class="bi bi-cpu-fill"></i> Jalankan Prediksi
     </button>
@@ -388,6 +397,11 @@
     fetch(CV_URL)
       .then(r => r.json())
       .then(data => {
+        if (data.error) {
+          alert('Prediksi CV gagal: ' + data.error);
+          location.reload();
+          return;
+        }
         if (!data.running) {
           // Done — reload to show fresh results
           location.reload();

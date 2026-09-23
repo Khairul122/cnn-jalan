@@ -30,3 +30,22 @@ class SplitService:
         for it in items:
             dist[it['fold_index']][it['label_id']] += 1
         return dist
+
+
+def jumlah_label_basi(config_id):
+    """Jumlah item split yang kelas tersimpannya beda dengan label sekarang (atau labelnya sudah dihapus)."""
+    from sqlalchemy import func, or_
+    from app import db
+    from app.models.dokumentasi_foto import DokumentasiFoto
+    from app.models.label_kerusakan import LabelKerusakan
+    from app.models.split_item import SplitItem
+
+    return (
+        db.session.query(func.count(SplitItem.id))
+        .join(DokumentasiFoto, SplitItem.dokumentasi_id == DokumentasiFoto.id)
+        .outerjoin(LabelKerusakan, LabelKerusakan.lokasi_id == DokumentasiFoto.lokasi_id)
+        .filter(SplitItem.config_id == config_id,
+                or_(LabelKerusakan.id.is_(None),
+                    LabelKerusakan.tingkat_kerusakan_id != SplitItem.tingkat_kerusakan_id))
+        .scalar()
+    )

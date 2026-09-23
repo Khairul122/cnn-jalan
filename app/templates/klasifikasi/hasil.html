@@ -39,7 +39,11 @@
     {% include 'components/detail_row.html' %}
 
     {% set dr_label = 'Jenis Kerusakan' %}
+    {% if hasil.jenis_kerusakan %}
     {% set dr_value = '<span class="badge bg-dark fs-6">' ~ hasil.jenis_kerusakan.kode ~ ' — ' ~ hasil.jenis_kerusakan.nama_jenis ~ '</span>' %}
+    {% else %}
+    {% set dr_value = '<span style="color:var(--c-muted);">Tidak diklasifikasi (model hanya memprediksi tingkat)</span>' %}
+    {% endif %}
     {% set dr_raw = true %}
     {% include 'components/detail_row.html' %}
     {% set dr_raw = false %}
