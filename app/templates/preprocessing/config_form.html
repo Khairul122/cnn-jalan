@@ -112,6 +112,16 @@
             </select>
           </div>
         </div>
+        <div class="row g-2 mt-1">
+          <div class="col-sm-4">
+            <label class="prep-label" for="resize_mode">Mode Resize</label>
+            <select id="resize_mode" name="resize_mode" class="prep-input form-select" onchange="updatePreview()">
+              {% for m, desc in [('stretch','Stretch (langsung ke target)'),('letterbox','Letterbox (jaga aspect ratio + pad hitam)')] %}
+              <option value="{{ m }}" {{ 'selected' if (config and config.resize_mode == m) or (not config and m == 'stretch') }}>{{ desc }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -370,6 +380,7 @@ function updatePreview() {
   var w    = document.getElementById('target_width').value;
   var h    = document.getElementById('target_height').value;
   var rm   = document.getElementById('resize_method').value;
+  var rmode = document.getElementById('resize_mode').value;
   var ce   = document.getElementById('crop_enabled') && document.getElementById('crop_enabled').checked;
   var cw   = document.getElementById('crop_width') ? document.getElementById('crop_width').value : 224;
   var ch   = document.getElementById('crop_height') ? document.getElementById('crop_height').value : 224;
@@ -393,7 +404,7 @@ function updatePreview() {
   if (parseFloat(ct) !== 1.0) augParts.push('Contrast ' + parseFloat(ct).toFixed(2) + '×');
 
   var html = [
-    row('#38BDF8', 'bi-aspect-ratio',        'Resize',       w + '×' + h + ' px (' + rm + ')'),
+    row('#38BDF8', 'bi-aspect-ratio',        'Resize',       w + '×' + h + ' px (' + rm + ', ' + rmode + ')'),
     row('#6366F1', 'bi-crop',                'Center Crop',  ce ? (cw + '×' + ch + ' px (tengah)') : 'Nonaktif'),
     row('#10B981', 'bi-distribute-vertical', 'Normalisasi',  normMap[nm ? nm.value : 'minmax'] || '-'),
     row('#F59E0B', 'bi-shuffle',             'Augmentasi',   augParts.length ? augParts.join(', ') : 'Tidak Ada'),

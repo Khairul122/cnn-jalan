@@ -224,6 +224,7 @@ def _update_config_from_form(cfg, form):
     cfg.target_width   = int(form.get('target_width', 224))
     cfg.target_height  = int(form.get('target_height', 224))
     cfg.resize_method  = form.get('resize_method', 'LANCZOS')
+    cfg.resize_mode    = form.get('resize_mode', 'stretch')
     cfg.crop_enabled   = bool(form.get('crop_enabled'))
     cfg.crop_width     = int(form.get('crop_width', 224))
     cfg.crop_height    = int(form.get('crop_height', 224))

@@ -18,6 +18,7 @@ from app.models.hasil_preprocessing import HasilPreprocessing
 from app.services import cnn_service
 from app.services.cnn_service import TRAIN_EXPAND_STEPS
 from app.services.split_service import SplitService, jumlah_label_basi
+from app.services.dedup_service import find_duplicate_groups
 
 split_bp = Blueprint('split', __name__, url_prefix='/split')
 
@@ -67,6 +68,7 @@ def _get_labeled_items():
         db.session.query(
             DokumentasiFoto.id,
             DokumentasiFoto.nama_file,
+            DokumentasiFoto.path_file,
             LokasiKerusakan.latitude,
             LokasiKerusakan.longitude,
             LabelKerusakan.tingkat_kerusakan_id,
@@ -80,6 +82,7 @@ def _get_labeled_items():
         {
             'dokumentasi_id': r.id,
             'nama_file':      r.nama_file,
+            'path_file':      r.path_file,
             'latitude':       float(r.latitude),
             'longitude':      float(r.longitude),
             'label_id':       r.tingkat_kerusakan_id,
@@ -141,7 +144,20 @@ def new():
             )
             return redirect(url_for('split.new'))
 
-        result = SplitService.run(n_splits, random_state, items)
+        dup_groups = find_duplicate_groups(
+            [i['dokumentasi_id'] for i in items],
+            [i['path_file'] for i in items],
+            BASE_DIR,
+        )
+        groups = [dup_groups[i['dokumentasi_id']] for i in items]
+        n_dup_groups = len(items) - len(set(groups))
+        if n_dup_groups > 0:
+            flash(
+                f'{n_dup_groups} foto near-duplicate terdeteksi dan dikelompokkan ke fold yang sama (cegah leakage).',
+                'info',
+            )
+
+        result = SplitService.run(n_splits, random_state, items, groups=groups)
 
         config = SplitConfig(
             nama=nama,

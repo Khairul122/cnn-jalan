@@ -305,7 +305,9 @@ surveyor (`Ket` untuk baris Estimasi) memberi macro-F1 lebih tinggi (~56â€“
 
 ### Preprocessing Pipeline
 Service: `app/services/preprocessing_service.py::PreprocessingService.run_pipeline(img_path, config)`
-- Step 1 Resize: Pillow `Image.resize()` dengan metode LANCZOS/BILINEAR/BICUBIC/NEAREST
+- Step 1 Resize: Pillow `Image.resize()` dengan metode LANCZOS/BILINEAR/BICUBIC/NEAREST. `resize_mode` (baru 2026-09-23):
+  `stretch` (default, resize langsung ke target — bisa distorsi) atau `letterbox` (jaga aspect ratio, resize masuk ke
+  dalam target box lalu pad hitam di sisa ruang) — pilih di `preprocessing_config.resize_mode` saat buat/edit config
 - Step 2 Center Crop: crop tengah ke dimensi target (crop_width Ã— crop_height), opsional
 - Step 3 Normalisasi: numpy â€” min-max (`Ã·255`) atau z-score (`(x-Âµ)/Ïƒ`); output disimpan sebagai uint8 [0-255]
 - Step 5 Augmentasi (tahap TERAKHIR, hanya visualisasi â€” tidak dipakai training; augmentasi training ada di dalam model): Pillow `ImageOps`, `ImageEnhance` â€” flip H/V, rotate, brightness, contrast; **setiap transform bersifat random per gambar** (bukan deterministik semua identik)
@@ -391,10 +393,17 @@ Semua berjalan di background thread. Progress dipoll via `/arsitektur/<id>/progr
 - Warna marker: Berat=#E53E3E, Sedang=#F59E0B, Ringan=#10B981
 
 ### Stratified K-Fold Split
-Service: `app/services/split_service.py::SplitService.run(n_splits, random_state, items)`
+Service: `app/services/split_service.py::SplitService.run(n_splits, random_state, items, groups=None)`
 - Input: list foto yang punya `LabelKerusakan` (join `DokumentasiFoto â†’ LokasiKerusakan â†’ LabelKerusakan`)
 - `StratifiedKFold` dari scikit-learn â€” shuffle=True, reproducible via random_state
 - Hasil disimpan ke `split_item` dengan `fold_index` 0..K-1
+- **Near-duplicate grouping** (baru 2026-09-23, lihat [[near-duplicate-split-grouping]]): `split_controller.new()`
+  memanggil `dedup_service.find_duplicate_groups()` (average-hash 64-bit + union-find, tanpa dependency baru) atas
+  SEMUA foto berlabel sebelum split â€” foto yang jaraknya â‰¤5 bit dianggap near-duplicate dan dipaksa satu `group_id`.
+  `SplitService.run` otomatis pakai `StratifiedGroupKFold` (bukan `StratifiedKFold` polos) kalau ada grup berisi
+  >1 foto, supaya foto near-identik tidak pernah kebagian fold berbeda (cegah leakage train/val). Kalau tidak ada
+  duplikat terdeteksi, perilakunya identik dengan `StratifiedKFold` sebelumnya. User diberi tahu lewat flash message
+  jumlah foto yang dikelompokkan. Di dataset 280 foto saat ini: **31 foto terdeteksi near-duplicate.**
 - Halaman detail: tabel distribusi kelas per fold + grouped bar chart (Chart.js 4)
 - Export CSV: `nama_file, fold_index, tingkat, latitude, longitude`
 
@@ -415,6 +424,11 @@ Route `label.hapus_semua` (`/label/hapus-semua` POST) menghapus semua record `La
 - Baca `DokumentasiFoto` dari DB, strip 21-char timestamp prefix dari `nama_file`
 - Cari file asli di `data/jalan/` (case-insensitive), copy ke `uploads/foto/`
 - DB tidak diubah sama sekali
+
+### Cek Kebersihan Data (Cleaning Audit)
+`scripts/check_data_quality.py` (baru 2026-09-23) â€” scan read-only semua `DokumentasiFoto`: file hilang/0 byte/korup,
+resolusi < `--min-resolution` (default 64px), dan duplikat persis (MD5). **Tidak menghapus apa pun** â€” cuma cetak
+laporan; keputusan hapus/tidak tetap manual. Jalankan: `.\.venv\Scripts\python.exe scripts\check_data_quality.py`
 
 ### Import Data (Excel â†’ DB)
 `scripts/seed_data.py` â€” kolom Excel: `Citra, x (lat), y (lon), P, L, Ket`. Semua nilai numerik (meter, derajat desimal), divalidasi sebelum ada yang dihapus.
@@ -453,6 +467,7 @@ Jalankan **berurutan** sesuai kebutuhan database. Dump SQL lama sudah dihapus ka
 | `migrate_revisi_lokasi.sql` | `panjang`/`lebar` â†’ DECIMAL(8,2) meter, tambah `keterangan` di lokasi_kerusakan | Sudah dijalankan |
 | `migrate_klasifikasi_jenis_nullable.sql` | `hasil_klasifikasi_cnn.jenis_kerusakan_id` boleh NULL | Sudah dijalankan |
 | `migrate_add_final_model.sql` | Tambah kolom `final_model_path` di arsitektur_config | Sudah dijalankan |
+| `migrate_add_resize_mode.sql` | Tambah kolom `resize_mode` (stretch/letterbox) di preprocessing_config | Sudah dijalankan |
 | `seed_data.py` | Reset data model + import Excel revisi & foto (`scripts/seed_data.py --reset`) | Sudah dijalankan |
 
 ---

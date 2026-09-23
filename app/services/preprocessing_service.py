@@ -21,7 +21,17 @@ class PreprocessingService:
         t0 = time.time()
         img = Image.open(img_path).convert('RGB')
         resample = getattr(Image.Resampling, str(config.resize_method), Image.Resampling.LANCZOS)
-        img = img.resize((int(config.target_width), int(config.target_height)), resample)
+        target_w, target_h = int(config.target_width), int(config.target_height)
+        if str(getattr(config, 'resize_mode', 'stretch')) == 'letterbox':
+            # Jaga aspect ratio: resize supaya pas di dalam target box, lalu pad hitam di sisa ruang
+            iw, ih = img.size
+            scale = min(target_w / iw, target_h / ih)
+            new_w, new_h = max(1, round(iw * scale)), max(1, round(ih * scale))
+            resized = img.resize((new_w, new_h), resample)
+            img = Image.new('RGB', (target_w, target_h), (0, 0, 0))
+            img.paste(resized, ((target_w - new_w) // 2, (target_h - new_h) // 2))
+        else:
+            img = img.resize((target_w, target_h), resample)
         results.append(('resize', img.copy(), int((time.time() - t0) * 1000)))
 
         # ── Step 2: Center Crop ───────────────────────────────────────

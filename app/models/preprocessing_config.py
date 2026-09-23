@@ -11,6 +11,7 @@ class PreprocessingConfig(db.Model):
     target_width   = db.Column(db.Integer, nullable=False, default=224)
     target_height  = db.Column(db.Integer, nullable=False, default=224)
     resize_method  = db.Column(db.Enum('LANCZOS', 'BILINEAR', 'BICUBIC', 'NEAREST'), nullable=False, default='LANCZOS')
+    resize_mode    = db.Column(db.Enum('stretch', 'letterbox'), nullable=False, default='stretch')
     # Center Crop
     crop_enabled   = db.Column(db.Boolean, nullable=False, default=False)
     crop_width     = db.Column(db.Integer, nullable=False, default=224)

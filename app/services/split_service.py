@@ -1,21 +1,32 @@
 from collections import defaultdict
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, StratifiedGroupKFold
 
 
 class SplitService:
 
     @staticmethod
-    def run(n_splits, random_state, items):
+    def run(n_splits, random_state, items, groups=None):
         """
         Stratified K-Fold split.
         fold_index = 0..n_splits-1
         items: list of dict {dokumentasi_id, label_id, nama_file, latitude, longitude}
+        groups: opsional, list sejajar items — id grup (mis. dari dedup_service.find_duplicate_groups).
+                Foto dengan group id sama SELALU jatuh di fold yang sama (cegah leakage
+                foto near-duplicate). Kalau None atau semua grup singleton, sama seperti
+                StratifiedKFold biasa.
         """
         X = list(range(len(items)))
         y = [i['label_id'] for i in items]
-        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
         result = [dict(it) for it in items]
-        for fold_idx, (_, val_idx) in enumerate(skf.split(X, y)):
+
+        if groups is not None and len(set(groups)) < len(items):
+            skf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+            splits = skf.split(X, y, groups=groups)
+        else:
+            skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+            splits = skf.split(X, y)
+
+        for fold_idx, (_, val_idx) in enumerate(splits):
             for i in val_idx:
                 result[i]['fold_index'] = fold_idx
         return result
