@@ -51,6 +51,11 @@ def create_app():
     app.register_blueprint(split_bp)
     app.register_blueprint(arsitektur_bp)
 
+    @app.context_processor
+    def inject_kelas():
+        from app import kelas
+        return {'KELAS': kelas.KELAS, 'KELAS_WARNA': kelas.WARNA_NAMA}
+
     @app.errorhandler(403)
     def forbidden(_):
         flash('Anda tidak memiliki izin untuk aksi ini. Hubungi admin.', 'danger')

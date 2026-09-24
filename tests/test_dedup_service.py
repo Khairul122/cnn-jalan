@@ -5,7 +5,7 @@ import unittest
 
 from PIL import Image
 
-from app.services.dedup_service import find_duplicate_groups
+from app.services.dedup_service import find_duplicate_groups, find_spatial_groups, merge_group_maps
 
 
 class TestDedupService(unittest.TestCase):
@@ -56,6 +56,25 @@ class TestDedupService(unittest.TestCase):
         groups = find_duplicate_groups([1, 2], [rel_a, 'uploads/foto/missing.jpg'], self.base_dir)
         self.assertIn(1, groups)
         self.assertIn(2, groups)
+
+    def test_spatial_groups_link_chains_and_ignore_far_points(self):
+        # ~0.00045 derajat lintang ~= 50 m. A-B 50 m, B-C 50 m (rantai), D jauh.
+        d = 0.00045
+        coords = [(5.18, 97.14), (5.18 + d, 97.14), (5.18 + 2 * d, 97.14), (5.30, 97.14)]
+        g = find_spatial_groups([1, 2, 3, 4], coords, radius_m=60)
+        self.assertEqual(g[1], g[2])
+        self.assertEqual(g[2], g[3])          # single linkage: A dekat B, B dekat C -> satu grup
+        self.assertNotEqual(g[3], g[4])
+        g0 = find_spatial_groups([1, 2, 3, 4], coords, radius_m=0)
+        self.assertEqual(len(set(g0.values())), 4)   # radius 0 = semua singleton
+
+    def test_merge_group_maps_unions_both_sources(self):
+        dup = {1: 1, 2: 1, 3: 3, 4: 4}        # 1~2 near-duplicate
+        spasial = {1: 1, 2: 2, 3: 3, 4: 3}    # 3~4 berdekatan
+        m = merge_group_maps([1, 2, 3, 4], dup, spasial)
+        self.assertEqual(m[1], m[2])
+        self.assertEqual(m[3], m[4])
+        self.assertNotEqual(m[1], m[3])
 
 
 if __name__ == '__main__':

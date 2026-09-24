@@ -34,7 +34,7 @@ class LabelKerusakan(db.Model):
             f_retak = 0
         elif p <= 10:
             f_retak = 5
-        elif p <= 20:
+        elif p <= 30:
             f_retak = 20
         else:
             f_retak = 40
@@ -55,11 +55,11 @@ class LabelKerusakan(db.Model):
         if r == 0:
             f_rutting = 0
         elif r <= 1:
-            f_rutting = 5
+            f_rutting = 2.5
         elif r <= 3:
-            f_rutting = 20
+            f_rutting = 10
         else:
-            f_rutting = 40
+            f_rutting = 20
 
         return round(f_retak + f_lubang + f_rutting, 2)
 
@@ -67,16 +67,20 @@ class LabelKerusakan(db.Model):
     def tingkat_dari_sdi(sdi):
         """Kembalikan tingkat_kerusakan_id berdasarkan skor SDI."""
         sdi = float(sdi)
-        if sdi <= 50:
-            return 3   # Ringan
+        if sdi < 50:
+            return 4   # Baik
+        elif sdi <= 100:
+            return 3   # Sedang
         elif sdi <= 150:
-            return 2   # Sedang
+            return 2   # Rusak Ringan
         else:
-            return 1   # Berat
+            return 1   # Rusak Berat
 
-    # Kalibrasi formula kontinu estimasi_dari_dimensi() (opsi A, diputuskan 2026-09-23
-    # menggantikan tabel diskrit 5-bucket lama — lihat CLAUDE.md untuk rasionalnya).
-    REF_RETAK    = 1.0    # m^2 per 1 poin persen_retak, sebelum dipotong di 100
+    # Model estimasi SDI dari luas (P x L). Semua konstanta di bawah adalah ASUMSI kalibrasi,
+    # bukan hasil ukur di lapangan (dataset tidak punya jumlah lubang / kedalaman rutting).
+    # Standar Bina Marga mengukur per segmen 100 m, jadi retak dinyatakan sebagai % luas segmen.
+    SEGMEN_M2    = 700.0  # 100 m x 7 m (jalan 2 lajur), penyebut persen_retak
+    LUBANG_M2    = 0.5    # asumsi luas satu lubang (m^2) -> jumlah_lubang = luas / LUBANG_M2
     REF_RUTTING  = 4.0    # m^2 per 1 cm kedalaman rutting
     RUTTING_MAX  = 5.0    # cm, batas atas fisik yang masuk akal
     AMBANG_LEBAR = 2.0    # m^2 — di atas ini jenis_retak dianggap 'lebar'
@@ -84,33 +88,23 @@ class LabelKerusakan(db.Model):
 
     @staticmethod
     def estimasi_dari_dimensi(panjang, lebar):
-        """Estimasi kontinu parameter SDI dari dimensi kerusakan (panjang Ã— lebar = area mÂ²).
+        """Estimasi parameter SDI dari dimensi kerusakan (panjang x lebar = luas m^2).
 
-        Formula dasar dari studi.md:
-          persen_retak      = min(luas / REF_RETAK, 100)
-          jumlah_lubang     = luas / 0,1                 (1 lubang per 0,1 mÂ², studi.md)
+          persen_retak      = min(luas / SEGMEN_M2 * 100, 100)
+          jumlah_lubang     = luas / LUBANG_M2
           kedalaman_rutting = min(luas / REF_RUTTING, RUTTING_MAX)
           jenis_retak       = 'lebar' kalau luas > AMBANG_LEBAR, selain itu 'halus'
 
-        REF_RETAK/REF_RUTTING/AMBANG_LEBAR adalah pilihan kalibrasi (bukan nilai baku Bina
-        Marga) berdasarkan distribusi luas riil dataset (persentil 10â€“95 âˆˆ [1, 60] mÂ², audit
-        2026-09-23) supaya nilai tersebar ke semua bucket F_retak/F_rutting, bukan menumpuk di
-        satu bucket seperti tabel diskrit lama (yang cuma menghasilkan 5 SDI tetap untuk 280
-        foto, tidak pernah dekat ambang 50/150). AMBANG_LEBAR=2 mÂ² mengikuti titik transisi
-        halus->lebar pada tabel lama. Didokumentasikan sebagai keterbatasan metodologis (bukan
-        nilai terukur) di CLAUDE.md/bab pembahasan skripsi.
-
-        jumlah_lubang dipotong di LUBANG_MAX untuk tampilan â€” beberapa baris 'Ukur' di dataset
-        punya panjang dalam ribuan meter (kemungkinan data segmen jalan, bukan patch kerusakan)
-        yang tanpa cap menghasilkan angka jumlah_lubang tidak masuk akal; F_lubang di hitung_sdi
-        sendiri sudah jenuh di jumlah_lubang > 50 jadi hasil SDI tidak berubah.
+        Keterbatasan (wajib disebut di bab metodologi): jumlah lubang dan kedalaman rutting
+        tidak pernah diukur, keduanya proksi dari luas. Kelas Rusak Ringan/Rusak Berat praktis
+        hanya bisa dicapai lewat F_lubang, jadi kelas ditentukan luas kerusakan, bukan jenisnya.
         """
         p = float(panjang or 1.0)
         l = float(lebar or 0.5)
         area = p * l
 
-        persen_retak = round(min(area / LabelKerusakan.REF_RETAK, 100), 2)
-        jumlah_lubang = min(int(round(area / 0.1)), LabelKerusakan.LUBANG_MAX)
+        persen_retak = round(min(area / LabelKerusakan.SEGMEN_M2 * 100, 100), 2)
+        jumlah_lubang = min(int(round(area / LabelKerusakan.LUBANG_M2)), LabelKerusakan.LUBANG_MAX)
         kedalaman_rutting = round(min(area / LabelKerusakan.REF_RUTTING, LabelKerusakan.RUTTING_MAX), 2)
         jenis_retak = 'lebar' if area > LabelKerusakan.AMBANG_LEBAR else 'halus'
 

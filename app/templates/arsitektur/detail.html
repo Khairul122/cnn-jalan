@@ -37,6 +37,7 @@
       <span class="detail-chip">lr={{ cfg.learning_rate }}</span>
       <span class="detail-chip">dropout={{ cfg.dropout_rate }}</span>
       <span class="detail-chip">{{ cfg.optimizer }}</span>
+      {% if cfg.aug_off %}<span class="detail-chip" title="Layer augmentasi yang dimatikan">tanpa aug: {{ cfg.aug_off }}</span>{% endif %}
       {% if cfg.split_config %}
       <span class="detail-chip">{{ cfg.split_config.nama }}</span>
       {% endif %}
@@ -310,14 +311,14 @@
       </p>
       <div class="cm-grid">
         <div class="cm-cell cm-corner"></div>
-        {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
-        <div class="cm-cell cm-header" style="color:{{ clr }};">{{ lbl }}</div>
+        {% for k in KELAS %}
+        <div class="cm-cell cm-header" style="color:{{ k.warna }};">{{ k.nama }}</div>
         {% endfor %}
-        {% for row_data in [(0,'Berat','#E53E3E'),(1,'Sedang','#F59E0B'),(2,'Ringan','#10B981')] %}
-        {% set row_i = row_data[0] %}{% set row_lbl = row_data[1] %}{% set row_clr = row_data[2] %}
+        {% for k in KELAS %}
+        {% set row_i = loop.index0 %}{% set row_lbl = k.nama %}{% set row_clr = k.warna %}
         <div class="cm-cell cm-row-label" style="color:{{ row_clr }};">{{ row_lbl }}</div>
-        {% set row_total = cm[row_i][0] + cm[row_i][1] + cm[row_i][2] %}
-        {% for col_i in range(3) %}
+        {% set row_total = cm[row_i]|sum %}
+        {% for col_i in range(KELAS|length) %}
           {% set val = cm[row_i][col_i] %}
           {% set opacity = (val / row_total) if row_total > 0 else 0 %}
           <div class="cm-cell cm-data {% if row_i == col_i %}cm-diagonal{% endif %}"
@@ -341,11 +342,7 @@
           <tr><th>Kelas</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
         </thead>
         <tbody>
-          {% for kls, clr, p, r, f in [
-            ('Berat',  '#E53E3E', evaluasi.precision_berat,  evaluasi.recall_berat,  evaluasi.f1_berat),
-            ('Sedang', '#F59E0B', evaluasi.precision_sedang, evaluasi.recall_sedang, evaluasi.f1_sedang),
-            ('Ringan', '#10B981', evaluasi.precision_ringan, evaluasi.recall_ringan, evaluasi.f1_ringan),
-          ] %}
+          {% for k in KELAS %}{% set pc = evaluasi.get_per_class()[k.key] %}{% set kls = k.nama %}{% set clr = k.warna %}{% set p = pc['precision'] %}{% set r = pc['recall'] %}{% set f = pc['f1-score'] %}
           <tr>
             <td><span class="ev-kls-badge" style="color:{{ clr }};background:{{ clr }}1a;">{{ kls }}</span></td>
             <td>{{ p }}%</td><td>{{ r }}%</td><td><strong>{{ f }}%</strong></td>
@@ -362,11 +359,7 @@
         </tfoot>
       </table>
       <div class="mt-3">
-        {% for kls, clr, f in [
-          ('Berat','#E53E3E',evaluasi.f1_berat),
-          ('Sedang','#F59E0B',evaluasi.f1_sedang),
-          ('Ringan','#10B981',evaluasi.f1_ringan),
-        ] %}
+        {% for k in KELAS %}{% set kls = k.nama %}{% set clr = k.warna %}{% set f = evaluasi.get_per_class()[k.key]['f1-score'] %}
         <div class="d-flex align-items-center gap-2 mb-2">
           <span style="font-size:.71rem;color:var(--c-muted);width:42px;">{{ kls }}</span>
           <div style="flex:1;background:var(--c-bg);border-radius:99px;height:7px;overflow:hidden;">
@@ -430,15 +423,11 @@
 <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
   <span style="font-size:.72rem;color:var(--c-muted);">Filter:</span>
   <button class="gis-filter active" data-filter="all">Semua</button>
-  <button class="gis-filter" data-filter="0" style="--fc:#E53E3E;">
-    <span class="gis-dot" style="background:#E53E3E;"></span>Berat
+  {% for k in KELAS %}
+  <button class="gis-filter" data-filter="{{ loop.index0 }}" style="--fc:{{ k.warna }};">
+    <span class="gis-dot" style="background:{{ k.warna }};"></span>{{ k.nama }}
   </button>
-  <button class="gis-filter" data-filter="1" style="--fc:#F59E0B;">
-    <span class="gis-dot" style="background:#F59E0B;"></span>Sedang
-  </button>
-  <button class="gis-filter" data-filter="2" style="--fc:#10B981;">
-    <span class="gis-dot" style="background:#10B981;"></span>Ringan
-  </button>
+  {% endfor %}
   <button class="gis-filter" data-filter="salah" style="--fc:#94a3b8;">
     <span class="gis-dot" style="background:#94a3b8;border:2px dashed #fff;"></span>Salah Prediksi
   </button>
@@ -451,7 +440,7 @@
   <div class="gis-legend">
     <div style="font-size:.65rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;
                 letter-spacing:.05em;margin-bottom:.5rem;">Legenda</div>
-    {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+    {% for k in KELAS %}{% set lbl = k.nama %}{% set clr = k.warna %}
     <div class="d-flex align-items-center gap-2 mb-1">
       <span style="width:10px;height:10px;border-radius:50%;background:{{ clr }};display:inline-block;flex-shrink:0;"></span>
       <span style="font-size:.7rem;color:var(--c-text);">{{ lbl }}</span>
@@ -538,7 +527,7 @@
 /* Evaluasi */
 .ev-card { background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);padding:1rem 1.125rem; }
 .ev-section-title { font-size:.72rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 .875rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap; }
-.cm-grid { display:grid;grid-template-columns:52px repeat(3,1fr);gap:4px; }
+.cm-grid { display:grid;grid-template-columns:52px repeat(4,1fr);gap:4px; }
 .cm-cell { border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.5rem .25rem;font-size:.78rem; }
 .cm-corner { background:transparent; }
 .cm-header { font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--c-bg); }
@@ -747,7 +736,7 @@
 <script>
 (function () {
   const GJS_URL = "{{ url_for('arsitektur.gis_json', config_id=cfg.id) }}";
-  const WARNA   = { 0: '#E53E3E', 1: '#F59E0B', 2: '#10B981' };
+  const WARNA = {{ KELAS|map(attribute='warna')|list|tojson }};
 
   const map = L.map('detailMap', { zoomControl: true });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

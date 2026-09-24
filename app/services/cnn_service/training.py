@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 
 from .dataset import load_dataset, _group_aware_split
-from .model import build_model, _apply_fine_tuning, uses_onehot_labels, N_CLASSES
+from .model import build_model, _apply_fine_tuning, uses_onehot_labels, parse_aug_off, N_CLASSES
 
 SEED = 42
 INNER_VAL_FRAC = 0.15   # porsi data training untuk early stopping
@@ -42,6 +42,19 @@ def _is_better_checkpoint(cand_acc, cand_loss, best_acc, best_loss):
     if cand_acc != best_acc:
         return cand_acc > best_acc
     return cand_loss < best_loss
+
+
+HYPERPARAM_FIELDS = (
+    'input_size', 'model_type', 'dropout_rate', 'optimizer', 'learning_rate', 'batch_size', 'epochs', 'patience',
+    'mixup_alpha', 'label_smoothing', 'dense_units', 'dense_l2', 'skip_fine_tuning', 'aug_off',
+)
+
+
+def hyperparams(arsitektur):
+    """Hiperparameter training dari ArsitekturConfig (atau objek serupa) sebagai dict. Satu sumber untuk
+    snapshot controller, predict_cv, dan train_final, supaya CV/model final tidak diam-diam memakai
+    default untuk field yang lupa disalin (sebelumnya predict_cv mengabaikan mixup/label smoothing/dense/Jalur A)."""
+    return {k: getattr(arsitektur, k) for k in HYPERPARAM_FIELDS}
 
 
 def _mixup_dataset(X, y_int, sample_weight, batch_size, alpha, n_classes, seed):
@@ -156,7 +169,10 @@ def _fit_phase(model, data, epochs, batch_size, class_weight, patience, lr_patie
         _Track(),
     ]
 
-    if mixup_alpha and mixup_alpha > 0 and len(X_fit) >= batch_size:
+    if mixup_alpha and mixup_alpha > 0:
+        if len(X_fit) < batch_size:
+            # Model sudah dikompilasi dengan loss one-hot; jatuh ke jalur label integer akan crash di fit().
+            raise ValueError(f'Mixup butuh minimal satu batch penuh: data fit {len(X_fit)} < batch_size {batch_size}.')
         # Mixup aktif: model dikompilasi dgn CategoricalCrossentropy (lihat model.py::_make_loss)
         # -> validation_data juga wajib one-hot. class_weight kwarg TIDAK dipakai lagi di sini
         # karena sudah dibaurkan ke sample_weight per-batch di dalam dataset (lihat _mixup_dataset).
@@ -228,7 +244,7 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     X_fit,   y_fit   = X_train[idx_fit],   y_train[idx_fit]
     X_inner, y_inner = X_train[idx_inner], y_train[idx_inner]
 
-    label_name = {0: 'Berat', 1: 'Sedang', 2: 'Ringan'}
+    from app.kelas import LABEL as label_name
 
     def dist(y):
         return '  '.join(f'{label_name[k]}={v}' for k, v in sorted(Counter(y.tolist()).items()))
@@ -256,6 +272,9 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     dense_units = getattr(arsitektur, 'dense_units', None) or 64
     dense_l2 = getattr(arsitektur, 'dense_l2', None) or 1e-4
     skip_fine_tuning = bool(getattr(arsitektur, 'skip_fine_tuning', False))
+    aug_off = parse_aug_off(getattr(arsitektur, 'aug_off', '') or '')
+    if aug_off:
+        logger.info(f'  augmentasi dimatikan : {", ".join(aug_off)}')
     if mixup_alpha:
         logger.info(f'  mixup_alpha  : {mixup_alpha} (Mixup aktif — loss CategoricalCrossentropy, class_weight via sample_weight)')
     if label_smoothing:
@@ -269,7 +288,7 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     model = build_model(arsitektur.model_type, arsitektur.input_size,
                         arsitektur.dropout_rate, arsitektur.optimizer, arsitektur.learning_rate,
                         mixup_alpha=mixup_alpha, label_smoothing=label_smoothing,
-                        dense_units=dense_units, dense_l2=dense_l2)
+                        dense_units=dense_units, dense_l2=dense_l2, aug_off=aug_off)
     logger.info(f'PHASE 1  epochs_max={arsitektur.epochs}  patience={patience}')
     logger.info('  [Early stopping/LR: inner_val_loss | Pilihan epoch: inner_val_balanced_acc (loss tiebreaker) | uji_* hanya laporan]')
     logger.info(head)
@@ -324,18 +343,8 @@ def train_final(arsitektur, base_dir, on_epoch_end=None):
     """
     from types import SimpleNamespace
 
-    cfg = SimpleNamespace(
-        id=arsitektur.id, split_config_id=arsitektur.split_config_id, fold_val=None,
-        input_size=arsitektur.input_size, model_type=arsitektur.model_type,
-        dropout_rate=arsitektur.dropout_rate, optimizer=arsitektur.optimizer,
-        learning_rate=arsitektur.learning_rate, batch_size=arsitektur.batch_size,
-        epochs=arsitektur.epochs, patience=getattr(arsitektur, 'patience', 5),
-        mixup_alpha=getattr(arsitektur, 'mixup_alpha', 0),
-        label_smoothing=getattr(arsitektur, 'label_smoothing', 0),
-        dense_units=getattr(arsitektur, 'dense_units', None),
-        dense_l2=getattr(arsitektur, 'dense_l2', None),
-        skip_fine_tuning=getattr(arsitektur, 'skip_fine_tuning', False),
-    )
+    cfg = SimpleNamespace(id=arsitektur.id, split_config_id=arsitektur.split_config_id, fold_val=None,
+                          **hyperparams(arsitektur))
     model, _ = train(cfg, base_dir, on_epoch_end=on_epoch_end)
     return model
 

@@ -34,12 +34,11 @@
 
 <!-- Tabs filter tahap preprocessing -->
 {% set step = step | default('semua') %}
-{% set step_counts = step_counts | default({'semua':0,'resize':0,'crop':0,'normalisasi':0,'augmentasi':0,'denoise':0}) %}
+{% set step_counts = step_counts | default({'semua':0,'resize':0,'crop':0,'normalisasi':0,'denoise':0}) %}
 {% set step_meta = {
   'resize':      ('Resize',       'bi-arrows-angle-contract', '#A78BFA'),
   'crop':        ('Center Crop',  'bi-crop',                  '#F59E0B'),
   'normalisasi': ('Normalisasi',  'bi-sliders',               '#10B981'),
-  'augmentasi':  ('Augmentasi',   'bi-images',                '#3B82F6'),
   'denoise':     ('Denoise',      'bi-droplet-half',          '#F472B6'),
 } %}
 {% set tabs = [
@@ -48,7 +47,6 @@
   ('crop',        'Center Crop',  'bi-crop',                   '#F59E0B'),
   ('normalisasi', 'Normalisasi',  'bi-sliders',                '#10B981'),
   ('denoise',     'Denoise (dipakai training)', 'bi-droplet-half',    '#F472B6'),
-  ('augmentasi',  'Augmentasi (visual)',        'bi-images',           '#3B82F6'),
 ] %}
 <div style="display:flex;gap:.25rem;flex-wrap:wrap;margin-bottom:.875rem;
             background:var(--c-surface);border:1px solid var(--c-border);

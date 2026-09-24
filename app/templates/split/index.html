@@ -64,8 +64,8 @@
   <i class="bi bi-info-circle"></i>
   Fold K-Fold ditentukan per <strong>foto</strong> ({{ total_berlabel }}) supaya tidak ada kebocoran data antar fold.
   "Sampel Training Efektif" ({{ total_sampel }}) adalah jumlah gambar training yang benar-benar dimuat,
-  setelah tiap foto diperluas ke hingga 4 tahap preprocessing non-acak (resize, crop, normalisasi, denoise —
-  augmentasi tidak dipakai karena acak). Validasi/fold uji TETAP 1 gambar/foto (tahap denoise), tidak ikut diperluas —
+  setelah tiap foto diperluas ke hingga 4 tahap preprocessing non-acak (resize, crop, normalisasi, denoise).
+  Validasi/fold uji TETAP 1 gambar/foto (tahap denoise), tidak ikut diperluas —
   supaya sebanding dengan evaluasi CV.
 </p>
 
@@ -97,7 +97,7 @@
           </span>
         </td>
         <td style="text-align:center;font-size:.8rem;color:var(--c-muted);font-variant-numeric:tabular-nums;">
-          {{ cfg.random_state }}
+          {{ cfg.random_state }}{% if cfg.radius_grup_m %}<div style="font-size:.66rem;">grup {{ cfg.radius_grup_m }} m</div>{% endif %}
         </td>
         <td style="text-align:center;font-size:.85rem;font-weight:600;color:var(--c-text);font-variant-numeric:tabular-nums;">
           {{ cfg.total_data }}

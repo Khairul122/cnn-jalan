@@ -34,3 +34,6 @@ Thumbs.db
 # Dataset directory
 data/
 
+
+# Cadangan sebelum migrasi kelas
+backup_*/

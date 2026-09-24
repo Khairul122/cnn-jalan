@@ -21,8 +21,18 @@
     </div>
     {% endfor %}
   </div>
+  <table class="table table-sm mb-0 mt-2" style="font-size:.74rem;font-variant-numeric:tabular-nums;">
+    <thead><tr><th scope="col">Kelas</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">F1</th></tr></thead>
+    <tbody>
+      {% for k in KELAS %}
+      <tr><td style="color:{{ k.warna }};font-weight:600;">{{ k.nama }}</td>
+          <td>{{ cv.precision[k.key] }}%</td><td>{{ cv.recall[k.key] }}%</td><td>{{ cv.f1[k.key] }}%</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
   <p style="font-size:.72rem;color:var(--c-muted);margin:.625rem 0 0;">
-    Recall — Berat {{ cv.recall.berat }}% · Sedang {{ cv.recall.sedang }}% · Ringan {{ cv.recall.ringan }}%
+    Salah prediksi {{ cv.kesalahan.total }} foto: {{ cv.kesalahan.bersebelahan }} ke kelas bersebelahan, {{ cv.kesalahan.jauh }} melompat jauh.
+    {% if cv.cross_entropy is not none %}&nbsp;|&nbsp; Cross-entropy {{ cv.cross_entropy }} (acak 4 kelas ≈ 1.386){% endif %}
     &nbsp;|&nbsp; Akurasi per fold:
     {% for f in cv.per_fold %}{{ f.akurasi }}%{{ ' · ' if not loop.last }}{% endfor %}
   </p>

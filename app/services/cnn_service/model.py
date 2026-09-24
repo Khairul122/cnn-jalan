@@ -1,6 +1,6 @@
 """Arsitektur Keras: transfer learning MobileNetV2/EfficientNetB0 + head klasifikasi."""
 
-N_CLASSES = 3  # Berat=0, Sedang=1, Ringan=2
+from app.kelas import N_KELAS as N_CLASSES  # 0=Rusak Berat, 1=Rusak Ringan, 2=Sedang, 3=Baik
 
 
 def _pixel_gaussian_noise_layer(stddev):
@@ -17,6 +17,59 @@ def _pixel_gaussian_noise_layer(stddev):
             return x
 
     return _PixelGaussianNoise()
+
+
+# Layer augmentasi training, urut seperti di build_model. Kunci dipakai form Arsitektur dan
+# arsitektur_config.aug_off (daftar kunci yang DIMATIKAN, dipisah koma) untuk ablation per layer.
+AUGMENTASI = (
+    ('flip', 'Flip horizontal'),
+    ('rotasi', 'Rotasi ±18°'),
+    ('zoom', 'Zoom ±20%'),
+    ('translasi', 'Translasi ±10%'),
+    ('brightness', 'Brightness ±30%'),
+    ('contrast', 'Contrast ±30%'),
+    ('hue', 'Hue'),
+    ('saturasi', 'Saturasi'),
+    ('noise', 'Noise piksel'),
+    ('erasing', 'Random erasing'),
+)
+AUG_KEYS = tuple(k for k, _ in AUGMENTASI)
+
+
+def parse_aug_off(nilai):
+    """'zoom,erasing' -> ('zoom', 'erasing'); ValueError untuk kunci yang tidak dikenal."""
+    if isinstance(nilai, str):
+        nilai = [k.strip() for k in nilai.split(',') if k.strip()]
+    tidak_dikenal = [k for k in nilai or () if k not in AUG_KEYS]
+    if tidak_dikenal:
+        raise ValueError(f'Layer augmentasi tidak dikenal: {tidak_dikenal}. Pilihan: {AUG_KEYS}')
+    return tuple(nilai or ())
+
+
+def _augmentation_layers(aug_off=()):
+    """Layer augmentasi Keras yang aktif (semua kecuali kunci di aug_off). Aktif hanya saat
+    training=True, mati saat predict/evaluate. Hanya augmentasi yang realistis untuk foto jalan
+    (perspektif kendaraan horizontal): tanpa flip vertikal, rotasi dibatasi ±18°."""
+    from tensorflow import keras
+    L = keras.layers
+    aug_off = parse_aug_off(aug_off)
+    pabrik = {
+        'flip': lambda: L.RandomFlip('horizontal'),
+        'rotasi': lambda: L.RandomRotation(0.05),
+        'zoom': lambda: L.RandomZoom(0.2),
+        'translasi': lambda: L.RandomTranslation(0.1, 0.1),
+        'brightness': lambda: L.RandomBrightness(0.3),
+        'contrast': lambda: L.RandomContrast(0.3),
+        # color jitter ringan
+        'hue': lambda: L.RandomHue(0.05, value_range=(0, 255)),
+        'saturasi': lambda: L.RandomSaturation((0.4, 0.6), value_range=(0, 255)),
+        # noise sensor kamera lapangan ringan, setelah tahap denoise preprocessing (melatih model tahan
+        # variasi sensor, bukan membalikkan denoise)
+        'noise': lambda: _pixel_gaussian_noise_layer(3.0),
+        # Cutout: patch kecil (<10% luas) supaya model tidak bergantung pada satu titik kerusakan
+        'erasing': lambda: L.RandomErasing(factor=0.5, scale=(0.02, 0.08), value_range=(0, 255)),
+    }
+    return [pabrik[k]() for k in AUG_KEYS if k not in aug_off]
 
 
 def _make_optimizer(optimizer_name, learning_rate):
@@ -46,31 +99,14 @@ def _make_loss(mixup_alpha, label_smoothing=0):
 
 
 def build_model(model_type, input_size, dropout_rate, optimizer_name, learning_rate,
-                mixup_alpha=0, label_smoothing=0, dense_units=64, dense_l2=1e-4):
+                mixup_alpha=0, label_smoothing=0, dense_units=64, dense_l2=1e-4, aug_off=()):
     from tensorflow import keras
 
     inp = keras.Input(shape=(input_size, input_size, 3))
 
-    # Augmentasi — aktif hanya saat training=True, mati saat predict/evaluate
-    # Hanya augmentasi yang realistis untuk foto jalan (perspektif kendaraan horizontal):
-    # - Flip vertikal DIHAPUS: menghasilkan gambar tidak realistis (jalan terbalik)
-    # - Rotation dikurangi ke ±18° (kemiringan kendaraan wajar, bukan 90°)
-    x = keras.layers.RandomFlip('horizontal')(inp)
-    x = keras.layers.RandomRotation(0.05)(x)
-    x = keras.layers.RandomZoom(0.2)(x)
-    x = keras.layers.RandomTranslation(0.1, 0.1)(x)
-    x = keras.layers.RandomBrightness(0.3)(x)
-    x = keras.layers.RandomContrast(0.3)(x)
-    # Color jitter ringan (TODO.md P3) — hue/saturation di atas brightness/contrast yang sudah ada
-    x = keras.layers.RandomHue(0.05, value_range=(0, 255))(x)
-    x = keras.layers.RandomSaturation((0.4, 0.6), value_range=(0, 255))(x)
-    # Noise sensor kamera lapangan ringan, diterapkan setelah tahap denoise preprocessing
-    # (gambar training sudah didenoise — noise ini melatih model tahan variasi sensor, bukan
-    # membalikkan denoise)
-    x = _pixel_gaussian_noise_layer(3.0)(x)
-    # Cutout/Random Erasing — patch kecil (<10% luas), model tidak boleh cuma bergantung
-    # pada satu titik kerusakan paling mencolok
-    x = keras.layers.RandomErasing(factor=0.5, scale=(0.02, 0.08), value_range=(0, 255))(x)
+    x = inp
+    for layer in _augmentation_layers(aug_off):
+        x = layer(x)
 
     if model_type == 'mobilenetv2':
         x = keras.applications.mobilenet_v2.preprocess_input(x)

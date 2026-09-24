@@ -72,7 +72,7 @@ class CnnDatasetTest(unittest.TestCase):
     # ── helpers ────────────────────────────────────────────────
     def make_split(self):
         with self.app.app_context():
-            sp = SplitConfig(nama=f'cnn-uji-{self.tag}', split_type='kfold', n_splits=3,
+            sp = SplitConfig(nama=f'cnn-uji-{self.tag}', n_splits=3,
                              random_state=1, label_sumber='tingkat', total_data=0,
                              pengguna_id=self.user_id)
             db.session.add(sp)
@@ -221,6 +221,41 @@ class CnnDatasetTest(unittest.TestCase):
         self.assertEqual(len(X_val), 1)   # tanpa denoise -> fallback ke foto original, bukan gagal
         self.assertEqual(y_val[0], 1)     # tingkat=2 -> label 1
         self.assertEqual(groups_val[0], foto_val)
+
+    def test_foto_tanpa_preprocessing_counts_photos_missing_denoise(self):
+        foto_ada, foto_tidak = self.make_foto('ada'), self.make_foto('tidak')
+        cfg = self.make_prep_config()
+        self.add_prep(foto_ada, cfg, 'denoise')
+        self.add_prep(foto_tidak, cfg, 'resize')   # tahap lain tidak dihitung: yang dipakai tahap denoise
+        sid = self.make_split()
+        self.add_item(sid, foto_ada, 0, 1)
+        self.add_item(sid, foto_tidak, 1, 1)
+        with self.app.app_context():
+            self.assertEqual(cnn_service.foto_tanpa_preprocessing(sid), 1)
+
+    def test_aktif_is_config_of_latest_preprocessing_result(self):
+        foto = self.make_foto('aktif')
+        cfg_a, cfg_b = self.make_prep_config(), self.make_prep_config()
+        self.add_prep(foto, cfg_a, 'denoise')
+        self.add_prep(foto, cfg_b, 'denoise')   # hasil terbaru milik config B
+        with self.app.app_context():
+            self.assertEqual(PreprocessingConfig.aktif().id, cfg_b)
+
+    def test_hapus_hasil_removes_files_and_only_selected_records(self):
+        from app.controllers.preprocessing_controller import _hapus_hasil
+        foto = self.make_foto('hapus')
+        cfg_a, cfg_b = self.make_prep_config(), self.make_prep_config()
+        self.add_prep(foto, cfg_a, 'denoise', color='red')
+        self.add_prep(foto, cfg_b, 'resize', color='blue')
+        with self.app.app_context():
+            path_a = HasilPreprocessing.query.filter_by(config_id=cfg_a).one().path_output
+            file_a = os.path.join(self.app.root_path, 'static', path_a)
+            self.assertTrue(os.path.isfile(file_a))
+            jumlah, n_file = _hapus_hasil(HasilPreprocessing.query.filter_by(config_id=cfg_a))
+            db.session.commit()
+            self.assertEqual((jumlah, n_file), (1, 1))
+            self.assertFalse(os.path.isfile(file_a))
+            self.assertEqual(HasilPreprocessing.query.filter_by(config_id=cfg_b).count(), 1)
 
 
 if __name__ == '__main__':

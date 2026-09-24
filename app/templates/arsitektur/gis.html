@@ -132,15 +132,11 @@
 <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
   <span style="font-size:.72rem;color:var(--c-muted);">Filter:</span>
   <button class="gis-filter active" data-filter="all">Semua</button>
-  <button class="gis-filter" data-filter="0" style="--fc:#E53E3E;">
-    <span class="gis-dot" style="background:#E53E3E;"></span>Berat
+  {% for k in KELAS %}
+  <button class="gis-filter" data-filter="{{ loop.index0 }}" style="--fc:{{ k.warna }};">
+    <span class="gis-dot" style="background:{{ k.warna }};"></span>{{ k.nama }}
   </button>
-  <button class="gis-filter" data-filter="1" style="--fc:#F59E0B;">
-    <span class="gis-dot" style="background:#F59E0B;"></span>Sedang
-  </button>
-  <button class="gis-filter" data-filter="2" style="--fc:#10B981;">
-    <span class="gis-dot" style="background:#10B981;"></span>Ringan
-  </button>
+  {% endfor %}
   <button class="gis-filter" data-filter="salah" style="--fc:#94a3b8;">
     <span class="gis-dot" style="background:#94a3b8;border:2px dashed #fff;"></span>Salah Prediksi
   </button>
@@ -155,7 +151,7 @@
   <div style="font-size:.68rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;">
     Legenda Prediksi
   </div>
-  {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+  {% for k in KELAS %}{% set lbl = k.nama %}{% set clr = k.warna %}
   <div class="d-flex align-items-center gap-2 mb-1">
     <span style="width:12px;height:12px;border-radius:50%;background:{{ clr }};display:inline-block;flex-shrink:0;"></span>
     <span style="font-size:.72rem;color:var(--c-text);">{{ lbl }}</span>
@@ -284,8 +280,8 @@
     attribution: '© OpenStreetMap contributors', maxZoom: 19
   }).addTo(map);
 
-  const WARNA = { 0: '#E53E3E', 1: '#F59E0B', 2: '#10B981' };
-  const LABEL = { 0: 'Berat', 1: 'Sedang', 2: 'Ringan' };
+  const WARNA = {{ KELAS|map(attribute='warna')|list|tojson }};
+  const LABEL = {{ KELAS|map(attribute='nama')|list|tojson }};
 
   let allFeatures = [];
   let markers = [];

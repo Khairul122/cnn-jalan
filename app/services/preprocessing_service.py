@@ -1,9 +1,8 @@
 import os
 import time
-import random
 import numpy as np
 import cv2
-from PIL import Image, ImageOps, ImageEnhance
+from PIL import Image
 
 
 class PreprocessingService:
@@ -24,7 +23,7 @@ class PreprocessingService:
     @staticmethod
     def run_pipeline_steps(img_path, config):
         """
-        Jalankan pipeline 5 tahap (resize, crop, normalisasi, denoise, augmentasi) dan simpan hasil tiap tahap secara kumulatif.
+        Jalankan pipeline 4 tahap (resize, crop, normalisasi, denoise) dan simpan hasil tiap tahap secara kumulatif.
         Kembalikan list of (step_key, PIL.Image, durasi_ms).
         Setiap gambar adalah hasil penerapan semua step sebelumnya + step ini.
         """
@@ -104,26 +103,6 @@ class PreprocessingService:
                 cv_img = cv2.bilateralFilter(cv_img, k, 75, 75)
             img = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
         results.append(('denoise', img.copy(), int((time.time() - t0) * 1000)))
-
-        # ── Step 5: Augmentasi (random per gambar; hanya visualisasi, TIDAK dipakai training) ────────────────────
-        t0 = time.time()
-        if config.aug_flip_h and random.random() < 0.5:
-            img = ImageOps.mirror(img)
-        if config.aug_flip_v and random.random() < 0.5:
-            img = ImageOps.flip(img)
-        deg = float(config.aug_rotate_deg or 0)
-        if deg != 0:
-            angle = random.uniform(-deg, deg)
-            img = img.rotate(angle, expand=False, fillcolor=(0, 0, 0))
-        brightness = float(config.aug_brightness or 1.0)
-        if brightness != 1.0:
-            factor = random.uniform(1.0 / brightness, brightness)
-            img = ImageEnhance.Brightness(img).enhance(factor)
-        contrast = float(config.aug_contrast or 1.0)
-        if contrast != 1.0:
-            factor = random.uniform(1.0 / contrast, contrast)
-            img = ImageEnhance.Contrast(img).enhance(factor)
-        results.append(('augmentasi', img.copy(), int((time.time() - t0) * 1000)))
 
         return results
 

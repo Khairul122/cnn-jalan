@@ -178,6 +178,24 @@
               </label>
             </div>
           </div>
+          <div class="col-12">
+            <div class="af-field mb-0">
+              <label class="af-label">Augmentasi training (di dalam model)</label>
+              <input type="hidden" name="aug_form" value="1">
+              <div class="d-flex flex-wrap gap-3">
+                {% for key, lbl in aug_list %}
+                <div class="form-check mb-0">
+                  <input type="checkbox" class="form-check-input" id="aug_{{ key }}" name="aug_{{ key }}" value="1" checked>
+                  <label class="form-check-label" for="aug_{{ key }}" style="font-size:.78rem;">{{ lbl }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
+                Semua aktif = default. Matikan satu per satu untuk ablation; mis. zoom, translasi, dan random erasing mengubah luas
+                kerusakan yang tampak padahal label SDI berbasis luas. Aktif hanya saat training, mati saat prediksi.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -219,7 +237,7 @@
             <span>Input Size</span><span style="color:var(--c-text);font-weight:600;">224 × 224 px</span>
           </div>
           <div class="af-info-row">
-            <span>Jumlah Kelas</span><span style="color:var(--c-text);font-weight:600;">3 (Berat / Sedang / Ringan)</span>
+            <span>Jumlah Kelas</span><span style="color:var(--c-text);font-weight:600;">4 (Rusak Berat / Rusak Ringan / Sedang / Baik)</span>
           </div>
           <div class="af-info-row">
             <span>Base Weights</span><span style="color:var(--c-text);font-weight:600;">ImageNet (frozen)</span>

@@ -222,7 +222,7 @@ tailwind.config = {
   <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-md text-center">
     {% set strip = [
       ('280+',    'Foto Kerusakan',   '280',   '+', '0'),
-      ('3',       'Kategori Tingkat', '3',     '',  '0'),
+      ('4',       'Kategori Tingkat', '4',     '',  '0'),
       (akurasi|string + '%' if akurasi else '—',
                   'Akurasi Model CNN', akurasi|string if akurasi else '0', '%', '1'),
       ('1',       'Kota Lhokseumawe', '1',    '',  '0'),
@@ -250,45 +250,11 @@ tailwind.config = {
     </div>
 
     {% if total_pred and total_pred > 0 %}
-    {% set total_ct = (berat_ct or 0) + (sedang_ct or 0) + (ringan_ct or 0) %}
+    {% set total_ct = pred_ct.values()|sum %}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-md">
 
-      <!-- Berat -->
-      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between" data-motion>
-        <div>
-          <span class="text-error font-headline-xl text-headline-xl js-count"
-                data-count="{{ berat_ct or 0 }}" data-suffix="" data-dec="0">{{ berat_ct or 0 }}</span>
-          <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Kerusakan Berat</p>
-        </div>
-        <div class="mt-md h-1 bg-surface-container rounded-full overflow-hidden">
-          <div class="h-full bg-error transition-all duration-1000"
-               data-bar="{{ ((berat_ct or 0) / total_ct * 100)|round(0)|int if total_ct > 0 else 0 }}"
-               style="width:0%"></div>
-        </div>
-        {% if recall_berat is not none %}
-        <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Recall: <strong>{{ recall_berat }}%</strong></p>
-        {% endif %}
-      </div>
-
-      <!-- Sedang -->
-      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between" data-motion>
-        <div>
-          <span class="text-tertiary font-headline-xl text-headline-xl js-count"
-                data-count="{{ sedang_ct or 0 }}" data-suffix="" data-dec="0">{{ sedang_ct or 0 }}</span>
-          <p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Kerusakan Sedang</p>
-        </div>
-        <div class="mt-md h-1 bg-surface-container rounded-full overflow-hidden">
-          <div class="h-full bg-tertiary transition-all duration-1000"
-               data-bar="{{ ((sedang_ct or 0) / total_ct * 100)|round(0)|int if total_ct > 0 else 0 }}"
-               style="width:0%"></div>
-        </div>
-        {% if recall_sedang is not none %}
-        <p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Recall: <strong>{{ recall_sedang }}%</strong></p>
-        {% endif %}
-      </div>
-
       <!-- Akurasi overall -->
-      <div class="bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between" data-motion>
+      <div class="md:col-span-3 bg-surface-container-lowest p-md rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between" data-motion>
         <div>
           {% if akurasi is not none %}
           <span class="text-primary font-headline-xl text-headline-xl js-count"
@@ -315,7 +281,7 @@ tailwind.config = {
         {% endif %}
       </div>
 
-      <!-- Ringan + total table card -->
+      <!-- Distribusi per kelas -->
       <div class="md:col-span-3 bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm" data-motion>
         <div class="px-md py-sm border-b border-outline-variant flex items-center justify-between">
           <div>
@@ -338,29 +304,24 @@ tailwind.config = {
               </tr>
             </thead>
             <tbody class="font-body-sm text-body-sm">
-              {% set rows = [
-                ('Berat',  berat_ct  or 0, recall_berat,  'text-error',   'bg-error-container text-on-error-container'),
-                ('Sedang', sedang_ct or 0, recall_sedang, 'text-tertiary', 'bg-tertiary-fixed text-on-tertiary-fixed-variant'),
-                ('Ringan', ringan_ct or 0, recall_ringan, 'text-primary',  'bg-secondary-container text-on-secondary-container'),
-              ] %}
-              {% for lbl, ct, rc, clr, badge in rows %}
+              {% for k in KELAS %}{% set ct = pred_ct[k.key] %}{% set rc = recall.get(k.key) %}
               <tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors">
                 <td class="p-md font-medium">
-                  <span class="inline-block px-xs py-1 rounded {{ badge }}">{{ lbl }}</span>
+                  <span class="inline-block px-xs py-1 rounded" style="background:{{ k.warna }}22;color:{{ k.warna }};">{{ k.nama }}</span>
                 </td>
-                <td class="p-md font-mono-data text-mono-data {{ clr }}">{{ ct }}</td>
+                <td class="p-md font-mono-data text-mono-data">{{ ct }}</td>
                 <td class="p-md">
                   <div class="flex items-center gap-xs">
                     <div class="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden max-w-[120px]">
-                      <div class="{{ 'bg-error' if lbl=='Berat' else ('bg-tertiary' if lbl=='Sedang' else 'bg-primary') }} h-full"
-                           style="width:{{ ((ct / total_ct * 100)|round(0)|int if total_ct > 0 else 0) }}%"></div>
+                      <div class="h-full"
+                           style="background:{{ k.warna }};width:{{ ((ct / total_ct * 100)|round(0)|int if total_ct > 0 else 0) }}%"></div>
                     </div>
                     <span class="font-mono-data text-mono-data text-on-surface-variant">
                       {{ ((ct / total_ct * 100)|round(1) if total_ct > 0 else 0) }}%
                     </span>
                   </div>
                 </td>
-                <td class="p-md text-right font-mono-data text-mono-data {{ clr }}">
+                <td class="p-md text-right font-mono-data text-mono-data">
                   {% if rc is not none %}{{ rc }}%{% else %}—{% endif %}
                 </td>
               </tr>
@@ -425,21 +386,13 @@ tailwind.config = {
                      shadow-sm transition-all" data-cnn-filter="all" style="border-color:#003d9b;">
         Semua
       </button>
+      {% for k in KELAS %}
       <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
                      bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
-                     shadow-sm transition-all" data-cnn-filter="berat">
-        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#E53E3E;"></span>Berat
+                     shadow-sm transition-all" data-cnn-filter="{{ k.nama|lower }}">
+        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:{{ k.warna }};"></span>{{ k.nama }}
       </button>
-      <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
-                     bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
-                     shadow-sm transition-all" data-cnn-filter="sedang">
-        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#F59E0B;"></span>Sedang
-      </button>
-      <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
-                     bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
-                     shadow-sm transition-all" data-cnn-filter="ringan">
-        <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#10B981;"></span>Ringan
-      </button>
+      {% endfor %}
       <button class="map-filter-btn px-md py-xs rounded-full border border-outline-variant
                      bg-surface-container-lowest font-label-md text-label-md text-on-surface-variant
                      shadow-sm transition-all" data-cnn-filter="salah">
@@ -502,18 +455,12 @@ tailwind.config = {
           Legenda Prediksi CNN
         </p>
         <div class="flex flex-col gap-xs mb-sm">
+          {% for k in KELAS %}
           <div class="flex items-center gap-xs">
-            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#E53E3E;border:2px solid #fff;"></span>
-            <span class="font-body-sm text-body-sm text-on-surface">Berat</span>
+            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:{{ k.warna }};border:2px solid #fff;"></span>
+            <span class="font-body-sm text-body-sm text-on-surface">{{ k.nama }}</span>
           </div>
-          <div class="flex items-center gap-xs">
-            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#F59E0B;border:2px solid #fff;"></span>
-            <span class="font-body-sm text-body-sm text-on-surface">Sedang</span>
-          </div>
-          <div class="flex items-center gap-xs">
-            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:#10B981;border:2px solid #fff;"></span>
-            <span class="font-body-sm text-body-sm text-on-surface">Ringan</span>
-          </div>
+          {% endfor %}
         </div>
         <div class="border-t border-outline-variant pt-xs flex flex-col gap-xs">
           <div class="flex items-center gap-xs">
@@ -554,11 +501,11 @@ tailwind.config = {
         </div>
         <div class="p-md bg-surface-container rounded-lg">
           <h4 class="font-label-md text-label-md text-primary mb-xs">KLASIFIKASI 3 KELAS</h4>
-          <p class="font-body-sm text-body-sm">Mengelompokkan tingkat kerusakan (Berat / Sedang / Ringan) berdasarkan standar SDI Bina Marga secara otomatis.</p>
+          <p class="font-body-sm text-body-sm">Mengelompokkan tingkat kerusakan (Rusak Berat / Rusak Ringan / Sedang / Baik) berdasarkan standar SDI Bina Marga secara otomatis.</p>
         </div>
         <div class="p-md bg-surface-container rounded-lg">
           <h4 class="font-label-md text-label-md text-primary mb-xs">SPLIT 80:20</h4>
-          <p class="font-body-sm text-body-sm">Stratified holdout split memastikan distribusi kelas yang seimbang pada data training dan validasi.</p>
+          <p class="font-body-sm text-body-sm">Stratified K-Fold split memastikan distribusi kelas yang seimbang pada data training dan validasi.</p>
         </div>
         <div class="p-md bg-surface-container rounded-lg">
           <h4 class="font-label-md text-label-md text-primary mb-xs">GIS PEMETAAN</h4>
@@ -748,7 +695,8 @@ const markerLayer = L.layerGroup().addTo(lmap);
 let allFeatures   = [];
 let activeFilter  = 'all';
 
-const CLABEL_WARNA = { Berat:'#E53E3E', Sedang:'#F59E0B', Ringan:'#10B981' };
+const CLABEL_WARNA = {{ KELAS_WARNA|tojson }};
+const FILTER_WARNA = Object.fromEntries(Object.entries(CLABEL_WARNA).map(([n, w]) => [n.toLowerCase(), w]));
 
 // ── helpers
 function showSkeleton(show) {
@@ -876,11 +824,7 @@ document.querySelectorAll('.map-filter-btn').forEach(btn => {
     });
     // activate clicked
     const f = btn.dataset.cnnFilter;
-    const activeColor = f === 'berat' ? '#E53E3E'
-                      : f === 'sedang' ? '#F59E0B'
-                      : f === 'ringan' ? '#10B981'
-                      : f === 'salah'  ? '#94a3b8'
-                      : '#003d9b';
+    const activeColor = FILTER_WARNA[f] || (f === 'salah' ? '#94a3b8' : '#003d9b');
     btn.style.borderColor = activeColor;
     btn.style.color       = activeColor;
     btn.classList.remove('text-on-surface-variant');

@@ -107,7 +107,7 @@
 
   <!-- Legenda status -->
   <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;">
-    {% for label, color in [('Berat', '#E53E3E'), ('Sedang', '#F6AD55'), ('Ringan', '#68D391')] %}
+    {% for k in KELAS %}{% set label = k.nama %}{% set color = k.warna %}
     <div style="display:inline-flex;align-items:center;gap:.375rem;padding:.3rem .625rem;
                 background:{{ color }}18;border:1px solid {{ color }}40;
                 border-radius:999px;font-size:.72rem;font-weight:600;color:{{ color }};">
@@ -165,15 +165,11 @@
   <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
     <span style="font-size:.72rem;color:var(--c-muted);">Filter:</span>
     <button class="peta-filter active" data-cnn-filter="all" onclick="applyCnnFilter(this)">Semua</button>
-    <button class="peta-filter" data-cnn-filter="0" style="--fc:#E53E3E;" onclick="applyCnnFilter(this)">
-      <span class="peta-dot" style="background:#E53E3E;"></span>Berat
-    </button>
-    <button class="peta-filter" data-cnn-filter="1" style="--fc:#F59E0B;" onclick="applyCnnFilter(this)">
-      <span class="peta-dot" style="background:#F59E0B;"></span>Sedang
-    </button>
-    <button class="peta-filter" data-cnn-filter="2" style="--fc:#10B981;" onclick="applyCnnFilter(this)">
-      <span class="peta-dot" style="background:#10B981;"></span>Ringan
-    </button>
+  {% for k in KELAS %}
+  <button class="peta-filter" data-cnn-filter="{{ loop.index0 }}" style="--fc:{{ k.warna }};" onclick="applyCnnFilter(this)">
+    <span class="peta-dot" style="background:{{ k.warna }};"></span>{{ k.nama }}
+  </button>
+  {% endfor %}
     <button class="peta-filter" data-cnn-filter="salah" style="--fc:#94a3b8;" onclick="applyCnnFilter(this)">
       <span class="peta-dot" style="background:#94a3b8;border:2px dashed #fff;"></span>Salah Prediksi
     </button>
@@ -218,7 +214,7 @@
   <div id="cnnLegend" class="peta-legend" style="display:none;">
     <div style="font-size:.65rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;
                 letter-spacing:.05em;margin-bottom:.5rem;">Legenda Prediksi CNN</div>
-    {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
+    {% for k in KELAS %}{% set lbl = k.nama %}{% set clr = k.warna %}
     <div class="d-flex align-items-center gap-2 mb-1">
       <span style="width:11px;height:11px;border-radius:50%;background:{{ clr }};display:inline-block;flex-shrink:0;"></span>
       <span style="font-size:.72rem;color:var(--c-text);">{{ lbl }}</span>
@@ -378,7 +374,7 @@
   };
 
   function renderCnnMarkers(filter) {
-    var WARNA = { 0: '#E53E3E', 1: '#F59E0B', 2: '#10B981' };
+    var WARNA = {{ KELAS|map(attribute='warna')|list|tojson }};
     cnnLayer.clearLayers();
     var shown = 0;
 

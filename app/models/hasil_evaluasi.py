@@ -11,15 +11,7 @@ class HasilEvaluasi(db.Model):
     total_data_val   = db.Column(db.Integer, nullable=False)
     akurasi          = db.Column(db.Float, nullable=False)
     confusion_matrix = db.Column(db.Text, nullable=False)
-    precision_berat  = db.Column(db.Float, nullable=False)
-    recall_berat     = db.Column(db.Float, nullable=False)
-    f1_berat         = db.Column(db.Float, nullable=False)
-    precision_sedang = db.Column(db.Float, nullable=False)
-    recall_sedang    = db.Column(db.Float, nullable=False)
-    f1_sedang        = db.Column(db.Float, nullable=False)
-    precision_ringan = db.Column(db.Float, nullable=False)
-    recall_ringan    = db.Column(db.Float, nullable=False)
-    f1_ringan        = db.Column(db.Float, nullable=False)
+    per_class        = db.Column(db.Text, nullable=False)   # JSON {kelas_key: {precision, recall, f1-score}}
     macro_precision  = db.Column(db.Float, nullable=False)
     macro_recall     = db.Column(db.Float, nullable=False)
     macro_f1         = db.Column(db.Float, nullable=False)
@@ -29,4 +21,7 @@ class HasilEvaluasi(db.Model):
 
     def get_cm(self):
         return json.loads(self.confusion_matrix)
+
+    def get_per_class(self):
+        return json.loads(self.per_class)
 

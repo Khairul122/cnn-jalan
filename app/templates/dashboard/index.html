@@ -580,7 +580,7 @@
   <div class="db-row db-row-2">
 
     <!-- Distribusi SDI -->
-    {% set total_sdi = (stats.berat_label + stats.sedang_label + stats.ringan_label) if (stats.berat_label + stats.sedang_label + stats.ringan_label) > 0 else 1 %}
+    {% set total_sdi = stats.label_ct.values()|sum or 1 %}
     <div class="db-card">
       <div class="db-card-head">
         <h2 class="db-card-title">
@@ -592,53 +592,22 @@
       <div class="db-card-body">
         <div class="dmg-list" role="list">
 
-          <!-- Berat -->
-          <div class="dmg-item" style="--dmg-color:#DC2626;--dmg-bg:#FEF2F2;" role="listitem">
+          {% for k in KELAS %}
+          <div class="dmg-item" style="--dmg-color:{{ k.warna }};--dmg-bg:{{ k.warna }}18;" role="listitem">
             <div class="dmg-ico">
-              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+              <i class="bi {{ 'bi-exclamation-triangle-fill' if loop.index0 < 2 else ('bi-dash-circle-fill' if loop.index0 == 2 else 'bi-check-circle-fill') }}" aria-hidden="true"></i>
             </div>
             <div class="dmg-info">
-              <p class="dmg-name">Berat</p>
-              <p class="dmg-desc">SDI &gt; 150</p>
+              <p class="dmg-name">{{ k.nama }}</p>
+              <p class="dmg-desc">{{ k.sdi }}</p>
               <div class="prog-track" style="margin-top:.35rem;">
-                <div class="prog-fill js-prog" style="background:#DC2626;"
-                     data-pct="{{ ((stats.berat_label / total_sdi) * 100) | round(1) }}"></div>
+                <div class="prog-fill js-prog" style="background:{{ k.warna }};"
+                     data-pct="{{ ((stats.label_ct[k.key] / total_sdi) * 100) | round(1) }}"></div>
               </div>
             </div>
-            <span class="dmg-badge">{{ stats.berat_label }}</span>
+            <span class="dmg-badge">{{ stats.label_ct[k.key] }}</span>
           </div>
-
-          <!-- Sedang -->
-          <div class="dmg-item" style="--dmg-color:#D97706;--dmg-bg:#FFFBEB;" role="listitem">
-            <div class="dmg-ico">
-              <i class="bi bi-dash-circle-fill" aria-hidden="true"></i>
-            </div>
-            <div class="dmg-info">
-              <p class="dmg-name">Sedang</p>
-              <p class="dmg-desc">SDI 51–150</p>
-              <div class="prog-track" style="margin-top:.35rem;">
-                <div class="prog-fill js-prog" style="background:#D97706;"
-                     data-pct="{{ ((stats.sedang_label / total_sdi) * 100) | round(1) }}"></div>
-              </div>
-            </div>
-            <span class="dmg-badge">{{ stats.sedang_label }}</span>
-          </div>
-
-          <!-- Ringan -->
-          <div class="dmg-item" style="--dmg-color:#059669;--dmg-bg:#ECFDF5;" role="listitem">
-            <div class="dmg-ico">
-              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-            </div>
-            <div class="dmg-info">
-              <p class="dmg-name">Ringan</p>
-              <p class="dmg-desc">SDI ≤ 50</p>
-              <div class="prog-track" style="margin-top:.35rem;">
-                <div class="prog-fill js-prog" style="background:#059669;"
-                     data-pct="{{ ((stats.ringan_label / total_sdi) * 100) | round(1) }}"></div>
-              </div>
-            </div>
-            <span class="dmg-badge">{{ stats.ringan_label }}</span>
-          </div>
+          {% endfor %}
 
         </div>
 

@@ -8,6 +8,7 @@ Pemakaian (dari root project, pakai venv):
   .\\.venv\\Scripts\\python.exe scripts\\run_pipeline.py
   .\\.venv\\Scripts\\python.exe scripts\\run_pipeline.py --skip-preprocessing --epochs 60 --fold 2
   .\\.venv\\Scripts\\python.exe scripts\\run_pipeline.py --no-cv
+  .\\.venv\\Scripts\\python.exe scripts\\run_pipeline.py --skip-label --skip-preprocessing --skip-single --no-final   # baseline CV saja
 
 Prasyarat: data lokasi + foto sudah ada (scripts/seed_data.py) dan minimal satu konfigurasi
 preprocessing (menu Preprocessing -> Konfigurasi Baru).
@@ -28,13 +29,16 @@ def log(*args):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--preprocessing-config', type=int, help='id config preprocessing (default: config default/pertama)')
+    ap.add_argument('--preprocessing-config', type=int, help='id config preprocessing (default: config aktif)')
+    ap.add_argument('--skip-label', action='store_true', help='lewati auto-label (pakai label yang sudah ada)')
+    ap.add_argument('--skip-single', action='store_true', help='lewati training fold tunggal (langsung ke CV K-Fold)')
+    ap.add_argument('--radius', type=int, default=50, help='radius grup spasial split (meter, 0 = nonaktif)')
     ap.add_argument('--skip-preprocessing', action='store_true', help='pakai hasil preprocessing yang sudah ada')
     ap.add_argument('--k', type=int, default=5, help='jumlah fold split')
     ap.add_argument('--random-state', type=int, default=42)
     ap.add_argument('--model', choices=('mobilenetv2', 'efficientnetb0'), default='mobilenetv2')
     ap.add_argument('--epochs', type=int, default=80)
-    ap.add_argument('--lr', type=float, default=0.001)
+    ap.add_argument('--lr', type=float, default=0.0001)
     ap.add_argument('--batch', type=int, default=32)
     ap.add_argument('--patience', type=int, default=20)
     ap.add_argument('--dropout', type=float, default=0.3)
@@ -64,7 +68,7 @@ def main():
             sys.exit('Belum ada akun admin. Jalankan scripts/create_admin.py dulu.')
         admin_id = admin.id
         prep = (db.session.get(PreprocessingConfig, args.preprocessing_config) if args.preprocessing_config
-                else PreprocessingConfig.query.filter_by(is_default=True).first() or PreprocessingConfig.query.first())
+                else PreprocessingConfig.aktif())
         if prep is None and not args.skip_preprocessing:
             sys.exit('Belum ada konfigurasi preprocessing. Buat lewat menu Preprocessing.')
         prep_id = prep.id if prep else None
@@ -78,11 +82,12 @@ def main():
             sys.exit(f'POST {path} gagal: HTTP {r.status_code}')
 
     # 1. Label
-    post('/label/auto', mode='semua')
+    if not args.skip_label:
+        post('/label/auto', mode='semua')
     with app.app_context():
         dist = dict(db.session.query(LabelKerusakan.tingkat_kerusakan_id, func.count())
                     .group_by(LabelKerusakan.tingkat_kerusakan_id).all())
-    log('Label (1=Berat, 2=Sedang, 3=Ringan):', dist)
+    log('Label (1=Rusak Berat, 2=Rusak Ringan, 3=Sedang, 4=Baik):', dist)
 
     # 2. Preprocessing
     if not args.skip_preprocessing:
@@ -92,7 +97,7 @@ def main():
 
     # 3. Split baru (yang lama dihapus dari perhatian: nama unik per waktu)
     nama_split = f'KFold{args.k}-{time.strftime("%m%d-%H%M")}'
-    post('/split/new', nama=nama_split, n_splits=args.k, random_state=args.random_state)
+    post('/split/new', nama=nama_split, n_splits=args.k, random_state=args.random_state, radius_grup_m=args.radius)
     with app.app_context():
         split_id = SplitConfig.query.order_by(SplitConfig.id.desc()).first().id
     log('Split', split_id, nama_split)
@@ -105,15 +110,21 @@ def main():
         aid = ArsitekturConfig.query.order_by(ArsitekturConfig.id.desc()).first().id
         ArsitekturConfig.query.filter_by(id=aid).update({'status': 'training'})
         db.session.commit()
-    log('Training fold', args.fold, '(arsitektur', aid, ')')
-    t = time.time()
-    _run_training(app, aid, BASE_DIR)
-    with app.app_context():
-        cfg = db.session.get(ArsitekturConfig, aid)
-        log(f'Training selesai ({(time.time() - t) / 60:.1f} menit), status = {cfg.status}',
-            f'| error = {_errors.get(aid)}' if cfg.status != 'selesai' else '')
-        if cfg.status != 'selesai':
-            sys.exit(1)
+    if args.skip_single:
+        log('Training fold tunggal dilewati (--skip-single); arsitektur', aid)
+        with app.app_context():
+            ArsitekturConfig.query.filter_by(id=aid).update({'status': 'selesai'})
+            db.session.commit()
+    else:
+        log('Training fold', args.fold, '(arsitektur', aid, ')')
+        t = time.time()
+        _run_training(app, aid, BASE_DIR)
+        with app.app_context():
+            cfg = db.session.get(ArsitekturConfig, aid)
+            log(f'Training selesai ({(time.time() - t) / 60:.1f} menit), status = {cfg.status}',
+                f'| error = {_errors.get(aid)}' if cfg.status != 'selesai' else '')
+            if cfg.status != 'selesai':
+                sys.exit(1)
 
     # 5. CV K-Fold: angka utama yang boleh dilaporkan
     if args.no_cv:

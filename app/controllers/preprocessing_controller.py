@@ -14,6 +14,21 @@ preprocessing_bp = Blueprint('preprocessing', __name__, url_prefix='/preprocessi
 PREPROCESSED_SUBDIR = os.path.join('uploads', 'preprocessed')
 
 
+def _hapus_hasil(query):
+    """Hapus file fisik lalu record HasilPreprocessing dari `query`. Return (jumlah_record, jumlah_file)."""
+    root = os.path.join(current_app.root_path, 'static')
+    n_file = 0
+    for h in query.filter(HasilPreprocessing.path_output != '', HasilPreprocessing.path_output.isnot(None)).all():
+        path = os.path.join(root, h.path_output)
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+                n_file += 1
+            except OSError:
+                pass
+    return query.delete(synchronize_session=False), n_file
+
+
 def _preprocessed_folder():
     base = os.path.join(current_app.root_path, 'static', 'uploads', 'preprocessed')
     os.makedirs(base, exist_ok=True)
@@ -29,8 +44,10 @@ def index():
     total_foto   = DokumentasiFoto.query.count()
     total_hasil  = HasilPreprocessing.query.count()
     total_config = len(config_list)
+    aktif = PreprocessingConfig.aktif() if total_hasil else None
     return render_template('preprocessing/index.html',
                            config_list=config_list,
+                           aktif_id=aktif.id if aktif else None,
                            total_foto=total_foto,
                            total_hasil=total_hasil,
                            total_config=total_config)
@@ -58,6 +75,10 @@ def config_new():
 def config_edit(config_id):
     cfg = PreprocessingConfig.query.get_or_404(config_id)
     if request.method == 'POST':
+        if HasilPreprocessing.query.filter_by(config_id=cfg.id).count():
+            flash('Config ini sedang aktif (sudah punya hasil preprocessing). Reset hasil dulu sebelum mengubah '
+                  'parameternya, supaya data training tidak berbeda dari config yang tersimpan.', 'warning')
+            return redirect(url_for('preprocessing.index'))
         _update_config_from_form(cfg, request.form)
         db.session.commit()
         flash(f'Konfigurasi "{cfg.nama_config}" diperbarui.', 'success')
@@ -72,6 +93,7 @@ def config_edit(config_id):
 def config_delete(config_id):
     cfg = PreprocessingConfig.query.get_or_404(config_id)
     nama = cfg.nama_config
+    _hapus_hasil(HasilPreprocessing.query.filter_by(config_id=cfg.id))
     db.session.delete(cfg)
     db.session.commit()
     flash(f'Konfigurasi "{nama}" dihapus.', 'info')
@@ -85,6 +107,9 @@ def config_delete(config_id):
 def run(config_id):
     cfg       = PreprocessingConfig.query.get_or_404(config_id)
     foto_list = DokumentasiFoto.query.all()
+    # Hanya satu config yang boleh punya hasil (config aktif): hasil lama dari config manapun diganti.
+    _hapus_hasil(HasilPreprocessing.query)
+    db.session.commit()
     out_folder = _preprocessed_folder()
     upload_folder = current_app.config['UPLOAD_FOLDER']
 
@@ -139,8 +164,8 @@ def run(config_id):
             db.session.commit()
 
     db.session.commit()
-    total_gambar = berhasil * 5   # 5 tahap per foto
-    flash(f'Preprocessing selesai â€” {berhasil} foto berhasil ({total_gambar} gambar dari 5 tahap), {gagal} gagal.',
+    total_gambar = berhasil * 4   # 4 tahap per foto
+    flash(f'Preprocessing selesai â€” {berhasil} foto berhasil ({total_gambar} gambar dari 4 tahap), {gagal} gagal.',
           'success' if gagal == 0 else 'warning')
     return redirect(url_for('preprocessing.hasil'))
 
@@ -150,23 +175,7 @@ def run(config_id):
 @preprocessing_bp.route('/hasil/reset', methods=['POST'])
 @admin_required
 def hasil_reset():
-    # Hapus file fisik terlebih dahulu sebelum delete record DB
-    hasil_list = HasilPreprocessing.query.filter(
-        HasilPreprocessing.path_output != '',
-        HasilPreprocessing.path_output.isnot(None),
-    ).all()
-
-    hapus_file = 0
-    for h in hasil_list:
-        file_path = os.path.join(current_app.root_path, 'static', h.path_output)
-        if os.path.isfile(file_path):
-            try:
-                os.remove(file_path)
-                hapus_file += 1
-            except OSError:
-                pass
-
-    jumlah = HasilPreprocessing.query.delete()
+    jumlah, hapus_file = _hapus_hasil(HasilPreprocessing.query)
     db.session.commit()
     flash(f'Reset selesai â€” {jumlah} record dan {hapus_file} file dihapus.', 'info')
     return redirect(url_for('preprocessing.hasil'))
@@ -197,7 +206,7 @@ def hasil():
     total_pages = max(1, (total + per_page - 1) // per_page)
 
     step_counts = {s: build_q(s).count()
-                   for s in ('semua', 'resize', 'crop', 'normalisasi', 'denoise', 'augmentasi')}
+                   for s in ('semua', 'resize', 'crop', 'normalisasi', 'denoise')}
 
     return render_template('preprocessing/hasil.html',
                            hasil_list=hasil_list,
@@ -221,20 +230,15 @@ def _config_from_form(form):
 
 def _update_config_from_form(cfg, form):
     cfg.nama_config    = form.get('nama_config', '').strip() or 'Konfigurasi Baru'
-    cfg.target_width   = int(form.get('target_width', 224))
-    cfg.target_height  = int(form.get('target_height', 224))
+    cfg.target_width   = int(form.get('target_width', 256))
+    cfg.target_height  = int(form.get('target_height', 256))
     cfg.resize_method  = form.get('resize_method', 'LANCZOS')
     cfg.resize_mode    = form.get('resize_mode', 'stretch')
     cfg.illum_correction = bool(form.get('illum_correction'))
     cfg.crop_enabled   = bool(form.get('crop_enabled'))
     cfg.crop_width     = int(form.get('crop_width', 224))
     cfg.crop_height    = int(form.get('crop_height', 224))
-    cfg.norm_method    = form.get('norm_method', 'minmax')
-    cfg.aug_flip_h     = bool(form.get('aug_flip_h'))
-    cfg.aug_flip_v     = bool(form.get('aug_flip_v'))
-    cfg.aug_rotate_deg = float(form.get('aug_rotate_deg', 0))
-    cfg.aug_brightness = float(form.get('aug_brightness', 1.0))
-    cfg.aug_contrast   = float(form.get('aug_contrast', 1.0))
+    cfg.norm_method    = form.get('norm_method', 'none')
     cfg.denoise_method = form.get('denoise_method', 'bilateral')
     cfg.denoise_ksize  = int(form.get('denoise_ksize', 3))
     cfg.is_default     = bool(form.get('is_default'))

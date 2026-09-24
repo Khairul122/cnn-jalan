@@ -1,7 +1,7 @@
 """
-audit_sdi_borderline.py — Tandai label yang skor SDI-nya dekat ambang batas (50 dan 150).
+audit_sdi_borderline.py — Tandai label yang skor SDI-nya dekat ambang batas (50, 100, 150).
 
-Baris ini paling rawan salah klasifikasi (Ringan/Sedang atau Sedang/Berat) karena SDI-nya
+Baris ini paling rawan salah klasifikasi (Baik/Sedang/Rusak Ringan/Rusak Berat) karena SDI-nya
 cuma sedikit di bawah/atas garis batas Bina Marga. Dipakai untuk analisis kesalahan terpisah
 (lihat TODO.md P1) — bukan untuk mengubah label apa pun, cuma laporan read-only + CSV.
 
@@ -17,7 +17,7 @@ import sys
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, BASE_DIR)
 
-THRESHOLDS = (50, 150)
+THRESHOLDS = (50, 100, 150)
 
 
 def main():

@@ -63,7 +63,7 @@ class P1Test(unittest.TestCase):
         cls.fotos = fotos
 
     def setUp(self):
-        self.split_ids, self.arsi_ids, self.label_ids = [], [], []
+        self.split_ids, self.arsi_ids, self.label_ids, self.tmp_lokasi_ids = [], [], [], []
 
     def tearDown(self):
         with self.app.app_context():
@@ -75,6 +75,9 @@ class P1Test(unittest.TestCase):
                 SplitConfig.query.filter_by(id=sid).delete()
             for lid in self.label_ids:
                 LabelKerusakan.query.filter_by(id=lid).delete()
+            for lok_id in self.tmp_lokasi_ids:
+                DokumentasiFoto.query.filter_by(lokasi_id=lok_id).delete()
+                LokasiKerusakan.query.filter_by(id=lok_id).delete()
             db.session.commit()
 
     @classmethod
@@ -91,9 +94,23 @@ class P1Test(unittest.TestCase):
         self.assertEqual(r.status_code, 302)
         return c
 
+    def make_temp_foto(self):
+        """(foto_id, lokasi_id) dari lokasi+foto sementara yang belum berlabel. Foto seed produksi
+        sudah berlabel, dan add_label menolak menimpa label nyata."""
+        with self.app.app_context():
+            lok = LokasiKerusakan(nama_citra=f'uji-{self.tag}', latitude=5.18, longitude=97.14,
+                                  pengguna_id=self.user_id)
+            db.session.add(lok)
+            db.session.flush()
+            foto = DokumentasiFoto(lokasi_id=lok.id, nama_file=f'uji-{self.tag}.jpg', path_file=f'uploads/foto/uji-{self.tag}.jpg')
+            db.session.add(foto)
+            db.session.commit()
+            self.tmp_lokasi_ids.append(lok.id)
+            return foto.id, lok.id
+
     def make_split(self, nama='uji'):
         with self.app.app_context():
-            sp = SplitConfig(nama=f'{nama}-{self.tag}', split_type='kfold', n_splits=3, random_state=1,
+            sp = SplitConfig(nama=f'{nama}-{self.tag}', n_splits=3, random_state=1,
                              label_sumber='tingkat', total_data=0, pengguna_id=self.user_id)
             db.session.add(sp)
             db.session.commit()
@@ -127,7 +144,7 @@ class P1Test(unittest.TestCase):
     # ── split basi ─────────────────────────────────────────────
     def test_jumlah_label_basi(self):
         sid = self.make_split()
-        foto = self.fotos[0]
+        foto = self.make_temp_foto()
         self.add_label(foto[1], tingkat=1)
         self.add_item(sid, foto, fold=0, tingkat=2)     # kelas tersimpan beda dari label
         with self.app.app_context():
@@ -136,9 +153,156 @@ class P1Test(unittest.TestCase):
             db.session.commit()
             self.assertEqual(jumlah_label_basi(sid), 0)
 
+    def test_arsitektur_form_stores_disabled_augmentation_layers(self):
+        sid = self.make_split()
+        c = self.client()
+        tok = _token(c.get('/arsitektur/new').get_data(as_text=True))
+        data = {'csrf_token': tok, 'nama': f'aug-{self.tag}', 'split_config_id': str(sid), 'fold_val': '0', 'aug_form': '1'}
+        for k in cnn_service.AUG_KEYS:
+            if k not in ('zoom', 'erasing'):      # zoom & erasing tidak dicentang -> dimatikan
+                data[f'aug_{k}'] = '1'
+        r = c.post('/arsitektur/new', data=data)
+        self.assertEqual(r.status_code, 302)
+        with self.app.app_context():
+            cfg = ArsitekturConfig.query.filter_by(nama=f'aug-{self.tag}').one()
+            self.arsi_ids.append(cfg.id)
+            self.assertEqual(set(cfg.aug_off.split(',')), {'zoom', 'erasing'})
+        # klien tanpa penanda aug_form (mis. scripts/run_pipeline.py): semua augmentasi tetap aktif
+        data2 = {'csrf_token': tok, 'nama': f'aug2-{self.tag}', 'split_config_id': str(sid), 'fold_val': '0'}
+        self.assertEqual(c.post('/arsitektur/new', data=data2).status_code, 302)
+        with self.app.app_context():
+            cfg2 = ArsitekturConfig.query.filter_by(nama=f'aug2-{self.tag}').one()
+            self.arsi_ids.append(cfg2.id)
+            self.assertEqual(cfg2.aug_off, '')
+
+    def test_split_form_rejects_non_numeric_input_without_creating_split(self):
+        c = self.client()
+        tok = _token(c.get('/split/new').get_data(as_text=True))
+        nama = f'bad-{self.tag}'
+        with self.app.app_context():
+            sebelum = SplitConfig.query.count()
+        r = c.post('/split/new', data={'csrf_token': tok, 'nama': nama, 'n_splits': 'lima', 'random_state': '42'},
+                   follow_redirects=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('bilangan bulat', r.get_data(as_text=True))
+        with self.app.app_context():
+            self.assertEqual(SplitConfig.query.count(), sebelum)
+            self.assertFalse(hasattr(SplitConfig, 'split_type'))   # mode holdout dihapus
+
+    def _hapus_split_berawalan(self, prefix):
+        with self.app.app_context():
+            for sp in SplitConfig.query.filter(SplitConfig.nama.like(prefix + '%')).all():
+                SplitItem.query.filter_by(config_id=sp.id).delete()
+                db.session.delete(sp)
+            db.session.commit()
+
+    def test_split_form_creates_repeated_splits_with_spatial_groups(self):
+        import math
+        from app.services.dedup_service import _haversine_m
+        prefix = f'rep-{self.tag}'
+        self.addCleanup(self._hapus_split_berawalan, prefix)
+        c = self.client()
+        tok = _token(c.get('/split/new').get_data(as_text=True))
+        r = c.post('/split/new', data={'csrf_token': tok, 'nama': prefix, 'n_splits': '5', 'random_state': '42',
+                                       'radius_grup_m': '50', 'ulangan': '2'})
+        self.assertEqual(r.status_code, 302)
+        with self.app.app_context():
+            splits = SplitConfig.query.filter(SplitConfig.nama.like(prefix + '%')).order_by(SplitConfig.random_state).all()
+            self.assertEqual([s.random_state for s in splits], [42, 43])
+            self.assertTrue(all(s.radius_grup_m == 50 for s in splits))
+            from app.models.lokasi_kerusakan import LokasiKerusakan
+            for sp in splits:
+                rows = (db.session.query(SplitItem.fold_index, LokasiKerusakan.latitude, LokasiKerusakan.longitude)
+                        .join(DokumentasiFoto, SplitItem.dokumentasi_id == DokumentasiFoto.id)
+                        .join(LokasiKerusakan, DokumentasiFoto.lokasi_id == LokasiKerusakan.id)
+                        .filter(SplitItem.config_id == sp.id).all())
+                self.assertEqual(len(rows), sp.total_data)
+                for i in range(len(rows)):           # foto <= 50 m tidak boleh beda fold
+                    for j in range(i + 1, len(rows)):
+                        if rows[i][0] != rows[j][0]:
+                            self.assertGreater(_haversine_m((float(rows[i][1]), float(rows[i][2])),
+                                                            (float(rows[j][1]), float(rows[j][2]))), 50)
+
+    def test_split_form_rejects_radius_that_makes_group_larger_than_a_fold(self):
+        prefix = f'big-{self.tag}'
+        self.addCleanup(self._hapus_split_berawalan, prefix)
+        c = self.client()
+        tok = _token(c.get('/split/new').get_data(as_text=True))
+        r = c.post('/split/new', data={'csrf_token': tok, 'nama': prefix, 'n_splits': '5', 'random_state': '42',
+                                       'radius_grup_m': '500', 'ulangan': '1'}, follow_redirects=True)
+        self.assertIn('tidak bisa seimbang', r.get_data(as_text=True))
+        with self.app.app_context():
+            self.assertEqual(SplitConfig.query.filter(SplitConfig.nama.like(prefix + '%')).count(), 0)
+
+    def test_cv_ulangan_aggregates_between_runs(self):
+        from app.services.metrics_service import cv_ulangan
+        def cv(acc, f1):
+            return {'akurasi': acc, 'macro_f1': f1, 'baseline': 46.1, 'selisih_baseline': round(acc - 46.1, 1),
+                    'recall': {k: acc for k in ('rusak_berat', 'rusak_ringan', 'sedang', 'baik')}}
+        self.assertIsNone(cv_ulangan([('a', cv(50, 40))]))
+        r = cv_ulangan([('a', cv(50.0, 40.0)), ('b', cv(54.0, 44.0)), ('c', cv(52.0, 42.0))])
+        self.assertEqual(r['n_run'], 3)
+        self.assertEqual(r['akurasi'], {'mean': 52.0, 'std': 2.0, 'min': 50.0, 'max': 54.0})
+        self.assertEqual(r['macro_f1']['mean'], 42.0)
+        self.assertEqual(r['recall']['baik']['mean'], 52.0)
+
+    def test_cv_summary_cross_entropy_uses_true_class_probability(self):
+        import json, math
+        sid = self.make_split()
+        aid = self.make_arsitektur(sid, status='selesai', pred_type='cv')
+        aktual = [0, 1, 2, 3, 0, 1]
+        prob_benar = [0.5, 0.25, 0.8, 0.1, 0.5, 0.25]
+        with self.app.app_context():
+            for i, foto in enumerate(self.fotos):
+                p = [0.1] * 4
+                p[aktual[i]] = prob_benar[i]
+                db.session.add(SplitItem(config_id=sid, dokumentasi_id=foto[0],
+                                         tingkat_kerusakan_id=aktual[i] + 1, fold_index=i // 3))
+                db.session.add(PrediksiModel(arsitektur_id=aid, dokumentasi_id=foto[0], prediksi=int(max(range(4), key=p.__getitem__)),
+                                             aktual=aktual[i], confidence=90, probabilitas=json.dumps(p)))
+            db.session.commit()
+            res = cv_summary(db.session.get(ArsitekturConfig, aid))
+        harapan = round(sum(-math.log(x) for x in prob_benar) / len(prob_benar), 3)
+        self.assertEqual(res['cross_entropy'], harapan)
+
+    def test_cv_predict_snapshot_carries_every_hyperparameter(self):
+        """Regresi: _run_cv_predict punya snapshot sendiri; field yang lupa disalin membuat CV crash atau memakai default."""
+        from app.controllers.arsitektur_controller import _run_cv_predict, _cv_progress
+        from app.services import cnn_service as svc
+        sid = self.make_split()
+        aid = self.make_arsitektur(sid, status='selesai')
+        with self.app.app_context():
+            db.session.query(ArsitekturConfig).filter_by(id=aid).update(
+                {'mixup_alpha': 0.2, 'label_smoothing': 0.1, 'dense_units': 32, 'skip_fine_tuning': True, 'aug_off': 'zoom'})
+            db.session.commit()
+        with mock.patch.object(svc, 'predict_cv', return_value=[]) as pc:
+            _run_cv_predict(self.app, aid, '.')
+        self.assertNotIn('error', _cv_progress.get(aid, {}))
+        dipakai = pc.call_args.args[0]
+        for k in svc.training.HYPERPARAM_FIELDS:
+            self.assertTrue(hasattr(dipakai, k), k)
+        self.assertEqual((dipakai.mixup_alpha, dipakai.label_smoothing, dipakai.dense_units, dipakai.skip_fine_tuning, dipakai.aug_off),
+                         (0.2, 0.1, 32, True, 'zoom'))
+        _cv_progress.pop(aid, None)
+
+    def test_train_refused_when_photo_not_preprocessed(self):
+        sid = self.make_split()
+        foto = self.make_temp_foto()          # foto baru: belum punya hasil preprocessing
+        self.add_label(foto[1], tingkat=1)    # label sesuai item split, supaya bukan ditolak karena split basi
+        self.add_item(sid, foto, fold=0, tingkat=1)
+        aid = self.make_arsitektur(sid)
+        c = self.client()
+        tok = _token(c.get('/arsitektur/').get_data(as_text=True))
+        with mock.patch('app.controllers.arsitektur_controller.threading.Thread') as thread:
+            r = c.post(f'/arsitektur/{aid}/train', data={'csrf_token': tok}, follow_redirects=True)
+            thread.assert_not_called()
+        self.assertIn('belum punya hasil preprocessing', r.get_data(as_text=True))
+        with self.app.app_context():
+            self.assertEqual(db.session.get(ArsitekturConfig, aid).status, 'draft')
+
     def test_train_refused_when_split_stale(self):
         sid = self.make_split()
-        foto = self.fotos[0]
+        foto = self.make_temp_foto()
         self.add_label(foto[1], tingkat=1)
         self.add_item(sid, foto, fold=0, tingkat=3)
         aid = self.make_arsitektur(sid)
@@ -189,7 +353,7 @@ class P1Test(unittest.TestCase):
     # ── ekspor CSV ─────────────────────────────────────────────
     def test_export_filename_is_sanitized(self):
         with self.app.app_context():
-            sp = SplitConfig(nama='a"b\r\nX-Evil: 1/../x', split_type='kfold', n_splits=3, random_state=1,
+            sp = SplitConfig(nama='a"b\r\nX-Evil: 1/../x', n_splits=3, random_state=1,
                              label_sumber='tingkat', total_data=0, pengguna_id=self.user_id)
             db.session.add(sp)
             db.session.commit()
@@ -248,8 +412,14 @@ class P1Test(unittest.TestCase):
             self.assertEqual(res['akurasi'], 50.0)          # 3 dari 6 benar
             self.assertEqual([f['akurasi'] for f in res['per_fold']], [66.7, 33.3])
             self.assertEqual(res['baseline'], 33.3)
-            self.assertEqual(res['recall']['berat'], 100.0)
-            self.assertEqual(res['recall']['ringan'], 0.0)
+            self.assertEqual(res['recall']['rusak_berat'], 100.0)
+            self.assertEqual(res['recall']['sedang'], 0.0)
+            self.assertEqual(res['precision']['rusak_berat'], 40.0)   # 5 diprediksi kelas 0, 2 benar
+            self.assertEqual(res['precision']['sedang'], 0.0)         # tidak pernah diprediksi
+            self.assertEqual(res['f1']['rusak_berat'], 57.1)
+            # 3 salah: 2->0 (x2) melompat jauh, 1->0 bersebelahan
+            self.assertEqual(res['kesalahan'], {'total': 3, 'bersebelahan': 1, 'jauh': 2})
+            self.assertIsNone(res['cross_entropy'])                   # prediksi tanpa probabilitas
             c = self.client()
             for path in (f'/arsitektur/{aid}', f'/arsitektur/{aid}/gis'):
                 page = c.get(path)

@@ -9,7 +9,7 @@ from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.label_kerusakan import LabelKerusakan
 
 from .dataset import _preprocessed_subquery
-from .training import train, save_model
+from .training import train, save_model, hyperparams
 
 _model_cache = {}   # path → (mtime, model)
 
@@ -19,7 +19,7 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
     K-Fold cross-validation prediction.
     Each photo's fold is predicted by a model trained on all OTHER folds.
     on_progress(fold_done, n_folds, epoch, total_epochs) — called each epoch + at fold completion.
-    Returns list of {dokumentasi_id, prediksi, aktual, confidence}.
+    Returns list of {dokumentasi_id, prediksi, aktual, confidence, probabilitas}.
     """
     import gc
     from collections import defaultdict
@@ -52,17 +52,7 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
     for r in rows:
         fold_items[r.fold_index].append(r)
 
-    cfg_base = dict(
-        split_config_id = arsitektur.split_config_id,
-        input_size      = arsitektur.input_size,
-        model_type      = arsitektur.model_type,
-        dropout_rate    = arsitektur.dropout_rate,
-        optimizer       = arsitektur.optimizer,
-        learning_rate   = arsitektur.learning_rate,
-        batch_size      = arsitektur.batch_size,
-        epochs          = arsitektur.epochs,
-        patience        = getattr(arsitektur, 'patience', 5),
-    )
+    cfg_base = dict(split_config_id=arsitektur.split_config_id, **hyperparams(arsitektur))
 
     results = []
 
@@ -110,6 +100,7 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
                 'prediksi':       pred,
                 'aktual':         aktual,
                 'confidence':     round(conf * 100, 2),
+                'probabilitas':   [round(float(p), 4) for p in probs],
             })
 
         # Free memory before next fold
@@ -163,7 +154,7 @@ def predict_all(arsitektur, base_dir):
             probs = _predict_probs_with(models, arr)
             pred = int(np.argmax(probs))
             conf = float(np.max(probs))
-            aktual = int(row.tingkat_kerusakan_id) - 1  # 0=Berat,1=Sedang,2=Ringan
+            aktual = int(row.tingkat_kerusakan_id) - 1  # indeks kelas, lihat app/kelas.py
         except Exception:
             continue
 
@@ -172,6 +163,7 @@ def predict_all(arsitektur, base_dir):
             'prediksi':       pred,
             'aktual':         aktual,
             'confidence':     round(conf * 100, 2),
+            'probabilitas':   [round(float(p), 4) for p in probs],
         })
 
     return results
@@ -253,7 +245,7 @@ def _predict_with_tta(model, img_arr):
     10 view (diperluas dari flip-only, TODO.md P3). Flip horizontal representatif untuk foto
     jalan (perspektif kendaraan simetris kiri-kanan), sama seperti augmentasi
     RandomFlip('horizontal') yang dipakai saat training.
-    img_arr: array [H, W, 3] float32 [0,255], belum di-batch. Return: vektor probabilitas [3].
+    img_arr: array [H, W, 3] float32 [0,255], belum di-batch. Return: vektor probabilitas [4].
     """
     batch = np.stack(_five_crop_flip_views(img_arr))
     probs = model.predict(batch, verbose=0)
@@ -300,7 +292,7 @@ def _predict_probs_with(models, img_arr):
 
 def predict_image(arsitektur, img_path, base_dir, prep_config=None):
     """
-    Prediksi satu foto → (kelas 0..2, confidence 0..1). Pakai ensemble model fold CV + TTA
+    Prediksi satu foto → (kelas 0..3, confidence 0..1). Pakai ensemble model fold CV + TTA
     kalau tersedia (lihat _resolve_prediction_models), fallback ke model tunggal + TTA.
     Bila prep_config diberikan, foto diproses dengan pipeline yang sama seperti data training
     (hasil tahap denoise); jika tidak, hanya di-resize.

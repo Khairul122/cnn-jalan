@@ -108,8 +108,7 @@ def prediksi_geojson():
     if not arsitektur_id:
         return jsonify({'type': 'FeatureCollection', 'features': []})
 
-    LABEL = {0: 'Berat', 1: 'Sedang', 2: 'Ringan'}
-    WARNA = {0: '#E53E3E', 1: '#F59E0B', 2: '#10B981'}
+    from app.kelas import LABEL, WARNA
 
     prediksi_list = (
         PrediksiModel.query

@@ -69,11 +69,11 @@
       </div>
     </li>
 
-    {% set dr_label = 'Valid' %}
+    {% set dr_label = 'Status' %}
     {% if hasil.is_valid %}
-      {% set dr_value = '<span class="badge bg-success">Valid</span>' %}
+      {% set dr_value = '<span class="badge bg-success">Confidence memadai</span>' %}
     {% else %}
-      {% set dr_value = '<span class="badge bg-danger">Perlu Ulang</span>' %}
+      {% set dr_value = '<span class="badge bg-warning text-dark">Perlu verifikasi manual</span>' %}
     {% endif %}
     {% set dr_raw = true %}
     {% include 'components/detail_row.html' %}

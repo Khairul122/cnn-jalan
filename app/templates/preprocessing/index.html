@@ -32,9 +32,9 @@
         <strong style="color:rgba(255,255,255,.8);">Resize</strong> →
         <strong style="color:rgba(255,255,255,.8);">Center Crop</strong> →
         <strong style="color:rgba(255,255,255,.8);">Normalisasi</strong> →
-        <strong style="color:rgba(255,255,255,.8);">Augmentasi</strong> →
         <strong style="color:rgba(255,255,255,.8);">Denoise</strong>
         &nbsp;|&nbsp; Output disimpan di <code style="color:#38BDF8;font-size:.72rem;">uploads/preprocessed/</code>
+        <br>Augmentasi tidak ada di tahap ini: augmentasi training ada di dalam model dan diatur di form Arsitektur CNN.
       </p>
     </div>
   </div>
@@ -65,7 +65,6 @@
       ('Resize',       'bi-aspect-ratio',        '#38BDF8'),
       ('Center Crop',  'bi-crop',                '#6366F1'),
       ('Normalisasi',  'bi-distribute-vertical', '#10B981'),
-      ('Augmentasi',   'bi-shuffle',             '#F59E0B'),
       ('Denoise',      'bi-eraser-fill',         '#A78BFA'),
   ] %}
   <div style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;
@@ -89,7 +88,6 @@
         <th>Nama Konfigurasi</th>
         <th>Resize</th>
         <th>Normalisasi</th>
-        <th>Augmentasi</th>
         <th>Denoise</th>
         <th style="text-align:center;width:160px;">Aksi</th>
       </tr>
@@ -100,7 +98,9 @@
         <td style="font-size:.78rem;color:var(--c-muted);">{{ loop.index }}</td>
         <td>
           <div style="font-weight:600;font-size:.85rem;color:var(--c-text);">{{ cfg.nama_config }}</div>
-          {% if cfg.is_default %}
+          {% if cfg.id == aktif_id %}
+          <span style="font-size:.68rem;color:#059669;font-weight:700;">Aktif (dipakai training &amp; klasifikasi)</span>
+          {% elif cfg.is_default %}
           <span style="font-size:.68rem;color:#10B981;font-weight:500;">Default</span>
           {% endif %}
         </td>
@@ -113,15 +113,6 @@
         <td>
           {% set norm_label = {'minmax':'Min-Max','zscore':'Z-Score','none':'Tidak Ada'} %}
           <span style="font-size:.78rem;color:var(--c-text);">{{ norm_label.get(cfg.norm_method, cfg.norm_method) }}</span>
-        </td>
-        <td>
-          <div style="font-size:.75rem;color:var(--c-text);">
-            {% set aug_items = [] %}
-            {% if cfg.aug_flip_h %}{% set _ = aug_items.append('Flip H') %}{% endif %}
-            {% if cfg.aug_flip_v %}{% set _ = aug_items.append('Flip V') %}{% endif %}
-            {% if cfg.aug_rotate_deg and cfg.aug_rotate_deg != 0 %}{% set _ = aug_items.append('Rotate ' ~ cfg.aug_rotate_deg ~ '°') %}{% endif %}
-            {% if aug_items %}{{ aug_items | join(', ') }}{% else %}<span style="color:var(--c-muted);">—</span>{% endif %}
-          </div>
         </td>
         <td>
           {% if cfg.denoise_method == 'none' %}
@@ -143,7 +134,7 @@
                              background:linear-gradient(135deg,#059669,#10B981);color:#fff;"
                       onclick="showConfirmForm(this,
                         'Jalankan Preprocessing',
-                        'Pipeline 5 tahap akan dijalankan pada <strong>semua 280 foto</strong> menggunakan konfigurasi <strong>{{ cfg.nama_config }}</strong>. Proses menghasilkan <strong>1400 gambar</strong> baru.',
+                        'Pipeline 4 tahap akan dijalankan pada <strong>semua {{ total_foto }} foto</strong> dengan konfigurasi <strong>{{ cfg.nama_config }}</strong>. Semua hasil preprocessing sebelumnya <strong>diganti</strong> (hanya satu config yang aktif), dan model yang sudah dilatih dengan config lama perlu dilatih ulang.',
                         'success','Ya, Jalankan','Proses ini memakan waktu beberapa menit')">
                 <i class="bi bi-play-fill"></i> Jalankan
               </button>

@@ -1,8 +1,9 @@
-﻿from app import utcnow
+import json
+
+from app import utcnow
 from app import db
 
-LABEL_MAP = {0: 'Berat', 1: 'Sedang', 2: 'Ringan'}
-WARNA_MAP = {0: '#E53E3E', 1: '#F59E0B', 2: '#10B981'}
+from app.kelas import LABEL as LABEL_MAP, WARNA as WARNA_MAP
 
 
 class PrediksiModel(db.Model):
@@ -14,10 +15,18 @@ class PrediksiModel(db.Model):
     prediksi       = db.Column(db.SmallInteger, nullable=False)
     aktual         = db.Column(db.SmallInteger, nullable=True)
     confidence     = db.Column(db.Float, nullable=False)
+    probabilitas   = db.Column(db.Text, nullable=True)   # JSON [p_kelas0..p_kelas3]; NULL = prediksi lama
     created_at     = db.Column(db.DateTime, default=utcnow)
 
     arsitektur  = db.relationship('ArsitekturConfig', backref=db.backref('prediksi_list', cascade='all, delete-orphan'))
     dokumentasi = db.relationship('DokumentasiFoto')
+
+    @classmethod
+    def dari_hasil(cls, arsitektur_id, r):
+        """Baris dari dict hasil cnn_service.predict_* ({dokumentasi_id, prediksi, aktual, confidence, probabilitas})."""
+        return cls(arsitektur_id=arsitektur_id, dokumentasi_id=r['dokumentasi_id'], prediksi=r['prediksi'],
+                   aktual=r['aktual'], confidence=r['confidence'],
+                   probabilitas=json.dumps(r['probabilitas']) if r.get('probabilitas') is not None else None)
 
     @property
     def label_prediksi(self):

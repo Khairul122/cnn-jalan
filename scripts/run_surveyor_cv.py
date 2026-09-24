@@ -101,7 +101,7 @@ def main():
         # label_sumber cuma bisa 'tingkat'/'jenis' (target klasifikasi, bukan sumber datanya) —
         # split surveyor tetap target 'tingkat', dibedakan lewat nama split.
         split_cfg = SplitConfig(
-            nama=nama_split, split_type='kfold', n_splits=args.k, random_state=args.random_state,
+            nama=nama_split, n_splits=args.k, random_state=args.random_state,
             label_sumber='tingkat', total_data=len(result), pengguna_id=admin.id,
         )
         db.session.add(split_cfg)

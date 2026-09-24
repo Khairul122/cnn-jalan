@@ -2,6 +2,7 @@
 import os
 import numpy as np
 
+from app.kelas import KEYS, N_KELAS
 from .dataset import load_dataset
 
 
@@ -25,13 +26,13 @@ def evaluate(arsitektur, base_dir):
 
     y_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
 
-    cm = confusion_matrix(y_val, y_pred, labels=[0, 1, 2]).tolist()
+    cm = confusion_matrix(y_val, y_pred, labels=list(range(N_KELAS))).tolist()
     akurasi = float(np.sum(y_pred == y_val) / len(y_val))
 
     report = classification_report(
         y_val, y_pred,
-        labels=[0, 1, 2],
-        target_names=['berat', 'sedang', 'ringan'],
+        labels=list(range(N_KELAS)),
+        target_names=list(KEYS),
         output_dict=True,
         zero_division=0,
     )
@@ -41,9 +42,8 @@ def evaluate(arsitektur, base_dir):
         'akurasi':        round(akurasi * 100, 2),
         'confusion_matrix': json.dumps(cm),
         'per_class': {
-            'berat':   {k: round(report['berat'][k] * 100, 2)   for k in ('precision', 'recall', 'f1-score')},
-            'sedang':  {k: round(report['sedang'][k] * 100, 2)  for k in ('precision', 'recall', 'f1-score')},
-            'ringan':  {k: round(report['ringan'][k] * 100, 2)  for k in ('precision', 'recall', 'f1-score')},
+            key: {k: round(report[key][k] * 100, 2) for k in ('precision', 'recall', 'f1-score')}
+            for key in KEYS
         },
         'macro': {
             'precision': round(report['macro avg']['precision'] * 100, 2),

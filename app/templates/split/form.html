@@ -27,8 +27,7 @@
     </div>
     <div class="sf-info-sep"></div>
     {% for t in tingkat_list %}
-    {% set colors = {'Berat':'#DC2626','Sedang':'#F59E0B','Ringan':'#10B981'} %}
-    {% set col = colors.get(t.nama_tingkat, '#A78BFA') %}
+    {% set col = KELAS[t.id - 1].warna %}
     <div class="sf-info-item">
       <span style="width:6px;height:6px;border-radius:50%;background:{{ col }};flex-shrink:0;"></span>
       <span style="color:var(--c-muted);">{{ t.nama_tingkat }}</span>
@@ -109,6 +108,27 @@
                oninput="updatePreview()">
         <p style="font-size:.68rem;color:var(--c-muted);margin:.3rem 0 0;">
           Seed untuk reproduktibilitas split.
+        </p>
+      </div>
+
+      <div class="sf-field">
+        <label class="sf-label">Radius grup spasial (meter)</label>
+        <input type="number" name="radius_grup_m" value="50" min="0" max="500"
+               class="sf-input" style="font-variant-numeric:tabular-nums;">
+        <p style="font-size:.68rem;color:var(--c-muted);margin:.3rem 0 0;">
+          Foto yang berjarak ≤ radius (GPS) dipaksa satu fold, supaya lokasi berdekatan di ruas jalan yang sama tidak
+          terbelah antara train dan val. 0 = nonaktif. Pada dataset ini 50 m menggabungkan ±79 foto ke grup ≤ 5 foto;
+          100 m mulai membentuk grup raksasa (47 foto), dan radius yang membuat grup lebih besar dari satu fold ditolak.
+        </p>
+      </div>
+
+      <div class="sf-field mb-0">
+        <label class="sf-label">Jumlah ulangan (Repeated K-Fold)</label>
+        <input type="number" name="ulangan" value="1" min="1" max="5"
+               class="sf-input" style="font-variant-numeric:tabular-nums;">
+        <p style="font-size:.68rem;color:var(--c-muted);margin:.3rem 0 0;">
+          1 = satu split. &gt;1 membuat beberapa split dengan seed berurutan (seed, seed+1, ...). Latih satu model per split, lalu
+          gabungkan di Arsitektur CNN → Ringkasan Repeated CV. Tiap ulangan = satu run CV penuh.
         </p>
       </div>
 

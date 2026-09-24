@@ -14,10 +14,24 @@ from scripts.seed_data import read_excel
 class P2Test(unittest.TestCase):
     def test_hitung_sdi(self):
         self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 0), 0)
-        self.assertEqual(LabelKerusakan.hitung_sdi(15, 'lebar', 12, 2), 135)
+        # F_retak 20x2 + F_lubang 75 + F_rutting 10 (standar Bina Marga: 2,5/10/20)
+        self.assertEqual(LabelKerusakan.hitung_sdi(15, 'lebar', 12, 2), 125)
+        # breakpoint F_retak: 10-30% -> 20, >30% -> 40
+        self.assertEqual(LabelKerusakan.hitung_sdi(25, 'halus', 0, 0), 20)
+        self.assertEqual(LabelKerusakan.hitung_sdi(30, 'halus', 0, 0), 20)
+        self.assertEqual(LabelKerusakan.hitung_sdi(30.01, 'halus', 0, 0), 40)
+        self.assertEqual(LabelKerusakan.hitung_sdi(25, 'lebar', 0, 0), 40)
+        # F_rutting: <=1cm -> 2,5 | <=3cm -> 10 | >3cm -> 20
+        self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 1), 2.5)
+        self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 3), 10)
+        self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 3.01), 20)
 
     def test_tingkat_dari_sdi(self):
+        # 4 kategori Bina Marga: Baik <50 | Sedang 50-100 | Rusak Ringan 100-150 | Rusak Berat >150
+        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(49.99), 4)
         self.assertEqual(LabelKerusakan.tingkat_dari_sdi(50), 3)
+        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(100), 3)
+        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(100.01), 2)
         self.assertEqual(LabelKerusakan.tingkat_dari_sdi(150), 2)
         self.assertEqual(LabelKerusakan.tingkat_dari_sdi(150.01), 1)
 
@@ -44,7 +58,7 @@ class P2Test(unittest.TestCase):
         self.assertLessEqual(params['jumlah_lubang'], LabelKerusakan.LUBANG_MAX)
         self.assertLessEqual(params['persen_retak'], 100)
         self.assertLessEqual(params['kedalaman_rutting'], LabelKerusakan.RUTTING_MAX)
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(sdi), 1)  # Berat — saturasi wajar
+        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(sdi), 1)  # Rusak Berat — saturasi wajar
 
     def test_split_service_is_stratified_and_deterministic(self):
         items = [{'dokumentasi_id': index, 'label_id': index % 3} for index in range(12)]
@@ -176,6 +190,70 @@ class P2Test(unittest.TestCase):
         finally:
             if os.path.exists(path):
                 os.remove(path)
+
+    def test_mixup_dataset_yields_soft_labels_over_all_classes(self):
+        from app.services.cnn_service.training import _mixup_dataset
+        from app.kelas import N_KELAS
+        X = np.random.RandomState(0).rand(16, 4, 4, 3).astype(np.float32)
+        y = np.arange(16) % N_KELAS
+        sw = np.array([0.5, 1.0, 1.5, 2.0] * 4, dtype=np.float32)
+        ds = _mixup_dataset(X, y, sw, batch_size=4, alpha=0.4, n_classes=N_KELAS, seed=1)
+        for xb, yb, wb in ds.take(3):
+            self.assertEqual(xb.shape, (4, 4, 4, 3))
+            self.assertEqual(yb.shape, (4, N_KELAS))
+            np.testing.assert_allclose(yb.numpy().sum(axis=1), 1.0, atol=1e-5)   # tiap baris distribusi valid
+            self.assertTrue(((wb.numpy() >= 0.5 - 1e-6) & (wb.numpy() <= 2.0 + 1e-6)).all())
+
+    def test_loss_is_categorical_only_when_mixup_or_label_smoothing(self):
+        from tensorflow import keras
+        from app.services.cnn_service.model import _make_loss, uses_onehot_labels
+        self.assertFalse(uses_onehot_labels(0, 0))
+        self.assertTrue(uses_onehot_labels(0.2, 0))
+        self.assertTrue(uses_onehot_labels(0, 0.1))
+        self.assertIsInstance(_make_loss(0, 0), keras.losses.SparseCategoricalCrossentropy)
+        self.assertIsInstance(_make_loss(0.2, 0), keras.losses.CategoricalCrossentropy)
+        self.assertEqual(_make_loss(0, 0.1).label_smoothing, 0.1)
+
+    def test_augmentation_layers_can_be_disabled_per_layer(self):
+        from app.services.cnn_service.model import AUG_KEYS, _augmentation_layers, parse_aug_off
+        self.assertEqual(len(_augmentation_layers()), len(AUG_KEYS))
+        self.assertEqual(len(_augmentation_layers('zoom,erasing')), len(AUG_KEYS) - 2)
+        self.assertEqual(_augmentation_layers(AUG_KEYS), [])
+        self.assertEqual(parse_aug_off('zoom, erasing'), ('zoom', 'erasing'))
+        self.assertEqual(parse_aug_off(''), ())
+        with self.assertRaises(ValueError):
+            parse_aug_off('zoom,tidak_ada')
+
+    def test_hyperparams_cover_every_training_field_and_reach_train_final(self):
+        from types import SimpleNamespace
+        from unittest import mock
+        from app.models.arsitektur_config import ArsitekturConfig
+        cfg = ArsitekturConfig(id=1, split_config_id=1, input_size=224, model_type='mobilenetv2', dropout_rate=0.3,
+                               optimizer='adam', learning_rate=1e-4, batch_size=16, epochs=5, patience=5,
+                               mixup_alpha=0.2, label_smoothing=0.1, dense_units=32, dense_l2=1e-3,
+                               skip_fine_tuning=True, aug_off='zoom')
+        hp = cnn_service.hyperparams(cfg)
+        self.assertEqual(set(hp), set(cnn_service.training.HYPERPARAM_FIELDS))
+        with mock.patch.object(cnn_service.training, 'train', return_value=('m', None)) as train:
+            cnn_service.train_final(cfg, base_dir='.')
+        dipakai = train.call_args.args[0]
+        for k, v in hp.items():   # sebelumnya model final memakai default untuk field yang lupa disalin
+            self.assertEqual(getattr(dipakai, k), v, k)
+
+    def test_preprocessing_pipeline_has_four_steps_and_no_augmentation(self):
+        from types import SimpleNamespace
+        from PIL import Image
+        from app.services.preprocessing_service import PreprocessingService
+        cfg = SimpleNamespace(target_width=32, target_height=32, resize_method='LANCZOS', resize_mode='stretch',
+                              illum_correction=False, crop_enabled=True, crop_width=24, crop_height=24,
+                              norm_method='none', denoise_method='bilateral', denoise_ksize=3)
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, 'a.png')
+            Image.new('RGB', (40, 30), 'gray').save(path)
+            steps = PreprocessingService.run_pipeline_steps(path, cfg)
+        self.assertEqual([k for k, _, _ in steps], ['resize', 'crop', 'normalisasi', 'denoise'])
+        self.assertEqual(steps[0][1].size, (32, 32))
+        self.assertEqual(steps[-1][1].size, (24, 24))
 
 
 if __name__ == '__main__':

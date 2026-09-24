@@ -108,20 +108,16 @@
       <div class="cm-grid">
         <!-- Header row -->
         <div class="cm-cell cm-corner"></div>
-        {% for lbl, clr in [('Berat','#E53E3E'),('Sedang','#F59E0B'),('Ringan','#10B981')] %}
-        <div class="cm-cell cm-header" style="color:{{ clr }};">{{ lbl }}</div>
+        {% for k in KELAS %}
+        <div class="cm-cell cm-header" style="color:{{ k.warna }};">{{ k.nama }}</div>
         {% endfor %}
 
         <!-- Data rows -->
-        {% for row_data in [
-          (0, 'Berat',  '#E53E3E'),
-          (1, 'Sedang', '#F59E0B'),
-          (2, 'Ringan', '#10B981'),
-        ] %}
-        {% set row_i = row_data[0] %}{% set row_lbl = row_data[1] %}{% set row_clr = row_data[2] %}
+        {% for k in KELAS %}
+        {% set row_i = loop.index0 %}{% set row_lbl = k.nama %}{% set row_clr = k.warna %}
         <div class="cm-cell cm-row-label" style="color:{{ row_clr }};">{{ row_lbl }}</div>
-        {% set row_total = cm[row_i][0] + cm[row_i][1] + cm[row_i][2] %}
-        {% for col_i in range(3) %}
+        {% set row_total = cm[row_i]|sum %}
+        {% for col_i in range(KELAS|length) %}
           {% set val = cm[row_i][col_i] %}
           {% set opacity = (val / row_total) if row_total > 0 else 0 %}
           <div class="cm-cell cm-data {% if row_i == col_i %}cm-diagonal{% endif %}"
@@ -166,11 +162,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for kls, clr, p, r, f in [
-            ('Berat',  '#E53E3E', hasil.precision_berat,  hasil.recall_berat,  hasil.f1_berat),
-            ('Sedang', '#F59E0B', hasil.precision_sedang, hasil.recall_sedang, hasil.f1_sedang),
-            ('Ringan', '#10B981', hasil.precision_ringan, hasil.recall_ringan, hasil.f1_ringan),
-          ] %}
+          {% for k in KELAS %}{% set pc = hasil.get_per_class()[k.key] %}{% set kls = k.nama %}{% set clr = k.warna %}{% set p = pc['precision'] %}{% set r = pc['recall'] %}{% set f = pc['f1-score'] %}
           <tr>
             <td><span class="ev-kls-badge" style="color:{{ clr }};background:{{ clr }}1a;">{{ kls }}</span></td>
             <td>{{ p }}%</td>
@@ -191,11 +183,7 @@
 
       <!-- Mini bar chart per kelas F1 -->
       <div class="mt-3">
-        {% for kls, clr, f in [
-          ('Berat',  '#E53E3E', hasil.f1_berat),
-          ('Sedang', '#F59E0B', hasil.f1_sedang),
-          ('Ringan', '#10B981', hasil.f1_ringan),
-        ] %}
+        {% for k in KELAS %}{% set kls = k.nama %}{% set clr = k.warna %}{% set f = hasil.get_per_class()[k.key]['f1-score'] %}
         <div class="d-flex align-items-center gap-2 mb-2">
           <span style="font-size:.71rem;color:var(--c-muted);width:42px;">{{ kls }}</span>
           <div style="flex:1;background:var(--c-bg);border-radius:99px;height:7px;overflow:hidden;">
@@ -264,7 +252,7 @@
 /* Confusion matrix */
 .cm-grid {
   display: grid;
-  grid-template-columns: 52px repeat(3, 1fr);
+  grid-template-columns: 52px repeat(4, 1fr);
   gap: 4px;
 }
 .cm-cell {

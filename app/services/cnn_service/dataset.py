@@ -13,14 +13,18 @@ from app.models.hasil_preprocessing import HasilPreprocessing
 MIN_TRAIN_SAMPLES = 20
 MIN_VAL_SAMPLES = 5
 
-# Tahap preprocessing non-acak (urutan kumulatif pipeline). 'augmentasi' sengaja
-# dikecualikan: hasilnya random per-run, tidak dipakai untuk training (lihat CLAUDE.md).
+# Tahap preprocessing (urutan kumulatif pipeline); semuanya deterministik. Augmentasi training
+# ada di dalam model (cnn_service/model.py), bukan di tahap preprocessing.
 TRAIN_EXPAND_STEPS = ('resize', 'crop', 'normalisasi', 'denoise')
 
 
 def _preprocessed_subquery():
-    """Path 'denoise' terbaru per foto — dipakai untuk validasi/prediksi (1 gambar/foto,
-    representatif untuk inferensi foto baru yang sesungguhnya)."""
+    """Path 'denoise' per foto — dipakai untuk validasi/prediksi (1 gambar/foto,
+    representatif untuk inferensi foto baru yang sesungguhnya).
+
+    Aman tanpa filter config karena hasil_preprocessing hanya boleh berisi SATU config
+    (config aktif): menjalankan preprocessing menggantikan semua hasil sebelumnya.
+    """
     return (
         db.session.query(
             HasilPreprocessing.dokumentasi_id,
@@ -33,6 +37,18 @@ def _preprocessed_subquery():
         )
         .group_by(HasilPreprocessing.dokumentasi_id)
         .subquery()
+    )
+
+
+def foto_tanpa_preprocessing(split_config_id):
+    """Jumlah foto di split yang belum punya hasil 'denoise'. Foto seperti ini diam-diam
+    jatuh ke gambar asli saat training, padahal inferensi memakai gambar terproses."""
+    sq = _preprocessed_subquery()
+    return (
+        db.session.query(func.count(SplitItem.id))
+        .outerjoin(sq, sq.c.dokumentasi_id == SplitItem.dokumentasi_id)
+        .filter(SplitItem.config_id == split_config_id, sq.c.prep_path.is_(None))
+        .scalar()
     )
 
 

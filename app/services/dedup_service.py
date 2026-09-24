@@ -1,5 +1,6 @@
-"""Deteksi foto near-duplicate (average hash) supaya split tidak membocorkan
-foto yang nyaris identik antara train dan val fold."""
+"""Pengelompokan foto untuk split: near-duplicate (average hash) dan kedekatan lokasi (GPS), supaya foto yang nyaris
+identik atau berada di ruas jalan yang sama tidak terbelah antara train dan val fold."""
+import math
 import os
 from PIL import Image
 
@@ -60,3 +61,54 @@ def find_duplicate_groups(doc_ids, path_files, base_dir, threshold=DEFAULT_THRES
                 union(ids[i], ids[j])
 
     return {doc_id: find(doc_id) for doc_id in doc_ids}
+
+
+def _haversine_m(a, b):
+    """Jarak (meter) antara dua titik (lat, lon) derajat."""
+    r = 6371000.0
+    p1, p2 = math.radians(a[0]), math.radians(b[0])
+    dp, dl = p2 - p1, math.radians(b[1] - a[1])
+    h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(h))
+
+
+def _union_find(ids):
+    parent = {i: i for i in ids}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)
+
+    return find, union
+
+
+def find_spatial_groups(doc_ids, coords, radius_m):
+    """
+    doc_ids, coords: list sejajar (dokumentasi_id, (lat, lon)). Foto yang jaraknya <= radius_m berbagi group_id
+    (single linkage: A dekat B dan B dekat C -> satu grup, jadi radius besar membentuk grup raksasa; caller wajib
+    memeriksa ukuran grup terbesar). radius_m <= 0 -> semua singleton.
+    """
+    find, union = _union_find(doc_ids)
+    if radius_m and radius_m > 0:
+        # ponytail: O(n^2), cukup untuk ratusan foto; pakai grid/KD-tree kalau ribuan.
+        for i in range(len(doc_ids)):
+            for j in range(i + 1, len(doc_ids)):
+                if _haversine_m(coords[i], coords[j]) <= radius_m:
+                    union(doc_ids[i], doc_ids[j])
+    return {d: find(d) for d in doc_ids}
+
+
+def merge_group_maps(doc_ids, *maps):
+    """Gabungkan beberapa {doc_id: group_id}: dua foto satu grup bila satu grup di salah satu peta."""
+    find, union = _union_find(doc_ids)
+    for m in maps:
+        for d in doc_ids:
+            union(d, m[d])
+    return {d: find(d) for d in doc_ids}

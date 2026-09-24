@@ -26,6 +26,7 @@
         K={{ config.n_splits }} Stratified K-Fold
       </span>
       <span class="sd-meta-chip">seed={{ config.random_state }}</span>
+      <span class="sd-meta-chip">{% if config.radius_grup_m %}grup spasial {{ config.radius_grup_m }} m{% else %}tanpa grup spasial{% endif %}</span>
       <span class="sd-meta-chip">{{ config.total_data }} data</span>
       <span style="font-size:.72rem;color:var(--c-muted);">{{ config.created_at.strftime('%d %b %Y, %H:%M') }}</span>
     </div>
@@ -82,7 +83,7 @@
     Dalam K-Fold, setiap foto berperan sebagai <em>train</em> (K-1 fold, diperluas ke semua tahap) dan
     <em>val</em> (1 fold, tetap 1 gambar/foto tahap denoise) secara bergantian.
     Total sampel training efektif (seluruh foto, kalau semuanya jadi train): <strong>{{ prep_coverage.sampel }}</strong>
-    (dari {{ prep_coverage.grand_total }} foto, augmentasi tidak dihitung).
+    (dari {{ prep_coverage.grand_total }} foto).
   </p>
 </div>
 
@@ -100,8 +101,7 @@
           <tr>
             <th style="padding:.45rem .6rem;font-size:.72rem;color:var(--c-muted);font-weight:600;border-bottom:1px solid var(--c-border);">Fold</th>
             {% for t in tingkat_list %}
-            {% set tc = {'Berat':'#DC2626','Sedang':'#F59E0B','Ringan':'#10B981'} %}
-            {% set col = tc.get(t.nama_tingkat, '#A78BFA') %}
+            {% set col = KELAS[t.id - 1].warna %}
             <th style="text-align:center;padding:.45rem .6rem;font-size:.72rem;font-weight:600;border-bottom:1px solid var(--c-border);">
               <span style="color:{{ col }};">{{ t.nama_tingkat }}</span>
             </th>
@@ -290,7 +290,7 @@
   const foldIndices = {{ fold_indices | tojson }};
   const labels      = foldIndices.map(i => `Fold ${i + 1}`);
   const tingkats    = [{% for t in tingkat_list %}{ id: {{ t.id }}, nama: '{{ t.nama_tingkat }}' }{% if not loop.last %},{% endif %}{% endfor %}];
-  const palette     = { 'Berat': '#EF4444', 'Sedang': '#F59E0B', 'Ringan': '#10B981' };
+  const palette     = {{ KELAS_WARNA|tojson }};
   const raw         = {{ dist | tojson }};
 
   new Chart(document.getElementById('distChart'), {

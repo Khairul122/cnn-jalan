@@ -14,6 +14,9 @@ from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.preprocessing_config import PreprocessingConfig
 from app.services import cnn_service
 
+# Akurasi CV resmi sistem sekitar 45%, jadi prediksi di bawah ambang ini ditandai perlu verifikasi manual.
+AMBANG_CONFIDENCE = 0.5
+
 klasifikasi_bp = Blueprint('klasifikasi', __name__, url_prefix='/klasifikasi')
 
 
@@ -50,8 +53,8 @@ def upload():
 
     base_dir = os.path.dirname(current_app.root_path)
     saved_path = os.path.join(current_app.config['UPLOAD_FOLDER'], nama_file)
-    prep_cfg = (PreprocessingConfig.query.filter_by(is_default=True).first()
-                or PreprocessingConfig.query.first())
+    # Config aktif = satu-satunya config yang menghasilkan data training (lihat PreprocessingConfig.aktif).
+    prep_cfg = PreprocessingConfig.aktif()
     try:
         kelas, confidence = cnn_service.predict_image(model_cfg, saved_path, base_dir, prep_cfg)
     except Exception as e:
@@ -59,7 +62,7 @@ def upload():
         flash(f'Prediksi gagal: {e}', 'danger')
         return _render_upload(lokasi_list)
 
-    tingkat = db.session.get(TingkatKerusakan, kelas + 1)   # 0=Berat (id 1), 1=Sedang, 2=Ringan
+    tingkat = db.session.get(TingkatKerusakan, kelas + 1)   # indeks kelas = id - 1, lihat app/kelas.py
     foto = DokumentasiFoto(lokasi_id=lokasi.id, nama_file=nama_file,
                            path_file=path_file, ukuran_kb=ukuran_kb)
     db.session.add(foto)
@@ -70,7 +73,7 @@ def upload():
         jenis_kerusakan_id=None,   # model hanya memprediksi tingkat, bukan jenis
         tingkat_kerusakan_id=tingkat.id,
         confidence_score=confidence,
-        is_valid=True,
+        is_valid=confidence >= AMBANG_CONFIDENCE,
         catatan=(f'Model #{model_cfg.id} "{model_cfg.nama}" ' +
                  ('(model final, semua data)' if model_cfg.final_model_path else f'(model fold uji {model_cfg.fold_val})')),
     )
@@ -88,7 +91,11 @@ def upload():
         ))
 
     db.session.commit()
-    flash('Klasifikasi CNN berhasil.', 'success')
+    if confidence < AMBANG_CONFIDENCE:
+        flash(f'Klasifikasi selesai, tetapi confidence hanya {confidence * 100:.0f}% (di bawah {AMBANG_CONFIDENCE * 100:.0f}%). '
+              'Verifikasi manual sebelum dipakai untuk prioritas perbaikan.', 'warning')
+    else:
+        flash('Klasifikasi CNN berhasil.', 'success')
     return redirect(url_for('klasifikasi.hasil', hasil_id=hasil.id))
 
 

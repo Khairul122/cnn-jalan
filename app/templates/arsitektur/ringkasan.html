@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Ringkasan Repeated CV{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<a href="{{ url_for('arsitektur.index') }}" style="color:var(--c-accent);text-decoration:none;">Arsitektur CNN</a>
+<span class="sep">›</span>
+<span class="current">Ringkasan Repeated CV</span>
+{% endblock %}
+
+{% block content %}
+{% set ph_title = 'Ringkasan Repeated CV' %}{% include 'components/page_header.html' %}
+<p style="font-size:.78rem;color:var(--c-muted);">
+  Pilih ≥ 2 config yang sudah dijalankan "Prediksi CV K-Fold", masing-masing dari split dengan seed berbeda dan hiperparameter yang
+  sama. Simpangan baku di sini antar-run (ddof=1), bukan antar-fold.
+</p>
+
+<form method="GET" class="mb-4">
+  {% if kandidat %}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead><tr><th scope="col"></th><th scope="col">Config</th><th scope="col">Model</th><th scope="col">Split</th></tr></thead>
+      <tbody>
+        {% for c in kandidat %}
+        <tr>
+          <td><input type="checkbox" name="id" value="{{ c.id }}" id="c{{ c.id }}" {{ 'checked' if c.id in pilih }}></td>
+          <td><label for="c{{ c.id }}">{{ c.nama }}</label></td>
+          <td>{{ c.model_type }}</td>
+          <td>{{ c.split_config.nama }} (seed {{ c.split_config.random_state }}, K={{ c.split_config.n_splits }})</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <button type="submit" class="btn-cnn-primary"><i class="bi bi-calculator"></i> Hitung ringkasan</button>
+  {% else %}
+  <div class="alert alert-info">Belum ada config dengan hasil CV. Jalankan "Prediksi CV K-Fold" pada halaman GIS sebuah config dulu.</div>
+  {% endif %}
+</form>
+
+{% if pilih and not ringkas %}
+<div class="alert alert-warning">Pilih minimal 2 config yang sudah punya hasil CV.</div>
+{% endif %}
+{% if hiperparameter_beda %}
+<div class="alert alert-warning" role="alert" style="font-size:.8rem;">
+  Hiperparameter config terpilih <strong>tidak sama</strong>. Rata-rata di bawah mencampur perlakuan berbeda; pilih config dengan pengaturan identik.
+</div>
+{% endif %}
+
+{% if ringkas %}
+<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);padding:1rem;">
+  <strong>{{ ringkas.n_run }} run</strong>
+  <table class="table table-sm mt-2 mb-3" style="font-size:.82rem;font-variant-numeric:tabular-nums;">
+    <thead><tr><th scope="col">Metrik</th><th scope="col">Rata-rata</th><th scope="col">± Std antar-run</th><th scope="col">Min</th><th scope="col">Maks</th></tr></thead>
+    <tbody>
+      {% for lbl, m in [('Akurasi (%)', ringkas.akurasi), ('Macro-F1 (%)', ringkas.macro_f1),
+                        ('Baseline mayoritas (%)', ringkas.baseline), ('Selisih dari baseline (poin)', ringkas.selisih_baseline)] %}
+      <tr><td>{{ lbl }}</td><td><strong>{{ m.mean }}</strong></td><td>{{ m.std }}</td><td>{{ m.min }}</td><td>{{ m.max }}</td></tr>
+      {% endfor %}
+      {% for k in KELAS %}
+      {% set m = ringkas.recall[k.key] %}
+      <tr><td style="color:{{ k.warna }};">Recall {{ k.nama }} (%)</td><td><strong>{{ m.mean }}</strong></td><td>{{ m.std }}</td><td>{{ m.min }}</td><td>{{ m.max }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <table class="table table-sm mb-0" style="font-size:.78rem;font-variant-numeric:tabular-nums;">
+    <thead><tr><th scope="col">Run</th><th scope="col">Akurasi</th><th scope="col">Macro-F1</th><th scope="col">Baseline</th></tr></thead>
+    <tbody>
+      {% for r in ringkas.runs %}
+      <tr><td>{{ r.nama }}</td><td>{{ r.akurasi }}%</td><td>{{ r.macro_f1 }}%</td><td>{{ r.baseline }}%</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

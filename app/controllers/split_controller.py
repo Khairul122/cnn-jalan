@@ -18,11 +18,13 @@ from app.models.hasil_preprocessing import HasilPreprocessing
 from app.services import cnn_service
 from app.services.cnn_service import TRAIN_EXPAND_STEPS
 from app.services.split_service import SplitService, jumlah_label_basi
-from app.services.dedup_service import find_duplicate_groups
+from collections import Counter
+from app.services.dedup_service import find_duplicate_groups, find_spatial_groups, merge_group_maps
 
 split_bp = Blueprint('split', __name__, url_prefix='/split')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MAKS_ULANGAN = 5   # jumlah split berseed berurutan yang boleh dibuat sekaligus (repeated K-Fold)
 
 
 def _prep_coverage(doc_ids):
@@ -117,7 +119,6 @@ def new():
     tingkat_list = TingkatKerusakan.query.order_by(TingkatKerusakan.id).all()
     items        = _get_labeled_items()
 
-    from collections import Counter
     kelas_count  = Counter(i['label_id'] for i in items)
     doc_ids      = {i['dokumentasi_id'] for i in items}
     total_prep   = len(_prep_coverage(doc_ids))
@@ -125,8 +126,14 @@ def new():
 
     if request.method == 'POST':
         nama         = request.form.get('nama', '').strip()
-        n_splits     = max(3, min(10, int(request.form.get('n_splits') or 5)))
-        random_state = int(request.form.get('random_state', 42))
+        try:
+            n_splits     = max(3, min(10, int(request.form.get('n_splits') or 5)))
+            random_state = int(request.form.get('random_state') or 42)
+            radius_m     = max(0, min(500, int(request.form.get('radius_grup_m') or 0)))
+            ulangan      = max(1, min(MAKS_ULANGAN, int(request.form.get('ulangan') or 1)))
+        except ValueError:
+            flash('K, random state, radius, dan jumlah ulangan harus berupa bilangan bulat.', 'warning')
+            return redirect(url_for('split.new'))
 
         if not nama:
             flash('Nama split wajib diisi.', 'warning')
@@ -144,46 +151,57 @@ def new():
             )
             return redirect(url_for('split.new'))
 
-        dup_groups = find_duplicate_groups(
-            [i['dokumentasi_id'] for i in items],
-            [i['path_file'] for i in items],
-            BASE_DIR,
-        )
-        groups = [dup_groups[i['dokumentasi_id']] for i in items]
-        n_dup_groups = len(items) - len(set(groups))
-        if n_dup_groups > 0:
-            flash(
-                f'{n_dup_groups} foto near-duplicate terdeteksi dan dikelompokkan ke fold yang sama (cegah leakage).',
-                'info',
+        ids = [i['dokumentasi_id'] for i in items]
+        dup_groups = find_duplicate_groups(ids, [i['path_file'] for i in items], BASE_DIR)
+        spatial_groups = find_spatial_groups(ids, [(i['latitude'], i['longitude']) for i in items], radius_m)
+        group_map = merge_group_maps(ids, dup_groups, spatial_groups)
+        groups = [group_map[d] for d in ids]
+        ukuran = Counter(groups)
+        terbesar = max(ukuran.values())
+        if terbesar > len(items) // n_splits:
+            flash(f'Radius {radius_m} m menggabungkan {terbesar} foto ke satu grup, lebih besar dari satu fold '
+                  f'(±{len(items) // n_splits} foto), sehingga fold tidak bisa seimbang. Kecilkan radius atau kurangi K.',
+                  'danger')
+            return redirect(url_for('split.new'))
+        n_grup_foto = len(items) - len(ukuran)
+        if n_grup_foto > 0:
+            flash(f'{n_grup_foto} foto digabung ke grup near-duplicate/spasial (radius {radius_m} m; grup terbesar '
+                  f'{terbesar} foto) dan selalu berada di fold yang sama.', 'info')
+
+        dibuat = []
+        for r in range(ulangan):
+            seed = random_state + r
+            result = SplitService.run(n_splits, seed, items, groups=groups)
+            config = SplitConfig(
+                nama=nama if ulangan == 1 else f'{nama} (ulangan {r + 1}/{ulangan}, seed {seed})',
+                n_splits=n_splits,
+                random_state=seed,
+                radius_grup_m=radius_m,
+                label_sumber='tingkat',
+                total_data=len(result),
+                pengguna_id=current_user.id,
             )
-
-        result = SplitService.run(n_splits, random_state, items, groups=groups)
-
-        config = SplitConfig(
-            nama=nama,
-            split_type='kfold',
-            n_splits=n_splits,
-            random_state=random_state,
-            label_sumber='tingkat',
-            total_data=len(result),
-            pengguna_id=current_user.id,
-        )
-        db.session.add(config)
-        db.session.flush()
-
-        db.session.bulk_insert_mappings(SplitItem, [
-            {
-                'config_id':            config.id,
-                'dokumentasi_id':       r['dokumentasi_id'],
-                'tingkat_kerusakan_id': r['label_id'],
-                'fold_index':           r['fold_index'],
-            }
-            for r in result
-        ])
+            db.session.add(config)
+            db.session.flush()
+            db.session.bulk_insert_mappings(SplitItem, [
+                {
+                    'config_id':            config.id,
+                    'dokumentasi_id':       x['dokumentasi_id'],
+                    'tingkat_kerusakan_id': x['label_id'],
+                    'fold_index':           x['fold_index'],
+                }
+                for x in result
+            ])
+            dibuat.append(config)
         db.session.commit()
 
-        flash(f'Split "{nama}" berhasil dibuat dengan {len(result)} data.', 'success')
-        return redirect(url_for('split.detail', config_id=config.id))
+        if ulangan == 1:
+            flash(f'Split "{nama}" berhasil dibuat dengan {len(items)} data.', 'success')
+            return redirect(url_for('split.detail', config_id=dibuat[0].id))
+        flash(f'{ulangan} split "{nama}" berhasil dibuat (seed {random_state}–{random_state + ulangan - 1}), '
+              f'masing-masing {len(items)} data. Latih satu model per split lalu gabungkan hasilnya di '
+              'Arsitektur CNN → Ringkasan Repeated CV.', 'success')
+        return redirect(url_for('split.index'))
 
     return render_template(
         'split/form.html',
@@ -326,14 +344,11 @@ def export(config_id):
         .all()
     )
 
-    holdout_label = {0: 'Train', 1: 'Test'}
-    is_holdout = (config.split_type == 'holdout')
-
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(['nama_file', 'split', 'tingkat', 'latitude', 'longitude'])
     for r in rows:
-        split_label = holdout_label.get(r.fold_index, str(r.fold_index)) if is_holdout else f'Fold {r.fold_index + 1}'
+        split_label = f'Fold {r.fold_index + 1}'
         writer.writerow([
             r.nama_file,
             split_label,

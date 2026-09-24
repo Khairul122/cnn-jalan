@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app import db
+from app.kelas import KEYS
 from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.pengguna import Pengguna
 from app.models.label_kerusakan import LabelKerusakan
@@ -30,9 +31,7 @@ def _headline_accuracy():
     if cv:
         return {
             'akurasi'       : cv['akurasi'],
-            'recall_berat'  : cv['recall']['berat'],
-            'recall_sedang' : cv['recall']['sedang'],
-            'recall_ringan' : cv['recall']['ringan'],
+            'recall'        : cv['recall'],
             'model_nama'    : best_cfg.nama,
             'sumber'        : 'cv',
         }
@@ -42,9 +41,7 @@ def _headline_accuracy():
         return None
     return {
         'akurasi'       : round(ev.akurasi or 0, 1),
-        'recall_berat'  : round(ev.recall_berat or 0, 1),
-        'recall_sedang' : round(ev.recall_sedang or 0, 1),
-        'recall_ringan' : round(ev.recall_ringan or 0, 1),
+        'recall'        : {k: round(v['recall'], 1) for k, v in ev.get_per_class().items()},
         'model_nama'    : best_cfg.nama,
         'sumber'        : '1fold',
     }
@@ -58,19 +55,13 @@ def root():
     headline = _headline_accuracy()
 
     total_pred = PrediksiModel.query.count()
-    berat_ct   = PrediksiModel.query.filter_by(prediksi=0).count()
-    sedang_ct  = PrediksiModel.query.filter_by(prediksi=1).count()
-    ringan_ct  = PrediksiModel.query.filter_by(prediksi=2).count()
+    pred_ct    = {k: PrediksiModel.query.filter_by(prediksi=i).count() for i, k in enumerate(KEYS)}
 
     ctx = {
         'total_pred'    : total_pred,
-        'berat_ct'      : berat_ct,
-        'sedang_ct'     : sedang_ct,
-        'ringan_ct'     : ringan_ct,
+        'pred_ct'       : pred_ct,
         'akurasi'       : headline['akurasi'] if headline else None,
-        'recall_berat'  : headline['recall_berat'] if headline else None,
-        'recall_sedang' : headline['recall_sedang'] if headline else None,
-        'recall_ringan' : headline['recall_ringan'] if headline else None,
+        'recall'        : headline['recall'] if headline else {},
         'model_nama'    : headline['model_nama'] if headline else None,
         'akurasi_sumber': headline['sumber'] if headline else None,
     }
@@ -83,8 +74,7 @@ def landing_gis():
     from app.models.prediksi_model import PrediksiModel
     from app.models.dokumentasi_foto import DokumentasiFoto
 
-    LABEL = {0: 'Berat', 1: 'Sedang', 2: 'Ringan'}
-    WARNA = {0: '#E53E3E', 1: '#F59E0B', 2: '#10B981'}
+    from app.kelas import LABEL, WARNA
 
     rows = (db.session.query(
                 PrediksiModel.prediksi,
@@ -126,9 +116,7 @@ def index():
     total_label    = LabelKerusakan.query.count()
     total_prediksi = PrediksiModel.query.count()
 
-    berat_label  = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=1).count()
-    sedang_label = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=2).count()
-    ringan_label = LabelKerusakan.query.filter_by(tingkat_kerusakan_id=3).count()
+    label_ct = {k: LabelKerusakan.query.filter_by(tingkat_kerusakan_id=i + 1).count() for i, k in enumerate(KEYS)}
 
     headline     = _headline_accuracy()
     akurasi_cnn  = headline['akurasi'] if headline else None
@@ -141,9 +129,7 @@ def index():
         'total_foto'     : total_foto,
         'total_label'    : total_label,
         'total_prediksi' : total_prediksi,
-        'berat_label'    : berat_label,
-        'sedang_label'   : sedang_label,
-        'ringan_label'   : ringan_label,
+        'label_ct'       : label_ct,
         'akurasi_cnn'    : akurasi_cnn,
         'model_nama'     : model_nama,
         'model_status'   : model_status,

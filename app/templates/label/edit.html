@@ -142,7 +142,7 @@
 
         <!-- Threshold guide -->
         <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;">
-          {% for nama, range, color in [('Ringan','SDI ≤ 50','#68D391'),('Sedang','SDI 51–150','#F6AD55'),('Berat','SDI > 150','#E53E3E')] %}
+          {% for k in KELAS|reverse %}{% set nama = k.nama %}{% set range = k.sdi %}{% set color = k.warna %}
           <div style="flex:1;text-align:center;padding:.45rem .5rem;border-radius:var(--r-input);
                       background:{{ color }}12;border:1px solid {{ color }}35;">
             <p style="font-size:.75rem;font-weight:700;color:{{ color }};margin:0;">{{ nama }}</p>
@@ -297,7 +297,7 @@ L.circleMarker([lat, lon], { radius: 8, fillColor: '#E53E3E', color: '#fff', wei
   .addTo(map).bindPopup('{{ lokasi.nama_citra }}').openPopup();
 
 // ── SDI Real-time ────────────────────────────────────────────
-var TIER_COLORS = { 'Ringan': '#68D391', 'Sedang': '#F6AD55', 'Berat': '#E53E3E' };
+// Salinan formula app/models/label_kerusakan.py::hitung_sdi — ubah keduanya bersamaan.
 
 function hitungSDI() {
   var pRetak   = parseFloat(document.getElementById('persen_retak').value)   || 0;
@@ -307,7 +307,7 @@ function hitungSDI() {
 
   // F_retak
   var fRetak = 0;
-  if (pRetak > 20)      fRetak = 40;
+  if (pRetak > 30)      fRetak = 40;
   else if (pRetak > 10) fRetak = 20;
   else if (pRetak > 0)  fRetak = 5;
   if (jRetak === 'lebar') fRetak *= 2;
@@ -320,17 +320,17 @@ function hitungSDI() {
 
   // F_rutting
   var fRutting = 0;
-  if (kRutting > 3)      fRutting = 40;
-  else if (kRutting > 1) fRutting = 20;
-  else if (kRutting > 0) fRutting = 5;
+  if (kRutting > 3)      fRutting = 20;
+  else if (kRutting > 1) fRutting = 10;
+  else if (kRutting > 0) fRutting = 2.5;
 
   var sdi = fRetak + fLubang + fRutting;
 
   // Label
   var nama, warna;
-  if (sdi <= 50)       { nama = 'Ringan'; warna = '#68D391'; }
-  else if (sdi <= 150) { nama = 'Sedang'; warna = '#F6AD55'; }
-  else                 { nama = 'Berat';  warna = '#E53E3E'; }
+  var K = {{ KELAS|tojson }};   // urut Rusak Berat -> Baik
+  var kls = sdi < 50 ? K[3] : sdi <= 100 ? K[2] : sdi <= 150 ? K[1] : K[0];
+  nama = kls.nama; warna = kls.warna;
 
   // Update UI
   document.getElementById('sdiValue').textContent = sdi;

@@ -1,4 +1,5 @@
 ﻿import os
+import json
 import traceback
 import threading
 from types import SimpleNamespace
@@ -12,7 +13,7 @@ from app.models.hasil_evaluasi import HasilEvaluasi
 from app.models.prediksi_model import PrediksiModel
 from app.models.split_config import SplitConfig
 from app.models.dokumentasi_foto import DokumentasiFoto
-from app.services.metrics_service import cv_summary
+from app.services.metrics_service import cv_summary, cv_ulangan
 from app.services.split_service import jumlah_label_basi
 
 arsitektur_bp = Blueprint('arsitektur', __name__, url_prefix='/arsitektur')
@@ -34,15 +35,7 @@ def _save_evaluasi(config_id, result):
         total_data_val   = result['total_data_val'],
         akurasi          = result['akurasi'],
         confusion_matrix = result['confusion_matrix'],
-        precision_berat  = result['per_class']['berat']['precision'],
-        recall_berat     = result['per_class']['berat']['recall'],
-        f1_berat         = result['per_class']['berat']['f1-score'],
-        precision_sedang = result['per_class']['sedang']['precision'],
-        recall_sedang    = result['per_class']['sedang']['recall'],
-        f1_sedang        = result['per_class']['sedang']['f1-score'],
-        precision_ringan = result['per_class']['ringan']['precision'],
-        recall_ringan    = result['per_class']['ringan']['recall'],
-        f1_ringan        = result['per_class']['ringan']['f1-score'],
+        per_class        = json.dumps(result['per_class']),
         macro_precision  = result['macro']['precision'],
         macro_recall     = result['macro']['recall'],
         macro_f1         = result['macro']['f1'],
@@ -83,19 +76,7 @@ def _run_training(app, config_id, base_dir):
             'id':              cfg.id,
             'split_config_id': cfg.split_config_id,
             'fold_val':        cfg.fold_val,
-            'input_size':      cfg.input_size,
-            'model_type':      cfg.model_type,
-            'dropout_rate':    cfg.dropout_rate,
-            'optimizer':       cfg.optimizer,
-            'learning_rate':   cfg.learning_rate,
-            'batch_size':      cfg.batch_size,
-            'epochs':          cfg.epochs,
-            'patience':        cfg.patience,
-            'mixup_alpha':     cfg.mixup_alpha,
-            'label_smoothing': cfg.label_smoothing,
-            'dense_units':     cfg.dense_units,
-            'dense_l2':        cfg.dense_l2,
-            'skip_fine_tuning': cfg.skip_fine_tuning,
+            **cnn_service.hyperparams(cfg),
         }
         db.session.remove()
 
@@ -152,13 +133,7 @@ def _run_training(app, config_id, base_dir):
             predict_results = cnn_service.predict_all(cfg_obj, base_dir)
             PrediksiModel.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
             for r in predict_results:
-                db.session.add(PrediksiModel(
-                    arsitektur_id  = config_id,
-                    dokumentasi_id = r['dokumentasi_id'],
-                    prediksi       = r['prediksi'],
-                    aktual         = r['aktual'],
-                    confidence     = r['confidence'],
-                ))
+                db.session.add(PrediksiModel.dari_hasil(config_id, r))
             # Semua proses selesai â€” baru set status 'selesai'
             ArsitekturConfig.query.filter_by(id=config_id).update({
                 'status':    'selesai',
@@ -249,9 +224,24 @@ def index():
                            best_id=best_id)
 
 
+@arsitektur_bp.route('/ringkasan-ulangan')
+@login_required
+def ringkasan_ulangan():
+    """Gabungkan beberapa run CV (Repeated K-Fold): pilih config lewat ?id=..&id=.."""
+    from app.services import cnn_service
+    kandidat = ArsitekturConfig.query.filter_by(pred_type='cv').order_by(ArsitekturConfig.id.desc()).all()
+    pilih = set(request.args.getlist('id', type=int))
+    dipilih = [c for c in kandidat if c.id in pilih]
+    ringkas = cv_ulangan([(c.nama, cv_summary(c)) for c in dipilih])
+    beda = len({tuple(sorted(cnn_service.hyperparams(c).items())) for c in dipilih}) > 1
+    return render_template('arsitektur/ringkasan.html', kandidat=kandidat, pilih=pilih,
+                           ringkas=ringkas, hiperparameter_beda=beda)
+
+
 @arsitektur_bp.route('/new', methods=['GET', 'POST'])
 @admin_required
 def new():
+    from app.services import cnn_service
     split_list = SplitConfig.query.order_by(SplitConfig.created_at.desc()).all()
 
     if request.method == 'POST':
@@ -268,6 +258,9 @@ def new():
         dense_units     = int(request.form.get('dense_units') or 64)
         dense_l2        = float(request.form.get('dense_l2') or 0.0001)
         skip_fine_tuning = bool(request.form.get('skip_fine_tuning'))
+        # Checkbox yang tidak dicentang tidak terkirim; tanpa penanda 'aug_form' (klien selain form ini, mis. skrip) = semua aktif.
+        aug_off         = (','.join(k for k in cnn_service.AUG_KEYS if not request.form.get(f'aug_{k}'))
+                           if request.form.get('aug_form') else '')
         split_config_id = int(request.form.get('split_config_id') or 0)
         fold_val        = int(request.form.get('fold_val') or 0)
 
@@ -288,7 +281,7 @@ def new():
             learning_rate=learning_rate, batch_size=batch_size,
             epochs=epochs, patience=patience, dropout_rate=dropout_rate,
             optimizer=optimizer, mixup_alpha=mixup_alpha, label_smoothing=label_smoothing,
-            dense_units=dense_units, dense_l2=dense_l2, skip_fine_tuning=skip_fine_tuning,
+            dense_units=dense_units, dense_l2=dense_l2, skip_fine_tuning=skip_fine_tuning, aug_off=aug_off,
             split_config_id=split_config_id,
             fold_val=fold_val, status='draft',
             pengguna_id=current_user.id,
@@ -298,7 +291,7 @@ def new():
         flash(f'Konfigurasi "{nama}" berhasil disimpan.', 'success')
         return redirect(url_for('arsitektur.detail', config_id=cfg.id))
 
-    return render_template('arsitektur/form.html', split_list=split_list)
+    return render_template('arsitektur/form.html', split_list=split_list, aug_list=cnn_service.AUGMENTASI)
 
 
 @arsitektur_bp.route('/<int:config_id>')
@@ -338,6 +331,7 @@ def progress(config_id):
 @admin_required
 def train(config_id):
     from flask import current_app
+    from app.services import cnn_service
 
     cfg = ArsitekturConfig.query.get_or_404(config_id)
 
@@ -349,6 +343,12 @@ def train(config_id):
     if jumlah_label_basi(cfg.split_config_id):
         flash('Label berubah sejak split dibuat. Buat split baru sebelum training agar kelas '
               'tiap fold sesuai label terbaru.', 'danger')
+        return redirect(url_for('arsitektur.detail', config_id=config_id))
+
+    kurang = cnn_service.foto_tanpa_preprocessing(cfg.split_config_id)
+    if kurang:
+        flash(f'{kurang} foto di split belum punya hasil preprocessing. Jalankan preprocessing dulu, '
+              'supaya data training sama dengan data inferensi.', 'danger')
         return redirect(url_for('arsitektur.detail', config_id=config_id))
 
     # Klaim atomik: hanya satu permintaan yang bisa mengubah status menjadi 'training'
@@ -447,8 +447,7 @@ def gis_json(config_id):
         .all()
     )
 
-    LABEL = {0: 'Berat', 1: 'Sedang', 2: 'Ringan'}
-    WARNA = {0: '#E53E3E', 1: '#F59E0B', 2: '#10B981'}
+    from app.kelas import LABEL, WARNA
 
     features = []
     for p in prediksi_list:
@@ -494,13 +493,7 @@ def predict(config_id):
 
         PrediksiModel.query.filter_by(arsitektur_id=config_id).delete()
         for r in results:
-            db.session.add(PrediksiModel(
-                arsitektur_id  = config_id,
-                dokumentasi_id = r['dokumentasi_id'],
-                prediksi       = r['prediksi'],
-                aktual         = r['aktual'],
-                confidence     = r['confidence'],
-            ))
+            db.session.add(PrediksiModel.dari_hasil(config_id, r))
         cfg.pred_type = 'single'
         db.session.commit()
         flash(f'Prediksi selesai â€” {len(results)} foto diproses.', 'success')
@@ -523,23 +516,7 @@ def _run_cv_predict(app, config_id, base_dir):
         split_cfg = db.session.get(SplitConfig, cfg.split_config_id)
         n_splits  = split_cfg.n_splits
 
-        _cfg_snapshot = dict(
-            id              = cfg.id,
-            split_config_id = cfg.split_config_id,
-            input_size      = cfg.input_size,
-            model_type      = cfg.model_type,
-            dropout_rate    = cfg.dropout_rate,
-            optimizer       = cfg.optimizer,
-            learning_rate   = cfg.learning_rate,
-            batch_size      = cfg.batch_size,
-            epochs          = cfg.epochs,
-            patience        = cfg.patience,
-            mixup_alpha     = cfg.mixup_alpha,
-            label_smoothing = cfg.label_smoothing,
-            dense_units     = cfg.dense_units,
-            dense_l2        = cfg.dense_l2,
-            skip_fine_tuning = cfg.skip_fine_tuning,
-        )
+        _cfg_snapshot = dict(id=cfg.id, split_config_id=cfg.split_config_id, **cnn_service.hyperparams(cfg))
         db.session.remove()
 
         _cv_progress[config_id] = {
@@ -568,13 +545,7 @@ def _run_cv_predict(app, config_id, base_dir):
 
             PrediksiModel.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
             for r in results:
-                db.session.add(PrediksiModel(
-                    arsitektur_id  = config_id,
-                    dokumentasi_id = r['dokumentasi_id'],
-                    prediksi       = r['prediksi'],
-                    aktual         = r['aktual'],
-                    confidence     = r['confidence'],
-                ))
+                db.session.add(PrediksiModel.dari_hasil(config_id, r))
             ArsitekturConfig.query.filter_by(id=config_id).update({'pred_type': 'cv'})
             db.session.commit()
             _cv_progress.pop(config_id, None)
@@ -633,12 +604,8 @@ def _run_final_training(app, config_id, base_dir):
         if not cfg:
             _final_progress.pop(config_id, None)
             return
-        snapshot = SimpleNamespace(
-            id=cfg.id, split_config_id=cfg.split_config_id, input_size=cfg.input_size,
-            model_type=cfg.model_type, dropout_rate=cfg.dropout_rate, optimizer=cfg.optimizer,
-            learning_rate=cfg.learning_rate, batch_size=cfg.batch_size, epochs=cfg.epochs,
-            patience=cfg.patience,
-        )
+        snapshot = SimpleNamespace(id=cfg.id, split_config_id=cfg.split_config_id,
+                                   **cnn_service.hyperparams(cfg))
         db.session.remove()
         try:
             model = cnn_service.train_final(snapshot, base_dir)
