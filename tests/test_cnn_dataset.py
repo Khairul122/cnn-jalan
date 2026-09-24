@@ -257,6 +257,86 @@ class CnnDatasetTest(unittest.TestCase):
             self.assertFalse(os.path.isfile(file_a))
             self.assertEqual(HasilPreprocessing.query.filter_by(config_id=cfg_b).count(), 1)
 
+    def _augmentation_rows(self, foto_ids, salinan=2):
+        """AugmentasiConfig + file/baris HasilAugmentasi sementara untuk foto_ids; dibersihkan lewat addCleanup."""
+        import json
+        from app.models.augmentasi_config import AugmentasiConfig
+        from app.models.hasil_augmentasi import HasilAugmentasi
+        from app.services import augmentation_service as aug
+        rel_dir = os.path.join('uploads', 'augmented')
+        abs_dir = os.path.join(BASE_DIR, 'app', 'static', rel_dir)
+        os.makedirs(abs_dir, exist_ok=True)
+        with self.app.app_context():
+            cfg = AugmentasiConfig(nama_config=f'aug-uji-{self.tag}', n_salinan=salinan, seed=1,
+                                   parameter=json.dumps(aug.default_params()), pengguna_id=self.user_id)
+            db.session.add(cfg)
+            db.session.flush()
+            cfg_id = cfg.id
+            for fid in foto_ids:
+                for k in range(1, salinan + 1):
+                    fname = f'{self.tag}_aug_{fid}_{k}.jpg'
+                    Image.new('RGB', (8, 8), 'purple').save(os.path.join(abs_dir, fname), 'JPEG')
+                    self.temp_files.append(os.path.join(abs_dir, fname))
+                    db.session.add(HasilAugmentasi(dokumentasi_id=fid, config_id=cfg_id, salinan_ke=k,
+                                                   path_output=f'uploads/augmented/{fname}'))
+            db.session.commit()
+
+        def bersih():
+            with self.app.app_context():
+                AugmentasiConfig.query.filter_by(id=cfg_id).delete()   # hasil ikut terhapus (ON DELETE CASCADE / ORM)
+                HasilAugmentasi.query.filter_by(config_id=cfg_id).delete()
+                db.session.commit()
+        self.addCleanup(bersih)
+        return cfg_id
+
+    def test_augmentation_copies_only_join_train_photos_never_the_test_fold(self):
+        sid = self.make_split()
+        cfg_id = self.make_prep_config()
+        foto_train, foto_val = self.make_foto('atrain'), self.make_foto('aval')
+        for foto in (foto_train, foto_val):
+            self.add_prep(foto, cfg_id, 'denoise', color='yellow')
+        self.add_item(sid, foto_train, fold=0, tingkat=1)
+        self.add_item(sid, foto_val, fold=1, tingkat=2)
+        self._augmentation_rows([foto_train, foto_val], salinan=2)
+
+        with self.app.app_context(), \
+             mock.patch.object(cnn_service.dataset, 'MIN_TRAIN_SAMPLES', 1), \
+             mock.patch.object(cnn_service.dataset, 'MIN_VAL_SAMPLES', 1):
+            X_train, y_train, groups_train, X_val, y_val, groups_val = cnn_service.load_dataset(
+                sid, fold_val=1, input_size=32, base_dir=BASE_DIR)
+
+        self.assertEqual(len(X_train), 1 + 2)                    # 1 gambar denoise + 2 salinan foto train
+        self.assertEqual(set(groups_train.tolist()), {foto_train})   # salinan membawa ID foto asal
+        self.assertTrue((y_train == 0).all())                    # kelas mengikuti foto asal
+        self.assertEqual(len(X_val), 1)                          # fold uji: 1 gambar, tanpa salinan
+        self.assertEqual(groups_val[0], foto_val)
+
+    def test_jalankan_creates_reproducible_copies_and_hapus_removes_files(self):
+        import json
+        from app.models.augmentasi_config import AugmentasiConfig
+        from app.models.hasil_augmentasi import HasilAugmentasi
+        from app.services import augmentation_service as aug
+        cfg_prep = self.make_prep_config()
+        foto = self.make_foto('jalan')
+        self.add_prep(foto, cfg_prep, 'denoise', color='green')
+        root = os.path.join(BASE_DIR, 'app', 'static')
+        with self.app.app_context():
+            cfg = AugmentasiConfig(nama_config=f'jalan-{self.tag}', n_salinan=2, seed=5,
+                                   parameter=json.dumps(aug.default_params()), pengguna_id=self.user_id)
+            db.session.add(cfg)
+            db.session.flush()
+            stat = aug.jalankan(cfg, root, doc_ids=[foto])
+            self.assertEqual(stat, {'foto': 1, 'salinan': 2, 'gagal': 0})
+            baris = HasilAugmentasi.query.filter_by(config_id=cfg.id).order_by(HasilAugmentasi.salinan_ke).all()
+            self.assertEqual([b.salinan_ke for b in baris], [1, 2])
+            files = [os.path.join(root, b.path_output) for b in baris]
+            self.assertTrue(all(os.path.isfile(f) for f in files))
+            self.temp_files.extend(files)
+            jumlah, n_file = aug.hapus_semua_hasil(root, HasilAugmentasi.query.filter_by(config_id=cfg.id))
+            self.assertEqual((jumlah, n_file), (2, 2))
+            db.session.delete(cfg)
+            db.session.commit()
+
 
 if __name__ == '__main__':
     unittest.main()

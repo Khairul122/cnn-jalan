@@ -99,6 +99,7 @@
       {{ nav_link(url_for('lokasi.index'),         'Lokasi',         request.blueprint == 'lokasi',         'bi bi-geo-alt-fill') }}
       {{ nav_link(url_for('label.index'),          'Labeling SDI',   request.blueprint == 'label',          'bi bi-tags-fill') }}
       {{ nav_link(url_for('preprocessing.index'),  'Preprocessing',  request.blueprint == 'preprocessing',  'bi bi-sliders') }}
+      {{ nav_link(url_for('augmentasi.index'),     'Augmentasi',     request.blueprint == 'augmentasi',     'bi bi-shuffle') }}
       {{ nav_link(url_for('split.index'),          'Split Data',     request.blueprint == 'split',          'bi bi-diagram-3-fill') }}
       {{ nav_link(url_for('arsitektur.index'),     'Arsitektur CNN', request.blueprint == 'arsitektur',     'bi bi-cpu-fill') }}
       {{ nav_link(url_for('peta.index'),           'Peta GIS',       request.blueprint == 'peta',           'bi bi-map-fill') }}

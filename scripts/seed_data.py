@@ -108,9 +108,10 @@ def clear_dir(folder, pattern='*'):
 def reset_data(db):
     from sqlalchemy import text
 
-    # Postgres: satu TRUNCATE untuk semua tabel (CASCADE menangani FK), id di-reset ke 1.
-    tabel_sql = ', '.join(f'"{tabel}"' for tabel in TABEL_DATA_MODEL)
-    db.session.execute(text(f'TRUNCATE TABLE {tabel_sql} RESTART IDENTITY CASCADE'))
+    db.session.execute(text('SET FOREIGN_KEY_CHECKS = 0'))
+    for tabel in TABEL_DATA_MODEL:
+        db.session.execute(text(f'TRUNCATE TABLE `{tabel}`'))
+    db.session.execute(text('SET FOREIGN_KEY_CHECKS = 1'))
     db.session.commit()
 
     print(f'  tabel dikosongkan : {len(TABEL_DATA_MODEL)}')

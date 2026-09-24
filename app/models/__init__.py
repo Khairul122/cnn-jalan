@@ -9,6 +9,8 @@ from app.models.peta_kerusakan import PetaKerusakan
 from app.models.evaluasi_model import EvaluasiModel
 from app.models.preprocessing_config import PreprocessingConfig
 from app.models.hasil_preprocessing import HasilPreprocessing
+from app.models.augmentasi_config import AugmentasiConfig
+from app.models.hasil_augmentasi import HasilAugmentasi
 from app.models.split_config import SplitConfig
 from app.models.split_item import SplitItem
 from app.models.arsitektur_config import ArsitekturConfig

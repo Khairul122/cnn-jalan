@@ -37,6 +37,7 @@ def create_app():
     from app.controllers.evaluasi_controller import evaluasi_bp
     from app.controllers.label_controller import label_bp
     from app.controllers.preprocessing_controller import preprocessing_bp
+    from app.controllers.augmentasi_controller import augmentasi_bp
     from app.controllers.split_controller import split_bp
     from app.controllers.arsitektur_controller import arsitektur_bp
 
@@ -48,6 +49,7 @@ def create_app():
     app.register_blueprint(evaluasi_bp)
     app.register_blueprint(label_bp)
     app.register_blueprint(preprocessing_bp)
+    app.register_blueprint(augmentasi_bp)
     app.register_blueprint(split_bp)
     app.register_blueprint(arsitektur_bp)
 

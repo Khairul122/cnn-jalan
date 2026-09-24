@@ -146,7 +146,6 @@ def build_model(model_type, input_size, dropout_rate, optimizer_name, learning_r
 
 def _apply_fine_tuning(model, model_type, learning_rate, optimizer_name, mixup_alpha=0, label_smoothing=0):
     """Unfreeze top layers of the base sub-model and recompile with lr/10."""
-    from tensorflow import keras
     # Dataset kecil (~224-540 train): unfreeze sedikit layer saja untuk hindari overfitting.
     # Diperkecil 2026-09-23 (dari 15/25) — log training berulang kali menunjukkan train acc
     # naik ke 70%+ di Phase 2 sementara val macet ~35-45%, tanda fine-tuning terlalu dalam

@@ -29,6 +29,12 @@ def _hapus_hasil(query):
     return query.delete(synchronize_session=False), n_file
 
 
+def _hapus_hasil_turunan():
+    """Augmentasi dibuat dari hasil denoise; kalau hasil preprocessing berubah, hasil augmentasi ikut basi."""
+    from app.services import augmentation_service
+    augmentation_service.hapus_semua_hasil(os.path.join(current_app.root_path, 'static'))
+
+
 def _preprocessed_folder():
     base = os.path.join(current_app.root_path, 'static', 'uploads', 'preprocessed')
     os.makedirs(base, exist_ok=True)
@@ -94,6 +100,7 @@ def config_delete(config_id):
     cfg = PreprocessingConfig.query.get_or_404(config_id)
     nama = cfg.nama_config
     _hapus_hasil(HasilPreprocessing.query.filter_by(config_id=cfg.id))
+    _hapus_hasil_turunan()
     db.session.delete(cfg)
     db.session.commit()
     flash(f'Konfigurasi "{nama}" dihapus.', 'info')
@@ -105,11 +112,13 @@ def config_delete(config_id):
 @preprocessing_bp.route('/run/<int:config_id>', methods=['POST'])
 @admin_required
 def run(config_id):
-    cfg       = PreprocessingConfig.query.get_or_404(config_id)
-    foto_list = DokumentasiFoto.query.all()
+    cfg = PreprocessingConfig.query.get_or_404(config_id)
     # Hanya satu config yang boleh punya hasil (config aktif): hasil lama dari config manapun diganti.
     _hapus_hasil(HasilPreprocessing.query)
+    _hapus_hasil_turunan()
     db.session.commit()
+
+    foto_list = DokumentasiFoto.query.all()
     out_folder = _preprocessed_folder()
     upload_folder = current_app.config['UPLOAD_FOLDER']
 
@@ -135,7 +144,7 @@ def run(config_id):
                 PreprocessingService.save_result(step_img, out_path)
                 kb_hasil = PreprocessingService.get_file_kb(out_path)
 
-                hasil = HasilPreprocessing(
+                db.session.add(HasilPreprocessing(
                     dokumentasi_id  = foto.id,
                     config_id       = cfg.id,
                     step_name       = step_key,
@@ -144,11 +153,10 @@ def run(config_id):
                     ukuran_kb_hasil = kb_hasil,
                     durasi_ms       = durasi_ms,
                     status          = 'selesai',
-                )
-                db.session.add(hasil)
+                ))
             berhasil += 1
         except Exception as e:
-            hasil = HasilPreprocessing(
+            db.session.add(HasilPreprocessing(
                 dokumentasi_id  = foto.id,
                 config_id       = cfg.id,
                 step_name       = 'resize',
@@ -156,8 +164,7 @@ def run(config_id):
                 ukuran_kb_asal  = kb_asal,
                 status          = 'gagal',
                 catatan         = str(e)[:250],
-            )
-            db.session.add(hasil)
+            ))
             gagal += 1
 
         if (i + 1) % BATCH == 0:
@@ -176,6 +183,7 @@ def run(config_id):
 @admin_required
 def hasil_reset():
     jumlah, hapus_file = _hapus_hasil(HasilPreprocessing.query)
+    _hapus_hasil_turunan()
     db.session.commit()
     flash(f'Reset selesai â€” {jumlah} record dan {hapus_file} file dihapus.', 'info')
     return redirect(url_for('preprocessing.hasil'))

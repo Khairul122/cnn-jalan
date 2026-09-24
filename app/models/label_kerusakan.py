@@ -8,7 +8,7 @@ class LabelKerusakan(db.Model):
     id                   = db.Column(db.Integer, primary_key=True, autoincrement=True)
     lokasi_id            = db.Column(db.Integer, db.ForeignKey('lokasi_kerusakan.id', ondelete='CASCADE'), nullable=False, unique=True)
     persen_retak         = db.Column(db.Numeric(5, 2), nullable=False, default=0)
-    jenis_retak          = db.Column(db.Enum('halus', 'lebar', native_enum=False), nullable=False, default='halus')
+    jenis_retak          = db.Column(db.Enum('halus', 'lebar'), nullable=False, default='halus')
     jumlah_lubang        = db.Column(db.Integer, nullable=False, default=0)
     kedalaman_rutting    = db.Column(db.Numeric(5, 2), nullable=False, default=0)
     sdi_score            = db.Column(db.Numeric(6, 2), nullable=False, default=0)

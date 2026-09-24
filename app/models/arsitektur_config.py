@@ -7,14 +7,14 @@ class ArsitekturConfig(db.Model):
 
     id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nama            = db.Column(db.String(100), nullable=False)
-    model_type      = db.Column(db.Enum('mobilenetv2', 'efficientnetb0', native_enum=False), nullable=False, default='mobilenetv2')
+    model_type      = db.Column(db.Enum('mobilenetv2', 'efficientnetb0'), nullable=False, default='mobilenetv2')
     input_size      = db.Column(db.Integer, nullable=False, default=224)
     learning_rate   = db.Column(db.Float, nullable=False, default=0.0001)
     batch_size      = db.Column(db.Integer, nullable=False, default=16)
     epochs          = db.Column(db.Integer, nullable=False, default=30)
     patience        = db.Column(db.SmallInteger, nullable=False, default=5)
     dropout_rate    = db.Column(db.Float, nullable=False, default=0.3)
-    optimizer       = db.Column(db.Enum('adam', 'sgd', 'rmsprop', native_enum=False), nullable=False, default='adam')
+    optimizer       = db.Column(db.Enum('adam', 'sgd', 'rmsprop'), nullable=False, default='adam')
     mixup_alpha     = db.Column(db.Float, nullable=False, default=0)  # 0 = nonaktif (default, tidak ubah perilaku lama)
     label_smoothing = db.Column(db.Float, nullable=False, default=0)  # 0 = nonaktif (default)
     dense_units     = db.Column(db.Integer, nullable=False, default=64)   # head Dense(units) — TODO.md P4
@@ -24,7 +24,7 @@ class ArsitekturConfig(db.Model):
     aug_off         = db.Column(db.String(100), nullable=False, default='')
     split_config_id = db.Column(db.Integer, db.ForeignKey('split_config.id'), nullable=False)
     fold_val        = db.Column(db.SmallInteger, nullable=False, default=0)
-    status          = db.Column(db.Enum('draft', 'training', 'selesai', 'gagal', native_enum=False), nullable=False, default='draft')
+    status          = db.Column(db.Enum('draft', 'training', 'selesai', 'gagal'), nullable=False, default='draft')
     model_path      = db.Column(db.String(500), nullable=True)
     final_model_path = db.Column(db.String(500), nullable=True)   # dilatih pada semua data
     pred_type       = db.Column(db.String(10), nullable=False, default='none')  # none | single | cv

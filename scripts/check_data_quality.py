@@ -32,7 +32,7 @@ def main():
     ap.add_argument('--min-resolution', type=int, default=64)
     args = ap.parse_args()
 
-    from app import create_app, db
+    from app import create_app
     from app.models.dokumentasi_foto import DokumentasiFoto
 
     with create_app().app_context():

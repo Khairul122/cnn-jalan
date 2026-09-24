@@ -2,7 +2,7 @@
 Tes regresi keamanan P0. Jalankan dari root project:
   .\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
 
-Memakai database dev (DATABASE_URL, atau TEST_DATABASE_URL bila diset). Akun uji dibuat dengan email acak dan
+Memakai database dev (MySQL harus running). Akun uji dibuat dengan email acak dan
 dihapus di akhir. Target aksi destruktif memakai id yang tidak ada (999999) agar tidak
 ada data nyata yang bisa terhapus seandainya proteksi gagal.
 """

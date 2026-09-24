@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 
 from .dataset import load_dataset, _group_aware_split
-from .model import build_model, _apply_fine_tuning, uses_onehot_labels, parse_aug_off, N_CLASSES
+from .model import build_model, _apply_fine_tuning, parse_aug_off, N_CLASSES
 
 SEED = 42
 INNER_VAL_FRAC = 0.15   # porsi data training untuk early stopping

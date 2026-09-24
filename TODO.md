@@ -190,3 +190,10 @@ Perbandingan yang sah hanya terhadap run 0 dengan split yang sama. Selisih di ba
 ## Catatan Kejujuran Akademik
 
 Setelah P0-P8 selesai, target akurasi di atas 70% kemungkinan besar tetap tidak tercapai murni dari foto saja. Akar masalahnya tetap sama: SDI mengukur luas fisik kerusakan dalam meter persegi, informasi yang tidak bisa direkonstruksi dari foto tanpa objek referensi skala. Perbaikan di TODO ini akan menghilangkan noise label yang tidak seharusnya ada (breakpoint salah, F_rutting 2× lipat, kategori tercampur) dan merapikan metodologi training/evaluasi, tapi tidak menghilangkan batasan mendasar ini. Sampaikan sebagai temuan metodologis di bab pembahasan, bukan disembunyikan sebagai kegagalan — ini kontribusi ilmiah yang valid: menunjukkan seberapa besar peran informasi non-visual dalam menentukan tingkat kerusakan jalan.
+
+---
+
+## Augmentasi terpisah (2026-09-24)
+
+- [x] Tahap Augmentasi sendiri sebelum split (`/augmentasi`, `HasilAugmentasi`, loader hanya fold-train). MySQL: `scripts/migrate_add_augmentasi.sql`.
+- Migrasi ke Supabase dan antrean job Google Colab **dibatalkan pemilik** (2026-09-24) dan seluruh kodenya dihapus; basis data tetap MySQL.

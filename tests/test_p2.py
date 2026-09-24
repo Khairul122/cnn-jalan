@@ -225,7 +225,6 @@ class P2Test(unittest.TestCase):
             parse_aug_off('zoom,tidak_ada')
 
     def test_hyperparams_cover_every_training_field_and_reach_train_final(self):
-        from types import SimpleNamespace
         from unittest import mock
         from app.models.arsitektur_config import ArsitekturConfig
         cfg = ArsitekturConfig(id=1, split_config_id=1, input_size=224, model_type='mobilenetv2', dropout_rate=0.3,

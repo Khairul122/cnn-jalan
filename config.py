@@ -19,8 +19,6 @@ class Config:
     SECRET_KEY = _required('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = _required('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Supabase Postgres lewat connection pooler: koneksi bisa diputus server saat idle.
-    SQLALCHEMY_ENGINE_OPTIONS = {'pool_pre_ping': True, 'pool_recycle': 280}
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'uploads', 'foto')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}

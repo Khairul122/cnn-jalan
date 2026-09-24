@@ -10,17 +10,17 @@ class PreprocessingConfig(db.Model):
     # Resize
     target_width   = db.Column(db.Integer, nullable=False, default=256)
     target_height  = db.Column(db.Integer, nullable=False, default=256)
-    resize_method  = db.Column(db.Enum('LANCZOS', 'BILINEAR', 'BICUBIC', 'NEAREST', native_enum=False), nullable=False, default='LANCZOS')
-    resize_mode      = db.Column(db.Enum('stretch', 'letterbox', native_enum=False), nullable=False, default='stretch')
+    resize_method  = db.Column(db.Enum('LANCZOS', 'BILINEAR', 'BICUBIC', 'NEAREST'), nullable=False, default='LANCZOS')
+    resize_mode      = db.Column(db.Enum('stretch', 'letterbox'), nullable=False, default='stretch')
     illum_correction = db.Column(db.Boolean, nullable=False, default=False)
     # Center Crop
     crop_enabled   = db.Column(db.Boolean, nullable=False, default=True)
     crop_width     = db.Column(db.Integer, nullable=False, default=224)
     crop_height    = db.Column(db.Integer, nullable=False, default=224)
     # Normalisasi
-    norm_method    = db.Column(db.Enum('minmax', 'zscore', 'none', 'clahe', native_enum=False), nullable=False, default='none')
+    norm_method    = db.Column(db.Enum('minmax', 'zscore', 'none', 'clahe'), nullable=False, default='none')
     # Denoise
-    denoise_method = db.Column(db.Enum('none', 'gaussian', 'median', 'bilateral', native_enum=False), nullable=False, default='bilateral')
+    denoise_method = db.Column(db.Enum('none', 'gaussian', 'median', 'bilateral'), nullable=False, default='bilateral')
     denoise_ksize  = db.Column(db.Integer, nullable=False, default=3)
     # Meta
     is_default     = db.Column(db.Boolean, nullable=False, default=False)

@@ -28,15 +28,8 @@ python -m venv .venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Database: Postgres (Supabase). Isi DATABASE_URL di .env (Session pooler), lalu buat skema + data master + RLS:
-$env:FLASK_APP = "run.py"
-.\.venv\Scripts\python.exe -m flask db upgrade
-
-# Pindahkan data dari MySQL lama (sekali jalan; --ganti mengosongkan tabel tujuan dulu):
-.\.venv\Scripts\python.exe scripts\migrate_mysql_to_supabase.py --sumber "mysql+pymysql://root:PWD@localhost/db_cnn_jalan" --ganti
-
-# Tes memakai database terpisah bila TEST_DATABASE_URL diset (jangan arahkan ke database utama):
-# $env:TEST_DATABASE_URL = "postgresql+psycopg2://postgres:@127.0.0.1:5432/cnn_jalan_test"
+# Import database schema (MySQL harus running); jalankan migration SQL di scripts/ berurutan sesuai kebutuhan, mis.:
+# Get-Content scripts\migrate_add_augmentasi.sql | & mysql -u root db_cnn_jalan
 
 # Jalankan server development — WAJIB pakai venv python
 .\.venv\Scripts\python.exe run.py
@@ -46,7 +39,7 @@ Akses di: **http://127.0.0.1:5000**
 
 **Akun default:** `admin@gmail.com` / `12345678` — **ganti** dengan `python scripts/create_admin.py --email admin@gmail.com`. Pendaftaran publik hanya membuat akun `viewer`; hanya `admin` yang boleh mengubah data (`app/auth_utils.py::admin_required`). Semua form POST memakai token CSRF (`{{ csrf_token() }}`), logout lewat POST.
 
-**Konfigurasi:** salin `.env.example` → `.env`, isi `SECRET_KEY` (acak), `DATABASE_URL` (Postgres/Supabase, Session pooler), dan `FLASK_DEBUG` (1 hanya untuk dev lokal). `config.py` menolak start jika `SECRET_KEY`/`DATABASE_URL` belum diset.
+**Konfigurasi:** salin `.env.example` → `.env`, isi `SECRET_KEY` (acak), `DATABASE_URL` (password MySQL), dan `FLASK_DEBUG` (1 hanya untuk dev lokal). `config.py` menolak start jika `SECRET_KEY`/`DATABASE_URL` belum diset.
 
 ---
 
@@ -65,13 +58,14 @@ Flask MVC dengan Blueprints. Semua blueprint didaftarkan di `app/__init__.py` me
 | `split_controller.py` | `split` | `/split` | Stratified K-Fold split dataset |
 | `arsitektur_controller.py` | `arsitektur` | `/arsitektur` | Konfigurasi & training CNN |
 | `peta_controller.py` | `peta` | `/peta` | Peta GIS interaktif (GeoJSON) |
+| `augmentasi_controller.py` | `augmentasi` | `/augmentasi` | Tahap Augmentasi terpisah (config, jalankan, galeri) |
 | `evaluasi_controller.py` | `evaluasi` | `/evaluasi` | Evaluasi model CNN |
 
 ---
 
 ## Database Schema
 
-Database: Postgres (Supabase). Skema dikelola Alembic (`migrations/`, `flask db upgrade`); semua tabel `ENABLE ROW LEVEL SECURITY` tanpa policy (aplikasi memakai role pemilik). Kolom enum disimpan sebagai VARCHAR (`native_enum=False`).
+Database: `db_cnn_jalan` (MySQL utf8mb4)
 
 | Tabel | Deskripsi |
 |---|---|
@@ -476,6 +470,19 @@ laporan; keputusan hapus/tidak tetap manual. Jalankan: `.\.venv\Scripts\python.e
 
 ---
 
+## Augmentasi terpisah (2026-09-24)
+
+**Urutan pipeline:** SDI → Preprocessing → **Augmentasi** → Split → Training → Evaluasi → Prediksi.
+
+**Augmentasi (tahap sendiri, sebelum split).** `AugmentasiConfig` + `HasilAugmentasi` (`app/services/augmentation_service.py`, setara 10 layer Keras,
+offline, RNG ber-seed per (seed, foto, salinan)). Bahan: hasil tahap denoise. Satu config aktif (`AugmentasiConfig.aktif()`); menjalankan config mengganti
+hasil lama; mengubah/menghapus hasil preprocessing menghapus hasil augmentasi. Salinan membawa ID foto ASAL: split tetap per foto asal
+(`SplitItem` tidak berubah), `cnn_service.dataset.load_dataset` memuat salinan hanya untuk foto fold-train (tidak pernah fold uji), dan
+`_group_aware_split` menjaga salinan satu grup dengan asalnya. Layer augmentasi dalam model (`aug_off`) tetap ada sebagai augmentasi *online*
+opsional; memakai offline + online menggandakan efek (zoom/translasi/erasing mengubah luas yang tampak padahal label berbasis luas).
+
+Rencana pindah ke Supabase dan Google Colab dibatalkan pemilik (2026-09-24); basis data tetap MySQL dan training tetap lokal.
+
 ## Configuration (`config.py`)
 
 | Setting | Default | Deskripsi |
@@ -490,9 +497,7 @@ laporan; keputusan hapus/tidak tetap manual. Jalankan: `.\.venv\Scripts\python.e
 
 ## Migration Files
 
-Sejak 2026-09-24 basis data Postgres (Supabase) dengan Alembic: `migrations/versions/` (satu revisi awal = skema + data master 4 kelas +
-RLS). Perubahan skema berikutnya: `flask db migrate -m "..."` lalu `flask db upgrade`. File `migrate_*.sql` lama (dialek MySQL) diarsipkan di
-`scripts/legacy_mysql/` dan tidak boleh dijalankan; datanya dipindahkan dengan `scripts/migrate_mysql_to_supabase.py`.
+Jalankan file `scripts/migrate_*.sql` berurutan sesuai kebutuhan (semua yang tercatat di sini sudah dijalankan pada DB dev). `migrate_add_augmentasi.sql` (2026-09-24) membuat tabel `augmentasi_config` dan `hasil_augmentasi`.
 
 ## Evaluasi, Pipeline Ulang, dan Tes
 

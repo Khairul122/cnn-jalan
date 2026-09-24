@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Augmentasi{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">›</span>
+<span class="current">Augmentasi</span>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div>{% set ph_title = 'Augmentasi Data' %}{% include 'components/page_header.html' %}</div>
+  <div class="d-flex gap-2">
+    {% if total_hasil %}
+    <form method="POST" action="{{ url_for('augmentasi.hasil_reset') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="button" class="btn btn-outline-danger btn-sm"
+              onclick="showConfirmForm(this,'Reset Hasil Augmentasi','Semua salinan augmentasi (file dan record) akan dihapus.','danger','Ya, Reset')">
+        <i class="bi bi-trash"></i> Reset hasil
+      </button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('augmentasi.config_new') }}" class="btn-cnn-primary"><i class="bi bi-plus-lg"></i> Buat Konfigurasi</a>
+  </div>
+</div>
+
+<div class="alert alert-info" role="note" style="font-size:.8rem;">
+  Tahap ini terpisah dari Preprocessing dan dijalankan <strong>sebelum Split</strong>. Tiap foto (hasil denoise) diperbanyak menjadi
+  beberapa salinan bertransformasi acak ber-seed. Salinan membawa ID foto asal: <strong>kelas dan fold mengikuti foto asal</strong>, dipakai
+  training hanya untuk foto fold-train, dan tidak pernah masuk fold uji. Hanya satu config aktif; menjalankan config mengganti hasil sebelumnya.
+  Mengubah hasil Preprocessing menghapus hasil augmentasi.
+</div>
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  {% for lbl, val, color, icon in [
+      ('Total Foto', total_foto, '#38BDF8', 'bi-images'),
+      ('Foto Siap (denoise)', total_denoise, '#A78BFA', 'bi-droplet-half'),
+      ('Salinan Augmentasi', total_hasil, '#10B981', 'bi-shuffle'),
+  ] %}
+  <div style="flex:1;min-width:120px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
+              padding:.625rem .875rem;display:flex;align-items:center;gap:.45rem;">
+    <i class="bi {{ icon }}" style="color:{{ color }};font-size:.95rem;"></i>
+    <div>
+      <p style="font-size:1.15rem;font-weight:700;margin:0;font-variant-numeric:tabular-nums;">{{ val }}</p>
+      <p style="font-size:.68rem;color:var(--c-muted);margin:0;">{{ lbl }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if config_list %}
+<div style="border-radius:var(--r-card);overflow:hidden;border:1px solid var(--c-border);margin-bottom:1.25rem;">
+  <table class="table table-hover align-middle mb-0 cnn-table">
+    <thead><tr>
+      <th scope="col">#</th><th scope="col">Nama</th><th scope="col">Salinan/foto</th><th scope="col">Seed</th>
+      <th scope="col">Transformasi aktif</th><th scope="col" style="text-align:center;width:170px;">Aksi</th>
+    </tr></thead>
+    <tbody>
+      {% for cfg in config_list %}
+      {% set p = cfg.get_parameter() %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          <div style="font-weight:600;font-size:.85rem;">{{ cfg.nama_config }}</div>
+          {% if cfg.id == aktif_id %}<span style="font-size:.68rem;color:#059669;font-weight:700;">Aktif (dipakai training)</span>
+          {% elif cfg.is_default %}<span style="font-size:.68rem;color:#10B981;">Default</span>{% endif %}
+        </td>
+        <td style="font-variant-numeric:tabular-nums;">{{ cfg.n_salinan }}</td>
+        <td style="font-variant-numeric:tabular-nums;">{{ cfg.seed }}</td>
+        <td style="font-size:.74rem;">{% for k, v in p.items() if v.aktif %}{{ k }}{{ ', ' if not loop.last }}{% else %}<span style="color:var(--c-muted);">—</span>{% endfor %}</td>
+        <td style="text-align:center;">
+          <div class="d-flex gap-1 justify-content-center flex-wrap">
+            <form method="POST" action="{{ url_for('augmentasi.run', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" class="btn btn-success btn-sm"
+                      onclick="showConfirmForm(this,'Jalankan Augmentasi','Membuat <strong>{{ cfg.n_salinan }} salinan</strong> per foto dengan <strong>{{ cfg.nama_config }}</strong>. Hasil augmentasi sebelumnya diganti.','success','Ya, Jalankan')">
+                <i class="bi bi-play-fill"></i> Jalankan
+              </button>
+            </form>
+            <a href="{{ url_for('augmentasi.config_edit', config_id=cfg.id) }}" class="btn btn-primary btn-sm" title="Edit"><i class="bi bi-pencil-fill"></i></a>
+            <form method="POST" action="{{ url_for('augmentasi.config_delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="button" class="btn btn-outline-danger btn-sm" title="Hapus" aria-label="Hapus konfigurasi"
+                      onclick="showConfirmForm(this,'Hapus Konfigurasi','Konfigurasi <strong>{{ cfg.nama_config }}</strong> dan hasilnya dihapus.','danger','Ya, Hapus')">
+                <i class="bi bi-trash-fill"></i>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-secondary">Belum ada konfigurasi augmentasi. Buat konfigurasi baru, lalu jalankan.</div>
+{% endif %}
+
+{% if galeri %}
+<h2 style="font-size:.9rem;font-weight:700;">Contoh hasil (24 terbaru)</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.5rem;">
+  {% for h in galeri %}
+  <figure style="margin:0;">
+    <img src="{{ url_for('static', filename=h.path_output) }}" alt="Salinan {{ h.salinan_ke }} foto {{ h.dokumentasi_id }}"
+         loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--c-border);">
+    <figcaption style="font-size:.65rem;color:var(--c-muted);">foto #{{ h.dokumentasi_id }} · salinan {{ h.salinan_ke }}</figcaption>
+  </figure>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

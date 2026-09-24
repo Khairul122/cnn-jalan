@@ -197,7 +197,6 @@ class P1Test(unittest.TestCase):
             db.session.commit()
 
     def test_split_form_creates_repeated_splits_with_spatial_groups(self):
-        import math
         from app.services.dedup_service import _haversine_m
         prefix = f'rep-{self.tag}'
         self.addCleanup(self._hapus_split_berawalan, prefix)
@@ -284,6 +283,36 @@ class P1Test(unittest.TestCase):
         self.assertEqual((dipakai.mixup_alpha, dipakai.label_smoothing, dipakai.dense_units, dipakai.skip_fine_tuning, dipakai.aug_off),
                          (0.2, 0.1, 32, True, 'zoom'))
         _cv_progress.pop(aid, None)
+
+    def test_augmentasi_pages_and_config_form(self):
+        from app.models.augmentasi_config import AugmentasiConfig
+        c = self.client()
+        self.assertEqual(c.get('/augmentasi/').status_code, 200)
+        self.assertEqual(c.get('/augmentasi/config/new').status_code, 200)
+        tok = _token(c.get('/augmentasi/config/new').get_data(as_text=True))
+        nama = f'augcfg-{self.tag}'
+        self.addCleanup(lambda: self._hapus_aug_config(nama))
+        data = {'csrf_token': tok, 'nama_config': nama, 'n_salinan': '2', 'seed': '7', 'flip_aktif': '1', 'flip_p': '0.5',
+                'zoom_aktif': '1', 'zoom_faktor': '0.1'}
+        self.assertEqual(c.post('/augmentasi/config/new', data=data).status_code, 302)
+        with self.app.app_context():
+            cfg = AugmentasiConfig.query.filter_by(nama_config=nama).one()
+            p = cfg.get_parameter()
+            self.assertEqual((cfg.n_salinan, cfg.seed), (2, 7))
+            self.assertTrue(p['flip']['aktif'] and p['zoom']['aktif'])
+            self.assertFalse(p['rotasi']['aktif'])            # checkbox tidak dicentang = nonaktif
+            self.assertEqual(p['zoom']['faktor'], 0.1)
+        data['zoom_faktor'] = '5'                             # di luar rentang -> ditolak, tidak tersimpan
+        data['nama_config'] = nama + '-buruk'
+        self.assertEqual(c.post('/augmentasi/config/new', data=data).status_code, 302)
+        with self.app.app_context():
+            self.assertEqual(AugmentasiConfig.query.filter_by(nama_config=nama + '-buruk').count(), 0)
+
+    def _hapus_aug_config(self, nama):
+        from app.models.augmentasi_config import AugmentasiConfig
+        with self.app.app_context():
+            AugmentasiConfig.query.filter(AugmentasiConfig.nama_config.like(nama + '%')).delete()
+            db.session.commit()
 
     def test_train_refused_when_photo_not_preprocessed(self):
         sid = self.make_split()

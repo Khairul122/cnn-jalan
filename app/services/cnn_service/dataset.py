@@ -9,6 +9,7 @@ from app import db
 from app.models.split_item import SplitItem
 from app.models.dokumentasi_foto import DokumentasiFoto
 from app.models.hasil_preprocessing import HasilPreprocessing
+from app.models.hasil_augmentasi import HasilAugmentasi
 
 MIN_TRAIN_SAMPLES = 20
 MIN_VAL_SAMPLES = 5
@@ -77,6 +78,20 @@ def _stage_map_for(doc_ids=None):
     return stage_map
 
 
+def _augmentation_map_for(doc_ids):
+    """dokumentasi_id (foto ASAL) -> [path salinan augmentasi]. Salinan mewarisi kelas dan fold foto asal."""
+    if not doc_ids:
+        return {}
+    rows = (db.session.query(HasilAugmentasi.dokumentasi_id, HasilAugmentasi.path_output)
+            .filter(HasilAugmentasi.dokumentasi_id.in_(list(doc_ids)), HasilAugmentasi.status == 'selesai',
+                    HasilAugmentasi.path_output != '')
+            .order_by(HasilAugmentasi.dokumentasi_id, HasilAugmentasi.salinan_ke).all())
+    hasil = {}
+    for doc_id, path in rows:
+        hasil.setdefault(doc_id, []).append(path)
+    return hasil
+
+
 def _file_hash(path_rel, base_dir):
     """MD5 isi file (bukan nama path) — dipakai mendeteksi tahap yang hasilnya identik
     byte-per-byte, misal 'crop' == 'resize' saat preprocessing_config.crop_enabled=False."""
@@ -116,10 +131,11 @@ def effective_sample_count(doc_ids, base_dir):
     if not doc_ids:
         return 0
     stage_map = _stage_map_for(doc_ids)
+    aug_map = _augmentation_map_for(doc_ids)
     total = 0
     for doc_id in doc_ids:
         n = len(distinct_stage_paths(doc_id, stage_map, base_dir))
-        total += n if n > 0 else 1
+        total += (n if n > 0 else 1) + len(aug_map.get(doc_id, []))
     return total
 
 
@@ -156,7 +172,8 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
 
     Training: diperluas memakai semua tahap non-acak yang tersedia (resize, crop,
     normalisasi, denoise) sebagai sampel terpisah dengan label yang sama → dataset
-    bertambah tanpa foto baru. 'augmentasi' dikecualikan (acak, tidak reproducible). Tahap
+    bertambah tanpa foto baru. Ditambah salinan dari tahap Augmentasi (hasil_augmentasi, offline dan
+    ber-seed) untuk foto fold-train saja. Tahap
     yang KONTEN file-nya identik dengan tahap lain di foto yang sama (misal 'crop' ==
     'resize' saat preprocessing_config.crop_enabled=False) di-dedup lewat
     distinct_stage_paths — supaya gambar yang sama tidak dihitung dua kali dengan bobot
@@ -191,6 +208,10 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
         .all()
     )
     stage_map = _stage_map_for({r.dokumentasi_id for r in rows})
+    # Salinan augmentasi (tahap Augmentasi terpisah) hanya untuk foto yang dipakai training; foto fold uji tidak
+    # pernah memuatnya. Salinan membawa ID foto asal, jadi tetap satu grup dengan asalnya di _group_aware_split.
+    aug_map = _augmentation_map_for({r.dokumentasi_id for r in rows
+                                     if not (fold_val is not None and r.fold_index == fold_val)})
     # Release DB connection back to pool before the slow image-loading loop
     db.session.remove()
 
@@ -208,6 +229,7 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
     X_val, y_val, groups_val = [], [], []
     skipped = 0
     prep_used = 0
+    aug_used = 0
     expanded = 0
 
     for row in rows:
@@ -238,6 +260,14 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
             groups_train.append(row.dokumentasi_id)
             added += 1
             prep_used += 1
+        for path_rel in aug_map.get(row.dokumentasi_id, []):
+            arr = _load(path_rel)
+            if arr is None:
+                continue
+            X_train.append(arr)
+            y_train.append(label)
+            groups_train.append(row.dokumentasi_id)
+            aug_used += 1
         if added == 0:
             arr = _load(row.path_file)
             if arr is None:
@@ -251,7 +281,7 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
 
     if prep_used > 0 or skipped > 0:
         print(f'[load_dataset] train={len(X_train)} val={len(X_val)} '
-              f'({prep_used} preprocessed dari {expanded} foto training diperbanyak, skip={skipped})')
+              f'({prep_used} preprocessed dari {expanded} foto training diperbanyak, {aug_used} salinan augmentasi, skip={skipped})')
 
     if len(X_train) < MIN_TRAIN_SAMPLES:
         raise ValueError(
