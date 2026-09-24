@@ -1,4 +1,4 @@
-﻿from app import utcnow
+from app import utcnow
 from app import db
 
 
@@ -13,7 +13,7 @@ class HasilPreprocessing(db.Model):
     ukuran_kb_asal  = db.Column(db.Integer, nullable=True)
     ukuran_kb_hasil = db.Column(db.Integer, nullable=True)
     durasi_ms       = db.Column(db.Integer, nullable=True)
-    status          = db.Column(db.Enum('selesai', 'gagal'), nullable=False, default='selesai')
+    status          = db.Column(db.Enum('selesai', 'gagal', native_enum=False), nullable=False, default='selesai')
     catatan         = db.Column(db.Text, nullable=True)
     created_at      = db.Column(db.DateTime, default=utcnow)
 

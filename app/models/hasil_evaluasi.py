@@ -1,4 +1,4 @@
-﻿import json
+import json
 from app import utcnow
 from app import db
 

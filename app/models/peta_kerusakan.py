@@ -7,7 +7,7 @@ class PetaKerusakan(db.Model):
     id                   = db.Column(db.Integer, primary_key=True, autoincrement=True)
     lokasi_id            = db.Column(db.Integer, db.ForeignKey('lokasi_kerusakan.id'), nullable=False, unique=True)
     hasil_klasifikasi_id = db.Column(db.Integer, db.ForeignKey('hasil_klasifikasi_cnn.id'), nullable=False)
-    status_pemetaan      = db.Column(db.Enum('draft', 'terverifikasi', 'diperbaiki'), nullable=False, default='draft')
+    status_pemetaan      = db.Column(db.Enum('draft', 'terverifikasi', 'diperbaiki', native_enum=False), nullable=False, default='draft')
     prioritas_perbaikan  = db.Column(db.Integer, nullable=False)
     tanggal_pemetaan     = db.Column(db.Date, nullable=False)
     pengguna_id          = db.Column(db.Integer, db.ForeignKey('pengguna.id'), nullable=False)

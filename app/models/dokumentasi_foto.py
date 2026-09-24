@@ -1,4 +1,4 @@
-﻿from app import utcnow
+from app import utcnow
 from app import db
 
 

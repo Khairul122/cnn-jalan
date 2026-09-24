@@ -1,4 +1,4 @@
-﻿from app import utcnow
+from app import utcnow
 from app import db
 
 
@@ -10,7 +10,7 @@ class SplitConfig(db.Model):
     n_splits     = db.Column(db.Integer, nullable=False, default=5)
     random_state = db.Column(db.Integer, nullable=False, default=42)
     radius_grup_m = db.Column(db.Integer, nullable=False, default=0)   # foto <= radius ini (meter) satu fold; 0 = tanpa grup spasial
-    label_sumber = db.Column(db.Enum('tingkat', 'jenis'), nullable=False, default='tingkat')
+    label_sumber = db.Column(db.Enum('tingkat', 'jenis', native_enum=False), nullable=False, default='tingkat')
     total_data   = db.Column(db.Integer, nullable=False, default=0)
     pengguna_id  = db.Column(db.Integer, db.ForeignKey('pengguna.id'), nullable=False)
     created_at   = db.Column(db.DateTime, default=utcnow)

@@ -1,4 +1,4 @@
-﻿from app import utcnow
+from app import utcnow
 from app import db
 
 
@@ -12,7 +12,7 @@ class LokasiKerusakan(db.Model):
     panjang        = db.Column(db.Numeric(8, 2), nullable=True)  # meter
     lebar          = db.Column(db.Numeric(8, 2), nullable=True)  # meter
     keterangan     = db.Column(db.String(50), nullable=True)     # 'Ukur' | 'Estimasi (Ringan|Sedang|Berat)'
-    sumber_data    = db.Column(db.Enum('primer', 'sekunder'), nullable=False, default='primer')
+    sumber_data    = db.Column(db.Enum('primer', 'sekunder', native_enum=False), nullable=False, default='primer')
     pengguna_id    = db.Column(db.Integer, db.ForeignKey('pengguna.id'), nullable=False)
     created_at     = db.Column(db.DateTime, default=utcnow)
 

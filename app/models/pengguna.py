@@ -1,4 +1,4 @@
-﻿from app import utcnow
+from app import utcnow
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login_manager
@@ -11,7 +11,7 @@ class Pengguna(UserMixin, db.Model):
     nama          = db.Column(db.String(100), nullable=False)
     email         = db.Column(db.String(150), nullable=False, unique=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    role          = db.Column(db.Enum('admin', 'viewer'), nullable=False, default='viewer')
+    role          = db.Column(db.Enum('admin', 'viewer', native_enum=False), nullable=False, default='viewer')
     created_at    = db.Column(db.DateTime, default=utcnow)
 
     lokasi_list = db.relationship('LokasiKerusakan', backref='pengguna', lazy=True)

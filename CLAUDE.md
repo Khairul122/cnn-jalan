@@ -28,17 +28,15 @@ python -m venv .venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Import database schema (MySQL harus running)
-# Dump SQL lama sudah dihapus; gunakan migration SQL di scripts/.
+# Database: Postgres (Supabase). Isi DATABASE_URL di .env (Session pooler), lalu buat skema + data master + RLS:
+$env:FLASK_APP = "run.py"
+.\.venv\Scripts\python.exe -m flask db upgrade
 
-# Atau jalankan migration tambahan jika sudah ada database:
-# Get-Content migrate_add_preprocessing.sql | & mysql -u root db_cnn_jalan
-# Get-Content migrate_add_split.sql | & mysql -u root db_cnn_jalan
-# Get-Content migrate_add_arsitektur.sql | & mysql -u root db_cnn_jalan
-# Get-Content migrate_add_hasil_evaluasi.sql | & mysql -u root db_cnn_jalan
-# Get-Content migrate_add_patience.sql | & mysql -u root db_cnn_jalan
-# Get-Content migrate_add_prediksi_model.sql | & mysql -u root db_cnn_jalan
-# Get-Content migrate_add_pred_type.sql | & mysql -u root db_cnn_jalan
+# Pindahkan data dari MySQL lama (sekali jalan; --ganti mengosongkan tabel tujuan dulu):
+.\.venv\Scripts\python.exe scripts\migrate_mysql_to_supabase.py --sumber "mysql+pymysql://root:PWD@localhost/db_cnn_jalan" --ganti
+
+# Tes memakai database terpisah bila TEST_DATABASE_URL diset (jangan arahkan ke database utama):
+# $env:TEST_DATABASE_URL = "postgresql+psycopg2://postgres:@127.0.0.1:5432/cnn_jalan_test"
 
 # Jalankan server development — WAJIB pakai venv python
 .\.venv\Scripts\python.exe run.py
@@ -48,7 +46,7 @@ Akses di: **http://127.0.0.1:5000**
 
 **Akun default:** `admin@gmail.com` / `12345678` — **ganti** dengan `python scripts/create_admin.py --email admin@gmail.com`. Pendaftaran publik hanya membuat akun `viewer`; hanya `admin` yang boleh mengubah data (`app/auth_utils.py::admin_required`). Semua form POST memakai token CSRF (`{{ csrf_token() }}`), logout lewat POST.
 
-**Konfigurasi:** salin `.env.example` → `.env`, isi `SECRET_KEY` (acak), `DATABASE_URL` (password MySQL), dan `FLASK_DEBUG` (1 hanya untuk dev lokal). `config.py` menolak start jika `SECRET_KEY`/`DATABASE_URL` belum diset.
+**Konfigurasi:** salin `.env.example` → `.env`, isi `SECRET_KEY` (acak), `DATABASE_URL` (Postgres/Supabase, Session pooler), dan `FLASK_DEBUG` (1 hanya untuk dev lokal). `config.py` menolak start jika `SECRET_KEY`/`DATABASE_URL` belum diset.
 
 ---
 
@@ -73,7 +71,7 @@ Flask MVC dengan Blueprints. Semua blueprint didaftarkan di `app/__init__.py` me
 
 ## Database Schema
 
-Database: `db_cnn_jalan` (MySQL utf8mb4)
+Database: Postgres (Supabase). Skema dikelola Alembic (`migrations/`, `flask db upgrade`); semua tabel `ENABLE ROW LEVEL SECURITY` tanpa policy (aplikasi memakai role pemilik). Kolom enum disimpan sebagai VARCHAR (`native_enum=False`).
 
 | Tabel | Deskripsi |
 |---|---|
@@ -492,31 +490,9 @@ laporan; keputusan hapus/tidak tetap manual. Jalankan: `.\.venv\Scripts\python.e
 
 ## Migration Files
 
-Jalankan **berurutan** sesuai kebutuhan database. Dump SQL lama sudah dihapus karena berisi skema/data lama; migration SQL di `scripts/` menjadi rujukan perubahan schema.
-
-| File | Fungsi | Status |
-|---|---|---|
-| `migrate_remove_kecamatan.sql` | Hapus tabel & kolom kecamatan | Sudah dijalankan |
-| `migrate_add_preprocessing.sql` | Tambah tabel preprocessing_config & hasil_preprocessing | Sudah dijalankan |
-| `migrate_add_split.sql` | Tambah tabel split_config & split_item + indexes | Sudah dijalankan |
-| `migrate_add_arsitektur.sql` | Tambah tabel arsitektur_config & hasil_training | Sudah dijalankan |
-| `migrate_add_hasil_evaluasi.sql` | Tambah tabel hasil_evaluasi (FK arsitektur_config) | Sudah dijalankan |
-| `migrate_add_patience.sql` | Tambah kolom `patience` di arsitektur_config | Sudah dijalankan |
-| `migrate_add_prediksi_model.sql` | Tambah tabel prediksi_model (arsitektur_id, dok_id, prediksi, aktual, confidence) | Sudah dijalankan |
-| `migrate_add_pred_type.sql` | Tambah kolom `pred_type` VARCHAR(10) di arsitektur_config (none/single/cv) | Sudah dijalankan |
-| `migrate_revisi_lokasi.sql` | `panjang`/`lebar` → DECIMAL(8,2) meter, tambah `keterangan` di lokasi_kerusakan | Sudah dijalankan |
-| `migrate_klasifikasi_jenis_nullable.sql` | `hasil_klasifikasi_cnn.jenis_kerusakan_id` boleh NULL | Sudah dijalankan |
-| `migrate_add_final_model.sql` | Tambah kolom `final_model_path` di arsitektur_config | Sudah dijalankan |
-| `migrate_add_split_radius.sql` | Kolom `split_config.radius_grup_m` (grup spasial) | Sudah dijalankan 2026-09-24 |
-| `migrate_add_probabilitas.sql` | Kolom `prediksi_model.probabilitas` (JSON, untuk cross-entropy CV) | Sudah dijalankan 2026-09-24 |
-| `migrate_drop_split_type.sql` | Hapus kolom `split_type` (mode holdout tidak pernah ada di UI) | Sudah dijalankan 2026-09-24 |
-| `migrate_p2_augmentasi.sql` | Hapus tahap/kolom augmentasi preprocessing; tambah `arsitektur_config.aug_off` | Sudah dijalankan 2026-09-24 |
-| `migrate_p1_preprocessing.sql` | Default config preprocessing (256→crop 224, norm none, stretch) | Sudah dijalankan 2026-09-24 |
-| `migrate_4_kelas.sql` | 3 → 4 kelas: master `tingkat_kerusakan`, `hasil_evaluasi.per_class` (JSON), kosongkan data turunan | Sudah dijalankan 2026-09-24 (cadangan di `backup_3kelas_20260924/`, tidak di-commit) |
-| `migrate_add_resize_mode.sql` | Tambah kolom `resize_mode` (stretch/letterbox) di preprocessing_config | Sudah dijalankan |
-| `seed_data.py` | Reset data model + import Excel revisi & foto (`scripts/seed_data.py --reset`) | Sudah dijalankan |
-
----
+Sejak 2026-09-24 basis data Postgres (Supabase) dengan Alembic: `migrations/versions/` (satu revisi awal = skema + data master 4 kelas +
+RLS). Perubahan skema berikutnya: `flask db migrate -m "..."` lalu `flask db upgrade`. File `migrate_*.sql` lama (dialek MySQL) diarsipkan di
+`scripts/legacy_mysql/` dan tidak boleh dijalankan; datanya dipindahkan dengan `scripts/migrate_mysql_to_supabase.py`.
 
 ## Evaluasi, Pipeline Ulang, dan Tes
 
