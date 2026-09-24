@@ -481,7 +481,6 @@ hasil lama; mengubah/menghapus hasil preprocessing menghapus hasil augmentasi. S
 `_group_aware_split` menjaga salinan satu grup dengan asalnya. Layer augmentasi dalam model (`aug_off`) tetap ada sebagai augmentasi *online*
 opsional; memakai offline + online menggandakan efek (zoom/translasi/erasing mengubah luas yang tampak padahal label berbasis luas).
 
-Rencana pindah ke Supabase dan Google Colab dibatalkan pemilik (2026-09-24); basis data tetap MySQL dan training tetap lokal.
 
 ## Configuration (`config.py`)
 
@@ -514,7 +513,5 @@ Jalankan file `scripts/migrate_*.sql` berurutan sesuai kebutuhan (semua yang ter
 - **Ulang pipeline sekali jalan:** `python scripts/run_pipeline.py` (Auto-label → Preprocessing → Split → Training → CV → Model final);
   opsi `--skip-preprocessing`, `--no-cv`, `--no-final`, `--epochs`, `--fold`, dll. (`--help`).
 - **Tes:** `python -m unittest discover -s tests -t . -v` (memakai DB dev; data uji sementara dibersihkan otomatis).
-
-
 
 

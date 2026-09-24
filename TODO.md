@@ -196,4 +196,3 @@ Setelah P0-P8 selesai, target akurasi di atas 70% kemungkinan besar tetap tidak 
 ## Augmentasi terpisah (2026-09-24)
 
 - [x] Tahap Augmentasi sendiri sebelum split (`/augmentasi`, `HasilAugmentasi`, loader hanya fold-train). MySQL: `scripts/migrate_add_augmentasi.sql`.
-- Migrasi ke Supabase dan antrean job Google Colab **dibatalkan pemilik** (2026-09-24) dan seluruh kodenya dihapus; basis data tetap MySQL.
