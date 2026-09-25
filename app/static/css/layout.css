@@ -304,12 +304,128 @@ button:focus-visible {
 /* Dipindah dari style.css 711-713. */
 .leaflet-popup-content { font-size: 0.85rem; min-width: 180px; }
 
-/* ── Responsive ──────────────────────────────────────────────────────── */
-/* Dipindah dari style.css 744-751. */
-@media (max-width: 767px) {
-  .auth-page { flex-direction: column; position: static; min-height: 100dvh; overflow: auto; }
-  .auth-brand { display: none; }
-  .auth-form-panel { padding: 2rem 1.25rem; padding-top: max(2rem, env(safe-area-inset-top)); }
-  .auth-mobile-logo { display: flex; }
-  .auth-box { padding: 2rem 1.5rem; }
+/* ══ Rail internals ════════════════════════════════════════════════════
+   Ditambahkan di Task 2, saat shell base.html ditulis ulang. Aturan di bawah
+   menimpa aturan .sidebar-nav-link yang di atas dalam berkas ini: specificity
+   sama, urutan menang. */
+.rail__brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+.rail__logo { height: 44px; width: auto; max-width: 100%; object-fit: contain; }
+.rail__close {
+  display: none;
+  min-width: 32px; min-height: 32px;
+  align-items: center; justify-content: center;
+  background: none; border: 0;
+  color: var(--rail-ink-dim);
+  cursor: pointer;
+}
+.rail__nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-2);
+}
+.rail__num {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--rail-ink-dim);
+  flex-shrink: 0;
+  width: 20px;
+}
+.rail__user {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border-top: 1px solid rgba(255, 255, 255, .06);
+}
+.rail__avatar {
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+.rail__user-text { min-width: 0; flex: 1; }
+.rail__user-name {
+  margin: 0;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--rail-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail__user-role {
+  margin: 0;
+  font-size: 10px;
+  color: var(--rail-ink-dim);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.rail__logout-form { margin: 0; display: contents; }
+.rail__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  background: none; border: 0;
+  color: var(--rail-ink-dim);
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease);
+}
+.rail__logout:hover { color: var(--danger); }
+.rail__logout:focus-visible { outline: 2px solid var(--rail-ink); outline-offset: 2px; }
+
+.sidebar-nav-link { color: var(--rail-ink); }
+.sidebar-nav-link:hover { color: var(--rail-ink); background: var(--sidebar-hover-bg); }
+.sidebar-nav-link.is-active { background: var(--rail-active); color: #fff; }
+.sidebar-nav-link.is-active .rail__num { color: rgba(255, 255, 255, .8); }
+.sidebar-nav-link:focus-visible { outline: 2px solid var(--rail-ink); outline-offset: -2px; }
+
+/* .sidebar-section-label sekarang memakai --rail-ink-dim juga, bukan
+   rgba(255,255,255,.28) yang mengukur 2,51:1 di atas rail — gagal AA.
+   Kelas ini belum dipakai template mana pun, jadi tidak ada yang berubah
+   hari ini; sekarang quando task berikutnya menyambungkannya, label yang
+   muncul bukan 2,5:1. */
+.sidebar-section-label { color: var(--rail-ink-dim); }
+
+.shell__header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.shell__logout {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 30px;
+  background: none; border: 0;
+  color: var(--danger);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.shell__logout:hover { color: #B91C1C; }
+.shell__logout:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+
+@media (max-width: 1023px) {
+  .rail__close { display: flex; }
+}
+@media (max-width: 639px) {
+  .shell__logout span { display: none; }
+  .cnn-role-badge { display: none; }
 }

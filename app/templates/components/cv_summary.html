@@ -1,40 +1,55 @@
-{# Ringkasan K-Fold CV. Butuh variabel: cv (dict dari metrics_service.cv_summary) #}
+{# Ringkasan K-Fold CV. Butuh variabel: cv (dict dari metrics_service.cv_summary)
+   dan KELAS. Colour arrives as a custom property, not as an inline style. #}
 {% if cv %}
-<div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
-            padding:.875rem 1rem;margin-bottom:1rem;box-shadow:var(--shadow-card);">
-  <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.25rem;margin-bottom:.625rem;">
-    <strong style="font-size:.85rem;">Hasil {{ cv.per_fold | length }}-Fold Cross Validation</strong>
-    <span style="font-size:.7rem;color:var(--c-muted);">{{ cv.n }} foto, tiap foto diprediksi model yang tidak melihatnya saat training</span>
+<section class="panel cv-summary">
+  <div class="panel__head">
+    <span>Hasil {{ cv.per_fold | length }}-Fold Cross Validation</span>
+    <span class="panel__head-note">{{ cv.n }} foto, tiap foto diprediksi model yang tidak melihatnya saat training</span>
   </div>
-  <div class="row g-2">
-    {% for label, value, color in [
-        ('Akurasi (rata-rata ± std)', cv.akurasi ~ '% ± ' ~ cv.std, '#10B981'),
-        ('Macro-F1', cv.macro_f1 ~ '%', '#38BDF8'),
-        ('Baseline kelas mayoritas', cv.baseline ~ '%', '#94A3B8'),
-        ('Selisih dari baseline', ('+' if cv.selisih_baseline >= 0 else '') ~ cv.selisih_baseline ~ ' poin', '#F59E0B'),
-    ] %}
-    <div class="col-6 col-md-3">
-      <div style="padding:.5rem .75rem;border:1px solid var(--c-border);border-radius:var(--r-card);text-align:center;">
-        <div style="font-size:1rem;font-weight:700;color:{{ color }};font-variant-numeric:tabular-nums;">{{ value }}</div>
-        <div style="font-size:.66rem;color:var(--c-muted);">{{ label }}</div>
+  <div class="panel__body">
+    <div class="grid grid--4">
+      {% for label, value, color in [
+          ('Akurasi (rata-rata ± std)', cv.akurasi ~ '% ± ' ~ cv.std, 'var(--sev-4)'),
+          ('Macro-F1', cv.macro_f1 ~ '%', 'var(--accent)'),
+          ('Baseline kelas mayoritas', cv.baseline ~ '%', 'var(--ink-2)'),
+          ('Selisih dari baseline', ('+' if cv.selisih_baseline >= 0 else '') ~ cv.selisih_baseline ~ ' poin', 'var(--sev-3)')
+      ] %}
+      <div class="cv-summary__stat">
+        <p class="cv-summary__value" style="--stat-color:{{ color }}">{{ value }}</p>
+        <p class="cv-summary__label">{{ label }}</p>
       </div>
-    </div>
-    {% endfor %}
-  </div>
-  <table class="table table-sm mb-0 mt-2" style="font-size:.74rem;font-variant-numeric:tabular-nums;">
-    <thead><tr><th scope="col">Kelas</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">F1</th></tr></thead>
-    <tbody>
-      {% for k in KELAS %}
-      <tr><td style="color:{{ k.warna }};font-weight:600;">{{ k.nama }}</td>
-          <td>{{ cv.precision[k.key] }}%</td><td>{{ cv.recall[k.key] }}%</td><td>{{ cv.f1[k.key] }}%</td></tr>
       {% endfor %}
-    </tbody>
-  </table>
-  <p style="font-size:.72rem;color:var(--c-muted);margin:.625rem 0 0;">
-    Salah prediksi {{ cv.kesalahan.total }} foto: {{ cv.kesalahan.bersebelahan }} ke kelas bersebelahan, {{ cv.kesalahan.jauh }} melompat jauh.
-    {% if cv.cross_entropy is not none %}&nbsp;|&nbsp; Cross-entropy {{ cv.cross_entropy }} (acak 4 kelas ≈ 1.386){% endif %}
-    &nbsp;|&nbsp; Akurasi per fold:
-    {% for f in cv.per_fold %}{{ f.akurasi }}%{{ ' · ' if not loop.last }}{% endfor %}
-  </p>
-</div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table table--dense">
+        <thead>
+          <tr>
+            <th scope="col">Kelas</th>
+            <th scope="col" class="table__num">Precision</th>
+            <th scope="col" class="table__num">Recall</th>
+            <th scope="col" class="table__num">F1</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for k in KELAS %}
+          <tr>
+            <td><span class="chip" style="--chip-color:{{ k.warna }}">{{ k.nama }}</span></td>
+            <td class="table__num">{{ cv.precision[k.key] }}%</td>
+            <td class="table__num">{{ cv.recall[k.key] }}%</td>
+            <td class="table__num">{{ cv.f1[k.key] }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="cv-summary__note">
+      Salah prediksi {{ cv.kesalahan.total }} foto: {{ cv.kesalahan.bersebelahan }} ke kelas bersebelahan, {{ cv.kesalahan.jauh }} melompat jauh.
+      {% if cv.cross_entropy is not none %}&nbsp;|&nbsp; Cross-entropy {{ cv.cross_entropy }} (acak 4 kelas ≈ 1.386){% endif %}
+      &nbsp;|&nbsp; Akurasi per fold:
+      {% for f in cv.per_fold %}{{ f.akurasi }}%{{ ', ' if not loop.last }}{% endfor %}
+    </p>
+  </div>
+</section>
 {% endif %}

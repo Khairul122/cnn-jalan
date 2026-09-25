@@ -1,11 +1,13 @@
-{% set _map = {
-  'primer':        'bg-primary',
-  'sekunder':      'bg-secondary',
-  'draft':         'bg-secondary',
-  'terverifikasi': 'bg-success',
-  'diperbaiki':    'bg-info text-dark',
-  'berat':         'bg-danger',
-  'sedang':        'bg-warning text-dark',
-  'ringan':        'bg-success'
+{# Status pill. Variable: badge_value. Maps to .chip, not Bootstrap .badge,
+   because Bootstrap leaves in this wave. #}
+{% set _tone = {
+  'primer':        'info',
+  'sekunder':      'muted',
+  'draft':         'muted',
+  'terverifikasi': 'ok',
+  'diperbaiki':    'info',
+  'berat':         'danger',
+  'sedang':        'warn',
+  'ringan':        'ok'
 } %}
-<span class="badge {{ _map[badge_value | lower] | default('bg-dark') }}">{{ badge_value }}</span>
+<span class="chip chip--{{ _tone[badge_value | lower] | default('muted') }}">{{ badge_value }}</span>

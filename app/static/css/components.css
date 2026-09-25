@@ -1,7 +1,17 @@
 /* Reusable class rules: panels, KPI, grids, fields, buttons, tables, chips,
    meters, matrices, dialogs, toasts. No custom property is defined here;
    tokens.css is the only place a token may be declared. The global
-   box-sizing reset is shell-level and lives in layout.css. */
+   box-sizing reset is shell-level and lives in layout.css.
+
+   PERUBAHAN Task 2: keempat `font-family: 'Inter', sans-serif` yang dibawa
+   dari style.css kini memakai var(--font-ui) — di .cnn-kpi-value, .auth-page,
+   .auth-input, dan .btn-auth-primary. base.html sudah tidak memuat Inter dari
+   Google Fonts, jadi literal 'Inter' akan jatuh diam-diam ke sans-serif
+   generik browser: di Windows itu wajah bergaya Arial, bukan Segoe UI dari
+   system-ui, sehingga empat elemen itu tampil dengan huruf berbeda dari sisa
+   aplikasi. .cnn-kpi-value sengaja tidak diganti ke var(--font-mono): memilih
+   huruf untuk angka metrik adalah keputusan desain, bukan perbaikan
+   ketersediaan huruf. */
 
 /* ── Keyframes ───────────────────────────────────────────────────────── */
 /* Dipindah dari style.css 52-55. Dipakai oleh base.html (blok <style> shell,
@@ -62,7 +72,7 @@
   margin: 0;
 }
 .cnn-kpi-value {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-ui);
   font-size: 2rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -218,7 +228,7 @@
   position: fixed;
   inset: 0;
   display: flex;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-ui);
 }
 .auth-brand {
   flex: 0 0 42%;
@@ -313,7 +323,7 @@
   height: 2.625rem;
   padding: 0 .75rem 0 2.5rem;
   border: 1px solid var(--c-border); border-radius: var(--r-input);
-  font-size: .9375rem; font-family: 'Inter', sans-serif;
+  font-size: .9375rem; font-family: var(--font-ui);
   color: var(--c-text); background: var(--c-surface);
   outline: none;
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
@@ -355,7 +365,7 @@
   width: 100%; height: 2.75rem;
   background: var(--c-accent);
   color: #fff; border: none; border-radius: var(--r-input);
-  font-size: .9rem; font-weight: 600; font-family: 'Inter', sans-serif;
+  font-size: .9rem; font-weight: 600; font-family: var(--font-ui);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: .5rem;
   transition: background var(--duration-fast), transform var(--duration-fast),
@@ -407,6 +417,19 @@
 .auth-strength-bar { height: 100%; border-radius: 999px; width: 0%; transition: width .3s, background .3s; }
 .auth-strength-hint { font-size: .72rem; color: var(--c-muted); margin: 0 0 .875rem; }
 .auth-confirm-hint { font-size: .72rem; margin: .25rem 0 .875rem; }
+
+/* ── Auth pages: layar kecil ───────────────────────────────────────────
+   Dipindah dari style.css 744-751. Semula blok ini berada di layout.css
+   padahal yang dia gaya adalah kelas auth, jadi sekarang ia pindah ke
+   components.css sesuai pembagian tanggung jawab pada tabel File Structure.
+   Tidak ada perubahan cascade: layout.css tidak punya aturan auth pun. */
+@media (max-width: 767px) {
+  .auth-page { flex-direction: column; position: static; min-height: 100dvh; overflow: auto; }
+  .auth-brand { display: none; }
+  .auth-form-panel { padding: 2rem 1.25rem; padding-top: max(2rem, env(safe-area-inset-top)); }
+  .auth-mobile-logo { display: flex; }
+  .auth-box { padding: 2rem 1.5rem; }
+}
 
 /* ── Tombol submit gradient ──────────────────────────────────────────── */
 /* Dipindah dari style.css 569-602. CATATAN: rentang baris ini berisi
@@ -542,7 +565,15 @@
 }
 .panel__body { padding: var(--s-3); }
 
+/* display/align ditambahkan Task 2. kpi_card.html menaruh .kpi__text
+   (flex: 1) dan .kpi__icon (32px) sebagai anak dari .kpi, jadi .kpi harus
+   jadi baris flex. Tanpa itu ikon jatuh ke bawah angka, bukan di sampingnya,
+   dan .kpi__text { flex: 1 } tidak berarti apa-apa. */
 .kpi {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-2);
   background: var(--surface-1);
   border: 1px solid var(--rule);
   border-left: 2px solid var(--kpi-accent, var(--accent));
@@ -823,6 +854,8 @@ select.control { padding-right: var(--s-2); }
 }
 #gcTitle { font-size: var(--t-md); font-weight: 700; margin: 0; }
 #gcSubtitle { font-size: var(--t-xs); color: var(--ink-2); margin: 0; }
+#gcConfirmBtn { background: var(--gc-accent); color: #fff; }
+#gcIcon { color: var(--gc-accent); }
 #gcModal .dialog__body { padding: var(--s-4); }
 #gcMessage { font-size: var(--t-base); margin: 0; line-height: 1.6; }
 #gcModal .dialog__foot {
@@ -841,3 +874,93 @@ select.control { padding-right: var(--s-2); }
     transition-duration: .01ms !important;
   }
 }
+
+/* ══ Komponen dari partial yang ditulis ulang di Task 2 ══════════════════ */
+
+/* Page header */
+.page-header { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-4); }
+.page-header__back { flex-shrink: 0; }
+.page-header__text { min-width: 0; }
+.page-header__title {
+  margin: 0;
+  font-size: var(--t-xl);
+  font-weight: 700;
+  letter-spacing: -.015em;
+  color: var(--ink-1);
+}
+.page-header__subtitle { margin: 0; font-size: var(--t-sm); color: var(--ink-2); }
+
+/* KPI */
+.kpi__text { flex: 1; min-width: 0; }
+.kpi__icon {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--r-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--kpi-icon-bg, var(--accent-wash));
+  color: var(--kpi-icon-color, var(--accent));
+}
+.kpi__icon svg { width: 18px; height: 18px; }
+
+/* Quick-action tile. The original rewrote inline styles on every mouse
+   event; hover is pure CSS. */
+.qa-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--qa-color, var(--accent));
+  border-radius: var(--r-1);
+  background: var(--qa-bg, var(--surface-1));
+  color: var(--qa-color, var(--accent));
+  text-decoration: none;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.qa-tile:hover { background: var(--qa-color, var(--accent)); color: #fff; }
+.qa-tile:hover .qa-tile__ico { color: #fff; }
+.qa-tile__ico { width: 16px; height: 16px; flex-shrink: 0; }
+.qa-tile__label { font-size: var(--t-sm); font-weight: 600; }
+
+/* CV summary */
+.cv-summary__stat { text-align: center; padding: var(--s-2); border: 1px solid var(--rule); border-radius: var(--r-1); }
+.cv-summary__value {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--stat-color, var(--ink-1));
+}
+.cv-summary__label { margin: 0; font-size: 10px; color: var(--ink-2); }
+.cv-summary__note { margin: var(--s-2) 0 0; font-size: var(--t-sm); color: var(--ink-2); }
+.panel__head-note { font-size: var(--t-xs); font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+
+/* Table row actions */
+.table-actions { display: flex; gap: var(--s-1); flex-wrap: wrap; }
+.btn--danger-ghost { color: var(--danger); border-color: var(--rule); }
+.btn--danger-ghost:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+.table--dense td { height: 26px; }
+.table--dense thead th { font-size: 10px; }
+
+.empty-cell { padding: var(--s-6) 0; text-align: center; color: var(--ink-3); }
+
+/* Auth card */
+.auth-card__head { padding: var(--s-6) var(--s-8); text-align: center; background: var(--ink-1); }
+.auth-card__ico {
+  width: 48px; height: 48px;
+  margin: 0 auto var(--s-3);
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card__ico svg { width: 24px; height: 24px; }
+.auth-card__title { margin: 0; font-size: 18px; font-weight: 600; color: #fff; }
+.auth-card__subtitle { margin: 4px 0 0; font-size: var(--t-sm); color: rgba(255, 255, 255, .72); }
+.auth-card__foot { margin-top: var(--s-5); text-align: center; font-size: var(--t-xs); color: rgba(255, 255, 255, .72); }

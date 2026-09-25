@@ -129,5 +129,92 @@ def _is_neutral(hex_color):
     return max(abs(r - mean), abs(g - mean), abs(b - mean)) / 255 <= 0.12
 
 
+class TestShellContract(unittest.TestCase):
+    """Menjaga ID dan hook JS yang dibaca toast.js, peta.js, dan dialog konfirmasi.
+
+    Test suite tidak pernah mengeksekusi JavaScript, jadi ID yang salah nama
+    hanya akan muncul sebagai TypeError di browser. Test ini memindai markup
+    shell secara statis.
+    """
+
+    TEMPLATE = Path(__file__).resolve().parent.parent / "app" / "templates" / "base.html"
+
+    LOAD_BEARING = [
+        'id="toast-container"',
+        'id="flash-data"',
+        'id="sidebar"',
+        'id="sidebar-overlay"',
+        'id="hamburger-btn"',
+        'id="main-content"',
+        'id="gcModal"',
+        'id="gcHeader"',
+        'id="gcIconWrap"',
+        'id="gcIcon"',
+        'id="gcTitle"',
+        'id="gcSubtitle"',
+        'id="gcMessage"',
+        'id="gcConfirmBtn"',
+    ]
+
+    def test_shell_exists(self):
+        self.assertTrue(self.TEMPLATE.exists())
+
+    def test_load_bearing_ids_present(self):
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        for needle in self.LOAD_BEARING:
+            self.assertIn(needle, html, f"{needle} hilang dari base.html")
+
+    def test_tailwind_is_gone(self):
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertNotIn("cdn.tailwindcss.com", html, "Tailwind Play CDN masih dimuat")
+        self.assertNotIn("tailwind.config", html, "tailwind.config masih ada")
+        for cls in ("-translate-x-full", "lg:hidden", "lg:relative", "lg:flex-shrink-0",
+                    "lg:translate-x-0", "z-[9999]", "max-w-[calc(100vw-2rem)]"):
+            self.assertNotIn(cls, html, f"utility class Tailwind {cls} masih dipakai")
+
+    def test_bootstrap_css_is_gone(self):
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertNotIn("bootstrap@5.3.3/dist/css", html, "Bootstrap CSS masih dimuat")
+        self.assertNotIn(
+            "bootstrap.bundle.min.js", html, "Bootstrap JS masih dimuat dan tidak pernah dipanggil"
+        )
+
+    def test_google_fonts_is_gone(self):
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertNotIn("fonts.googleapis.com", html, "Google Fonts masih dimuat")
+        self.assertNotIn("fonts.gstatic.com", html, "Google Fonts masih dimuat")
+
+    def test_bootstrap_icons_stay(self):
+        """Non-goal yang disengaja: icon font dipertahankan."""
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("bootstrap-icons", html, "Bootstrap Icons harus tetap dimuat")
+
+    def test_no_inline_style_in_shell(self):
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        found = re.findall(r'style="([^"]*)"', html)
+        offenders = [s for s in found if "{" not in s and "{%" not in s]
+        self.assertEqual(
+            offenders, [],
+            "base.html masih punya inline style statis: " + "; ".join(offenders[:5]),
+        )
+
+    def test_dialog_colours_come_from_css_not_js(self):
+        """showConfirm tidak boleh menyetel warna lewat .style. anymore."""
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertNotIn(
+            "iconWrap.style.background", html,
+            "showConfirm masih menyetel warna dari JS, melanggar aturan tokens.css",
+        )
+        self.assertNotIn("btn.style.background", html,
+                         "showConfirm masih menyetel warna tombol dari JS")
+        self.assertIn("dataset.type", html,
+                      "dialog harus menetapkan data-type agar CSS yang mengambil alih")
+
+    def test_sidebar_toggle_uses_new_class(self):
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("is-open", html,
+                      "toggleSidebar harus memutar kelas .is-open, bukan utility Tailwind")
+
+
 if __name__ == "__main__":
     unittest.main()
