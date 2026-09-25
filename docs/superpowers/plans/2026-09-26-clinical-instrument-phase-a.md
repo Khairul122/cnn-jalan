@@ -34,7 +34,7 @@ These apply to every task. Copy them verbatim.
 The 76 tests assert HTTP status codes and Indonesian copy strings. They never assert on a CSS class, an element ID, or a visual property. A wave can therefore pass the whole suite while rendering an unusable page. These are the failure modes most likely to reach a person using this app; each has a test named in its owning task.
 
 1. **JavaScript reading a renamed ID or class.** `toast.js` reads `#toast-container`, `.tw-progress-bar`, `#flash-data`; `peta.js` reads `#map`, `#map-skeleton`, `#map-error`, `#map-error-msg`, `#filterStatus`, `#btnFilter`; the inline confirm-dialog script reads thirteen `#gc*` IDs. Renaming any of them throws a `TypeError` at runtime and the test suite stays green because the tests never execute that JavaScript. Pinned in Task 2.
-2. **Contrast failure on inactive navigation text.** `style.css` line 164 dims inactive rail items with `opacity: .72`, which puts `#8A94A0` text on `#12161C` below the 4.5:1 that WCAG AA requires for body text. Every rail label becomes unreadable for low-vision users. Pinned in Task 2.
+2. **Contrast failure on the rail section label.** `.sidebar-section-label` (original `style.css` line 172) sets `color: rgba(255,255,255,.28)`, which composites to `#54575C` on the rail and measures **2.51:1** — well below the 4.5:1 WCAG AA requires. The inactive *nav link* is not the problem: `rgba(255,255,255,.55)` composites to `#949699` and measures **6.13:1**, which passes. The class has zero references today, so nothing is currently unreadable; the risk is that a later task wires it up and ships a 2.5:1 label. Pinned in Task 2, which sets it to `--rail-ink-dim` (5.90:1).
 3. **A severity colour rendering as an undefined custom property.** The four `tingkat_kerusakan.warna_peta` values arrive from the database as Jinja. If a chip or meter references `var(--sev-2)` and the token is missing, the element renders with no background at all and the damage level becomes indistinguishable from blank. Pinned in Task 1.
 4. **A `col-*` or `row` grid class losing its meaning when Bootstrap leaves.** 69 distinct Bootstrap classes are in use, mostly `form-control` (34), `form-floating` (21), `btn` (23), `table` (16), `card` (14). If a Wave A3 or A4 page keeps a Bootstrap grid class with no replacement, its form silently loses its column layout. Pinned in Task 4.
 5. **Horizontal page scroll at 390px.** Dense tables in `preprocessing/hasil.html` and `arsitektur/detail.html` overflow their container if `.table-wrap` is missing or if a fixed pixel width replaces a fluid one. Unusable one-handed on a phone. Pinned in Task 5.
@@ -107,7 +107,7 @@ from pathlib import Path
 CSS = Path(__file__).resolve().parent.parent / "app" / "static" / "css" / "tokens.css"
 
 # Dikunci dengan tingkat_kerusakan.warna_peta. Mengubahnya berarti warna di UI
-# berubah, jadi harus jadi keputusan tersendiri, bukan accidentsi.
+# berubah, jadi harus jadi keputusan tersendiri, bukan kebetulan.
 EXPECTED = {
     1: "#E53E3E",  # Rusak Berat
     2: "#F97316",  # Rusak Ringan
@@ -483,7 +483,7 @@ a { color: var(--accent); }
 }
 ```
 
-The critical change inside `.sidebar-nav-link`: the existing rule dims inactive items with `opacity: .72`, which drops `#8A94A0` on `#12161C` to roughly 4.0:1 and fails WCAG AA. Replace the opacity approach with explicit colours so inactive labels are at or above 4.5:1.
+The critical change inside `.sidebar-nav-link`: replace the semi-transparent `rgba(255,255,255,.55)` with the explicit token `--rail-ink-dim` so the colour is measurable and themeable rather than composited. `--rail-ink-dim` `#8A94A0` on `--rail` `#12161C` measures 5.90:1 and passes AA for body text; the composited form it replaces measures 6.13:1, which also passed, so this is a tokenisation change and not a fix for a live failure. The one genuine failure is `.sidebar-section-label` at 2.51:1, described in Review Focus item 2 — give it `--rail-ink-dim` too.
 
 - [ ] **Step 5: Create `components.css`**
 
@@ -1103,6 +1103,10 @@ Replace lines 1 to 38, from `<!DOCTYPE html>` through the closing `</head>`, wit
 
 The Tailwind script, its config block, all three Google Fonts lines, and the Bootstrap CSS link are gone. The `style.css` link from Task 1 is already replaced, so do not re-add it.
 
+**Also repoint the four hardcoded Inter stacks in `components.css`.** Task 1 carried these across verbatim from the old `style.css`, and they name a font this step just stops loading. Leaving them means those elements silently fall back to the browser's generic `sans-serif` — which on Windows is Arial-flavoured, not `system-ui`'s Segoe UI — so they would render in a visibly different face from the rest of the app. The four sites are `.cnn-kpi-value` (~line 65), `.auth-page` (~221), `.auth-input` (~316), and `.btn-auth-primary` (~358). Replace each `font-family: 'Inter', sans-serif;` with `font-family: var(--font-ui);`. Do **not** switch `.cnn-kpi-value` to `var(--font-mono)` here: the KPI redesign belongs to a later task, and changing the metric face is a design decision, not a font-availability fix.
+
+Twenty further `font-family:'Inter'` inline declarations sit in templates (`evaluasi/index.html` has nine, `lokasi/detail.html` four, and so on). They fall back the same way once the CDN link is gone, but they are inline styles that Tasks A3 to A5 delete anyway, so leave them for those tasks rather than widening this step.
+
 - [ ] **Step 4: Replace the toast container and shell markup**
 
 Replace lines 41 to 106, from the skip link through the closing `</nav>` of the main navigation, with:
@@ -1507,7 +1511,7 @@ Append:
 }
 ```
 
-The `.sidebar-nav-link` rules replace the `opacity: .72` approach with explicit colours. `--rail-ink-dim` `#8A94A0` on `--rail` `#12161C` measures about 5.9:1, which passes AA for body text; the previous opacity treatment measured about 4.0:1 and failed.
+The `.sidebar-nav-link` rules replace the semi-transparent white with explicit tokens. `--rail-ink-dim` `#8A94A0` on `--rail` `#12161C` measures 5.90:1, which passes AA for body text. The composited white it replaces measured 6.13:1 and also passed, so nothing regresses. `.sidebar-section-label` moves from 2.51:1 (a real AA failure) to the same 5.90:1.
 
 - [ ] **Step 10: Rewrite the nine partials**
 
