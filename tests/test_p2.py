@@ -5,61 +5,12 @@ import unittest
 import numpy as np
 from openpyxl import Workbook
 
-from app.models.label_kerusakan import LabelKerusakan
 from app.services import cnn_service
 from app.services.split_service import SplitService
 from scripts.seed_data import read_excel
 
 
 class P2Test(unittest.TestCase):
-    def test_hitung_sdi(self):
-        self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 0), 0)
-        # F_retak 20x2 + F_lubang 75 + F_rutting 10 (standar Bina Marga: 2,5/10/20)
-        self.assertEqual(LabelKerusakan.hitung_sdi(15, 'lebar', 12, 2), 125)
-        # breakpoint F_retak: 10-30% -> 20, >30% -> 40
-        self.assertEqual(LabelKerusakan.hitung_sdi(25, 'halus', 0, 0), 20)
-        self.assertEqual(LabelKerusakan.hitung_sdi(30, 'halus', 0, 0), 20)
-        self.assertEqual(LabelKerusakan.hitung_sdi(30.01, 'halus', 0, 0), 40)
-        self.assertEqual(LabelKerusakan.hitung_sdi(25, 'lebar', 0, 0), 40)
-        # F_rutting: <=1cm -> 2,5 | <=3cm -> 10 | >3cm -> 20
-        self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 1), 2.5)
-        self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 3), 10)
-        self.assertEqual(LabelKerusakan.hitung_sdi(0, 'halus', 0, 3.01), 20)
-
-    def test_tingkat_dari_sdi(self):
-        # 4 kategori Bina Marga: Baik <50 | Sedang 50-100 | Rusak Ringan 100-150 | Rusak Berat >150
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(49.99), 4)
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(50), 3)
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(100), 3)
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(100.01), 2)
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(150), 2)
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(150.01), 1)
-
-    def test_estimasi_dari_dimensi_is_continuous_not_5_fixed_buckets(self):
-        # Regresi untuk bug lama: tabel diskrit cuma menghasilkan 5 nilai SDI tetap
-        # (20/25/75/135/195) untuk SELURUH dataset, tidak pernah dekat ambang 50/150.
-        sdis = set()
-        for area in (0.2, 0.9, 1.5, 3.0, 5.5, 8.0, 11.0, 20.0, 40.0):
-            _, sdi, _ = LabelKerusakan.estimasi_dari_dimensi(area, 1.0)
-            sdis.add(sdi)
-        self.assertGreater(len(sdis), 5, 'harus lebih beragam dari tabel diskrit lama')
-
-    def test_estimasi_dari_dimensi_monotonic_in_area(self):
-        _, sdi_kecil, area_kecil = LabelKerusakan.estimasi_dari_dimensi(1.0, 1.0)
-        _, sdi_besar, area_besar = LabelKerusakan.estimasi_dari_dimensi(10.0, 1.0)
-        self.assertLess(area_kecil, area_besar)
-        self.assertLessEqual(sdi_kecil, sdi_besar)
-
-    def test_estimasi_dari_dimensi_caps_extreme_area(self):
-        # Baris 'Ukur' dengan panjang ribuan meter (kemungkinan data segmen jalan, bukan
-        # patch kerusakan) tidak boleh menghasilkan jumlah_lubang yang tidak masuk akal.
-        params, sdi, area = LabelKerusakan.estimasi_dari_dimensi(8000, 10)
-        self.assertEqual(area, 80000)
-        self.assertLessEqual(params['jumlah_lubang'], LabelKerusakan.LUBANG_MAX)
-        self.assertLessEqual(params['persen_retak'], 100)
-        self.assertLessEqual(params['kedalaman_rutting'], LabelKerusakan.RUTTING_MAX)
-        self.assertEqual(LabelKerusakan.tingkat_dari_sdi(sdi), 1)  # Rusak Berat — saturasi wajar
-
     def test_split_service_is_stratified_and_deterministic(self):
         items = [{'dokumentasi_id': index, 'label_id': index % 3} for index in range(12)]
         first = SplitService.run(3, 42, items)

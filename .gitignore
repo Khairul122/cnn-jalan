@@ -37,3 +37,6 @@ data/
 
 # Cadangan sebelum migrasi kelas
 backup_*/
+
+# Superpowers execution artifacts
+.superpowers/
