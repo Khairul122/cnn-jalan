@@ -1,0 +1,131 @@
+/* Design tokens — the single source of truth for every value in Phase A.
+   No selectors live in this file. Nothing outside this file may define a token.
+   The severity block mirrors `tingkat_kerusakan.warna_peta` and is pinned by
+   tests/test_design_tokens.py. */
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────────────────── */
+  --surface-0: #F4F6F8;   /* page background */
+  --surface-1: #FFFFFF;   /* panel, card */
+  --surface-2: #E8ECF0;   /* panel head, table thead, chip */
+  --surface-3: #D3D9E0;   /* hairline, placeholder */
+
+  /* ── Ink ───────────────────────────────────────────────────────────── */
+  --ink-1: #12161C;       /* primary text, rail background */
+  --ink-2: #5F6B7A;       /* secondary text, labels */
+  --ink-3: #8794A3;       /* muted text, placeholder */
+
+  /* ── Rules ─────────────────────────────────────────────────────────── */
+  --rule: #D3D9E0;        /* hairline border, 1px */
+  --rule-strong: #B7C1CC; /* control border, emphasis border */
+
+  /* ── Accent, the only interactive hue ──────────────────────────────── */
+  --accent: #0F4C81;
+  --accent-hover: #0B3A66;
+  --accent-ink: #FFFFFF;
+  --accent-wash: #EAF1F7;
+
+  /* ── Rail ──────────────────────────────────────────────────────────── */
+  --rail: #12161C;
+  --rail-ink: #E7EBEF;
+  --rail-ink-dim: #8A94A0;
+  --rail-active: #0F4C81;
+
+  /* ── Status ────────────────────────────────────────────────────────── */
+  --ok: #059669;      --ok-bg: #ECFDF5;
+  --warn: #D97706;    --warn-bg: #FFFBEB;
+  --danger: #DC2626;  --danger-bg: #FEF2F2;
+  --info: #0284C7;    --info-bg: #E0F2FE;
+
+  /* ── Severity: sourced from tingkat_kerusakan.warna_peta ───────────── */
+  /* Satu token per baris. Uji "defined exactly once" menghitung dengan
+     jangkarawal baris, jadi dua token sebaris akan lolos dari hitungan. */
+  --sev-1: #E53E3E;
+  --sev-1-bg: #FDECEC;    /* Rusak Berat */
+  --sev-2: #F97316;
+  --sev-2-bg: #FEF0E6;    /* Rusak Ringan */
+  --sev-3: #F59E0B;
+  --sev-3-bg: #FEF6E4;    /* Sedang */
+  --sev-4: #10B981;
+  --sev-4-bg: #E7F8F1;    /* Baik */
+
+  /* ── Type ──────────────────────────────────────────────────────────── */
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --t-xs: 10.5px;      /* uppercase label, letter-spacing .08em */
+  --t-sm: 12px;        /* meta, secondary cell, badge */
+  --t-base: 13.5px;    /* body, table cell */
+  --t-md: 15px;        /* subhead, dialog title */
+  --t-lg: 18px;        /* panel title */
+  --t-xl: 22px;        /* page title */
+  --t-metric: 30px;    /* KPI value */
+
+  /* ── Spacing, multiples of 4 ────────────────────────────────────────── */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 20px;  --s-6: 24px;  --s-8: 32px;  --s-10: 40px;
+  --s-12: 48px;
+  --gap: 12px;
+
+  /* ── Radius ────────────────────────────────────────────────────────── */
+  --r-1: 3px;
+  --r-2: 5px;
+
+  /* ── Shadow: overlay only. Panels and tables never use these. ───────── */
+  --shadow-1: 0 1px 2px rgba(18, 22, 28, .06);   /* dialog, toast, drawer */
+  --shadow-2: 0 8px 28px rgba(18, 22, 28, .14);  /* dialog, raised state */
+
+  /* ── Motion ────────────────────────────────────────────────────────── */
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --ease: cubic-bezier(.2, 0, .2, 1);
+
+  --rail-w: 240px;
+
+  /* ══ Legacy alias layer ══════════════════════════════════════════════
+     883 var() references to these names live across 28 templates. They are
+     remapped to the new vocabulary, not restated, so the two vocabularies
+     cannot drift apart. Tasks A3, A4 and A5 migrate call sites off these
+     names; Task 5 deletes this block once no reference remains. */
+
+  --c-primary: var(--ink-1);
+  --c-secondary: var(--rail);
+  --c-secondary-light: var(--ink-2);
+  --c-accent: var(--accent);
+  --c-accent-dark: var(--accent-hover);
+  --c-accent-light: var(--accent-wash);
+  --c-primary-glow: rgba(18, 22, 28, .18);
+  --c-accent-glow: rgba(15, 76, 129, .25);
+
+  --c-ok: var(--ok);         --c-ok-bg: var(--ok-bg);
+  --c-warn: var(--warn);     --c-warn-bg: var(--warn-bg);
+  --c-danger: var(--danger); --c-danger-bg: var(--danger-bg);
+  --c-info: var(--info);     --c-info-bg: var(--info-bg);
+
+  --c-surface: var(--surface-1);
+  --c-bg: var(--surface-0);
+  --c-border: var(--rule);
+  --c-border-sub: var(--surface-2);
+  --c-muted: var(--ink-2);
+  --c-text: var(--ink-1);
+  --c-label: var(--ink-2);
+
+  --r-card: var(--r-1);
+  --r-input: var(--r-1);
+
+  --shadow-card: none;
+  --shadow-hover: none;
+  --shadow-md: var(--shadow-1);
+  --shadow-lg: var(--shadow-2);
+  --shadow-xl: var(--shadow-2);
+
+  --sidebar-w: var(--rail-w);
+  --sidebar-active-bg: var(--rail-active);
+  --sidebar-hover-bg: rgba(255, 255, 255, .08);
+
+  --ease-spring: var(--ease);
+  --duration-fast: var(--dur-1);
+  --duration-normal: var(--dur-2);
+  --duration-slow: var(--dur-2);
+  --focus-ring: 0 0 0 3px rgba(15, 76, 129, .35);
+}

@@ -1,0 +1,315 @@
+/* App shell only: wrapper, rail, rail items, header, breadcrumb, drawer,
+   overlay, main, skip link, visually-hidden, Leaflet popup. No component
+   styling lives here. Loaded last, after components.css, so shell rules win
+   any specificity tie against the component they sit on top of. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--t-base);
+  line-height: 1.5;
+  color: var(--ink-1);
+  background: var(--surface-0);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); }
+
+/* Bootstrap defined .sr-only. base.html uses it once (the breadcrumb home
+   label) and the 38 inline <style> blocks assume it exists. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Wrapper: rail plus main column */
+#wrapper {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Rail, permanent at >=1024px, drawer below */
+#sidebar {
+  width: var(--rail-w);
+  min-width: var(--rail-w);
+  background: var(--rail);
+  color: var(--rail-ink);
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+  flex-shrink: 0;
+}
+
+/* Compositing hint for the mobile drawer, which slides via transform below
+   1024px. Without this the rail repaints on every frame of the slide. */
+#sidebar { will-change: transform; }
+
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .5);
+  z-index: 20;
+}
+
+/* Main column */
+.shell__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.shell__header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 48px;
+  padding: 0 var(--s-4);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--rule);
+  flex-shrink: 0;
+}
+
+#hamburger-btn {
+  display: none;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+#main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s-4);
+  outline: none;
+}
+
+@media (min-width: 1024px) {
+  #hamburger-btn { display: none; }
+  #sidebar-overlay { display: none !important; }
+}
+
+@media (max-width: 1023px) {
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform var(--dur-2) var(--ease);
+  }
+  #sidebar.is-open { transform: translateX(0); }
+  #sidebar-overlay:not([aria-hidden="true"]) { display: block; }
+  #hamburger-btn { display: inline-flex; }
+  #main-content { padding: var(--s-3); }
+}
+
+/* ── Skip link (accessibility) ──────────────────────────────────────── */
+/* Dipindah dari style.css 86-105. Token tetap warisan, nilainya kini
+   diterjemahkan lewat alias block di tokens.css. */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 10000;
+  background: var(--c-accent);
+  color: #fff;
+  padding: .5rem 1rem;
+  border-radius: 0 0 var(--r-input) var(--r-input);
+  font-size: .875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top var(--duration-fast);
+}
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ── Sidebar nav link ────────────────────────────────────────────────── */
+/* Dipindah dari style.css 107-182.
+
+   PERUBAHAN: warna item tidak aktif tadinya berasal dari alpha putih
+   `rgba(255,255,255,.55)`. Sekarang diganti warna eksplisit
+   `var(--rail-ink-dim)` supaya warna rail berasal dari tokens.css dan tidak
+   lagi bergantung pada alpha yang dikomposisikan di atas warna latar.
+
+   Catatan: alasan di rencana bahwa nilai lama "sekitar 4,0:1" tidak
+   akurat. Angka sebenarnya, dihitung dengan WCAG 2.x:
+     rgba(255,255,255,.55) di atas #0F1E35 -> #939AA4, 5,88:1
+     #8A94A0 di atas #0F1E35 (latar rail sekarang) -> 5,43:1
+     #8A94A0 di atas #12161C (--rail, setelah inline style dibuang di Task 2) -> 5,90:1
+   Ketiganya di atas 4,5:1, jadi ini perubahan tokenisasi, bukan perbaikan
+   kontras darurat. Yang dipertahankan adalah persyaratannya: warna eksplisit
+   dan minimal 4,5:1. */
+.sidebar-nav-link {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .575rem .75rem;
+  border-radius: .5rem;
+  font-size: .835rem;
+  font-weight: 500;
+  color: var(--rail-ink-dim);
+  text-decoration: none;
+  transition: background var(--duration-fast), color var(--duration-fast),
+              transform var(--duration-fast), box-shadow var(--duration-fast);
+  position: relative;
+  cursor: pointer;
+  min-height: 40px;
+}
+.sidebar-nav-link .nav-ico {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: .375rem;
+  flex-shrink: 0;
+  transition: background var(--duration-fast), color var(--duration-fast);
+  font-size: .9rem;
+}
+.sidebar-nav-link:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--rail-ink);
+  transform: translateX(3px);
+  text-decoration: none;
+}
+.sidebar-nav-link:hover .nav-ico {
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+}
+.sidebar-nav-link.is-active {
+  background: var(--sidebar-active-bg);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(15, 76, 129, .4);
+}
+.sidebar-nav-link.is-active .nav-ico {
+  background: var(--c-accent);
+  color: #fff;
+}
+.sidebar-nav-link.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 15%; bottom: 15%;
+  width: 3px;
+  background: linear-gradient(180deg, #38BDF8, var(--c-accent));
+  border-radius: 0 3px 3px 0;
+}
+.sidebar-nav-link:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, .6);
+  outline-offset: 1px;
+}
+
+.sidebar-section-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .28);
+  padding: .75rem .75rem .25rem;
+  margin-top: .125rem;
+}
+.sidebar-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, .08);
+}
+
+/* ── Breadcrumb topbar ───────────────────────────────────────────────── */
+/* Dipindah dari style.css 648-674. */
+.cnn-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  color: var(--c-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.cnn-breadcrumb a {
+  color: var(--c-muted);
+  text-decoration: none;
+  transition: color var(--duration-fast);
+  white-space: nowrap;
+}
+.cnn-breadcrumb a:hover { color: var(--c-accent); }
+.cnn-breadcrumb .sep { opacity: .4; flex-shrink: 0; }
+.cnn-breadcrumb .current {
+  color: var(--c-text);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Avatar & role badge ─────────────────────────────────────────────── */
+/* Dipindah dari style.css 675-700. */
+.cnn-avatar {
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  background: var(--c-accent);
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: .03em;
+}
+.cnn-role-badge {
+  font-size: .65rem;
+  font-weight: 700;
+  padding: .2rem .6rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-dark) 100%);
+  color: #fff;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* ── Focus ring untuk interactive elements ──────────────────────────── */
+/* Dipindah dari style.css 701-710. */
+.btn:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* ── Leaflet popup ─────────────────────────────────────────────────── */
+/* Dipindah dari style.css 711-713. */
+.leaflet-popup-content { font-size: 0.85rem; min-width: 180px; }
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+/* Dipindah dari style.css 744-751. */
+@media (max-width: 767px) {
+  .auth-page { flex-direction: column; position: static; min-height: 100dvh; overflow: auto; }
+  .auth-brand { display: none; }
+  .auth-form-panel { padding: 2rem 1.25rem; padding-top: max(2rem, env(safe-area-inset-top)); }
+  .auth-mobile-logo { display: flex; }
+  .auth-box { padding: 2rem 1.5rem; }
+}
