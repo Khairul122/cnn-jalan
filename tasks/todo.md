@@ -5,7 +5,7 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 
 ## Phase 1 — Foundation
 
-- [x] Task 1: Establish failing labeling contract tests — RED: `ImportError: cannot import name 'labeling_service'`
+- [x] Task 1: Establish failing labeling contract tests — RED→GREEN; focused contract suite 4/4
 - [x] Task 2: Implement labeling models and relationships — metadata/import check lulus
 
 ### Checkpoint: Foundation
@@ -15,7 +15,7 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 
 ## Phase 2 — Algorithm and persistence
 
-- [ ] Task 3: Implement feature extraction and clustering core
+- [x] Task 3: Implement feature extraction and clustering core — focused suite 4/4
 - [ ] Task 4: Implement run persistence, apply, and discard
 
 ### Checkpoint: Algorithm

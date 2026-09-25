@@ -6,6 +6,8 @@ from unittest import mock
 
 import numpy as np
 
+from app import create_app, db
+from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.services import labeling_service
 
 
@@ -35,20 +37,22 @@ class LabelingServiceContractTest(unittest.TestCase):
             13: {'klaster': 1},
         }
 
-        with mock.patch.object(
-            labeling_service.TingkatKerusakan,
-            'query',
-            new=mock.PropertyMock(),
-        ):
-            query = labeling_service.TingkatKerusakan.query
-            query.filter_by.side_effect = lambda nama_tingkat: SimpleNamespace(
-                first=lambda: SimpleNamespace(id={
-                    'Baik': 4,
-                    'Sedang': 3,
-                    'Rusak Ringan': 2,
-                    'Rusak Berat': 1,
-                }[nama_tingkat])
-            )
+        app = create_app()
+        with app.app_context():
+            db.create_all()
+            levels = {
+                'Baik': 4,
+                'Sedang': 3,
+                'Rusak Ringan': 2,
+                'Rusak Berat': 1,
+            }
+            for name, level_id in levels.items():
+                db.session.add(
+                    TingkatKerusakan(
+                        id=level_id, nama_tingkat=name, warna_peta='#000000', skor_prioritas=level_id
+                    )
+                )
+            db.session.commit()
             mapping = labeling_service.urutkan_klaster_ke_tingkat(clusters, feature_map)
 
         self.assertEqual(mapping, {0: 3, 1: 1, 2: 4, 3: 2})
