@@ -1,0 +1,3 @@
+# Flask-Migrate migrations
+
+This migration directory is maintained for the visual labeling schema rewrite. Review the generated SQL and target database before applying `flask db upgrade`.

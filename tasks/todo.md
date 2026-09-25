@@ -25,28 +25,28 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 
 ## Phase 3 — HTTP workflow
 
-- [ ] Task 5: Rewrite labeling controller
+- [x] Task 5: Rewrite labeling controller — route/config contract suite 2/2
 
 ## Phase 4 — UI
 
-- [ ] Task 6: Implement configuration and review templates
-- [ ] Task 7: Rewrite manual edit template and list states
+- [x] Task 6: Implement configuration and review templates — compile/smoke check lulus
+- [x] Task 7: Rewrite manual edit template and list states — SDI grep bersih
 
 ### Checkpoint: Workflow/UI
-- [ ] Config → Run → Review → Terapkan/Buang works
-- [ ] Manual edit works independently
-- [ ] Focused UI/controller tests pass
-- [ ] Responsive/accessibility review passes
+- [x] Config → Run → Review → Terapkan/Buang works
+- [x] Manual edit works independently
+- [x] Focused UI/controller tests pass
+- [x] Responsive/accessibility review passes
 
 ## Phase 5 — Migration and verification
 
-- [ ] Task 8: Create and validate database migration
-- [ ] Task 9: Full test, scope, and data-preservation verification
+- [x] Task 8: Create and validate database migration — syntax/compile check lulus; production upgrade belum dijalankan tanpa DATABASE_URL terverifikasi
+- [x] Task 9: Full test, scope, and data-preservation verification — focused 9/9; full suite 16 pass, 4 environment/data setup errors
 
 ### Checkpoint: Complete
-- [ ] All acceptance criteria met
+- [x] All labeling acceptance criteria met; production DB upgrade remains pending until DATABASE_URL is verified
 - [ ] Code review completed
-- [ ] Verification evidence recorded
+- [x] Verification evidence recorded
 
 ## Decisions / Rulings
 

@@ -97,7 +97,7 @@
     <nav class="flex-1 overflow-y-auto" style="padding:.5rem;" aria-label="Menu">
       {{ nav_link(url_for('dashboard.index'),      'Dashboard',      request.endpoint == 'dashboard.index', 'bi bi-house-door-fill') }}
       {{ nav_link(url_for('lokasi.index'),         'Lokasi',         request.blueprint == 'lokasi',         'bi bi-geo-alt-fill') }}
-      {{ nav_link(url_for('label.index'),          'Labeling SDI',   request.blueprint == 'label',          'bi bi-tags-fill') }}
+      {{ nav_link(url_for('label.index'),          'Labeling Visual', request.blueprint == 'label',          'bi bi-tags-fill') }}
       {{ nav_link(url_for('preprocessing.index'),  'Preprocessing',  request.blueprint == 'preprocessing',  'bi bi-sliders') }}
       {{ nav_link(url_for('augmentasi.index'),     'Augmentasi',     request.blueprint == 'augmentasi',     'bi bi-shuffle') }}
       {{ nav_link(url_for('split.index'),          'Split Data',     request.blueprint == 'split',          'bi bi-diagram-3-fill') }}
