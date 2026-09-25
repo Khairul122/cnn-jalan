@@ -154,7 +154,7 @@ def upgrade():
     sa.Column('path_file', sa.String(length=500), nullable=False),
     sa.Column('ukuran_kb', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['lokasi_id'], ['lokasi_kerusakan.id'], ),
+    sa.ForeignKeyConstraint(['lokasi_id'], ['lokasi_kerusakan.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('label_kerusakan',
@@ -212,7 +212,7 @@ def upgrade():
     sa.Column('is_valid', sa.Boolean(), nullable=False),
     sa.Column('catatan', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['dokumentasi_id'], ['dokumentasi_foto.id'], ),
+    sa.ForeignKeyConstraint(['dokumentasi_id'], ['dokumentasi_foto.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['jenis_kerusakan_id'], ['jenis_kerusakan.id'], ),
     sa.ForeignKeyConstraint(['tingkat_kerusakan_id'], ['tingkat_kerusakan.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -284,6 +284,19 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('lokasi_id')
     )
+
+    # Index ini ada di MySQL produksi tapi tidak dideklarasikan model (tidak ada
+    # `index=True` di app/models). Tanpa ikut direproduksi, instalasi baru akan
+    # berjalan tanpa index ini dan `uk_arsitektur_dok` kehilangan guarantor bahwa
+    # satu dokumentasi tidak diprediksi dua kali oleh arsitektur yang sama.
+    op.create_index('idx_cnn_valid', 'hasil_klasifikasi_cnn', ['is_valid'])
+    op.create_index('idx_lokasi_koordinat', 'lokasi_kerusakan', ['latitude', 'longitude'])
+    op.create_index('idx_lokasi_sumber', 'lokasi_kerusakan', ['sumber_data'])
+    op.create_index('idx_peta_prioritas', 'peta_kerusakan', ['prioritas_perbaikan'])
+    op.create_index('idx_peta_status', 'peta_kerusakan', ['status_pemetaan'])
+    op.create_index('idx_split_fold', 'split_item', ['config_id', 'fold_index'])
+    op.create_index('uk_arsitektur_dok', 'prediksi_model', ['arsitektur_id', 'dokumentasi_id'], unique=True)
+
 
 def downgrade():
     op.drop_table('peta_kerusakan')
