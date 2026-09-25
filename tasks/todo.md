@@ -60,11 +60,23 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 
 ### Checkpoint: MySQL restoration
 - [x] Rantai `0001_baseline_mysql` → `20260926_labeling_visual_kmeans` jalan di DB kosong (22 tabel, head benar)
-- [x] DDL MySQL offline 39 statement; upgrade dan downgrade dua arah valid
-- [x] Drift check setelah upgrade: "No changes in schema detected"
-- [x] 22 tabel + indeks compile bersih untuk dialek MySQL
-- [x] Full suite 36 test, 3 error (butuh DB dev ber-schema — pre-existing, identik di `2241c7e`)
-- [ ] `flask db upgrade` terhadap MySQL sungguhan — **terblokir: kredensial belum diberikan**
+- [x] Migrasi dijalankan terhadap MySQL 8.4.3 sungguhan: `stamp` lalu `upgrade`, exit 0
+- [x] `ALTER COLUMN metode DROP DEFAULT` dan drop `jenis_retak` ENUM terbukti berhasil di server
+- [x] Backfill 280 baris label lama → `metode='manual'`
+- [x] Data utuh setelah migrasi: 280 lokasi, 280 label, 1120 hasil preprocessing, 280 split_item
+- [x] Full suite terhadap MySQL: 76 test, semua OK
+- [x] Backup pra-migrasi terbukti bisa dipulihkan persis (restore test, 0 selisih)
+
+## Phase 7 — Baseline vs produksi dan isolasi test
+
+- [x] Task 16: Bandingkan schema live dengan baseline — 110 selisih ditemukan
+- [x] Task 17: Tambahkan 7 index yang hilang (termasuk UNIQUE `uk_arsitektur_dok`) + 2 aturan CASCADE
+- [x] Task 18: Perbaiki isolasi test labeling — override `DATABASE_URL` di `setUp` ternyata tidak berefek
+
+### Checkpoint: Baseline and isolation
+- [x] Baseline direproduksi di DB scratch lalu di-diff ke MySQL live: index & aturan FK identik
+- [x] Sisa 23 selisih hanya lebar tipe, dan tipe model selalu lebih longgar dari produksi
+- [x] Test labeling tidak lagi menyentuh `db_cnn_jalan` (row count sebelum/sesuai identik)
 
 ## Decisions / Rulings
 
@@ -77,3 +89,17 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 - Ruling: Baris label lama di-backfill ke `metode='manual'`, bukan `'klasterisasi'` — asalnya formula SDI, menandainya klasterisasi akan memalsukan provenance.
 - Ruling: `op.alter_column(metode, DROP DEFAULT)` diguard `if dialect.name != 'sqlite'` — sintaks itu valid MySQL, SQLite tidak mendukungnya dan tidak butuh default yang bersih.
 - Ruling: Pembersihan komentar dibatasi ke file labeling/migration/config + test labeling. 21 file yang ditandai JANGAN DIUBAH di `TODO.md` tidak disentuh. 4 komentar bermakna dipertahankan (pool_pre_ping, backfill `metode`, guard dialek, bentuk pre-labeling baseline).
+- Ruling: Verifikasi "No changes in schema detected" yang dijalankan sebelumnya DIBATALKAN sebagai
+  bukti. Itu mencocokkan migrasi dengan database yang dibuat oleh migrasi itu sendiri — sirkular.
+  Baseline baru diverifikasi terhadap MySQL sungguhan, dan saat itu ditemukan 110 selisih.
+- Ruling: 63 `server_default` yang ada di produksi tapi tidak dideklarasikan model TIDAK dimasukkan ke
+  baseline. Model memakai `default=` sisi-Python, dan autogenerate Flask-Migrate memakai
+  `compare_server_default=False`, jadi tidak ada dampak fungsional maupun drift yang dilaporkan.
+- Ruling: 23 selisih lebar tipe (`timestamp`/`datetime`, `float(p,s)`/`float`, `tinyint`/`smallint`)
+  dibiarkan mengikuti model. Di setiap kasus tipe model lebih longgar, jadi instalasi baru menampung
+  semua yang bisa ditampung produksi. Memperbaikinya berarti mengubah 18 model di luar scope.
+- Ruling: `flask db check` akan melaporkan ~34 operasi pada tabel di luar scope. Itu drift
+  model-vs-DB yang sudah ada sebelum kerja ini, bukan efek migrasi labeling. Tidak diperbaiki.
+- Ruling: Isolasi test labeling diperbaiki dengan patch `Config.SQLALCHEMY_DATABASE_URI` sebelum
+  `create_app()`, bukan dengan `os.environ`. `os.environ` tidak berefek karena nilainya dibekukan
+  saat `config.py` di-import.
