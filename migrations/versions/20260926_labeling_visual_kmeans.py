@@ -1,28 +1,16 @@
-"""rewrite labeling schema for visual k-means
+"""Ganti label SDI (formula P x L) dengan label K-Means atas fitur visual.
 
-Ganti label SDI (formula P x L) dengan label klasterisasi K-Means atas fitur visual.
-
-Catatan penting soal migrasi ini:
-- Tabel di bawah diasumsikan SUDAH ada (basis data aplikasi yang berjalan). Jadi
-  `down_revision = None` di sini bukan "baseline dari nol", melainkan revisi pertama
-  yang di-deploy ke atas schema lama. Jalankan `flask db upgrade` hanya setelah
-  `flask db current` mengonfirmasi basis data sudah kosong dari tabel labeling.
-- Kolom SDI dihapus tanpa dip-backup. Old labels memang tidak valid secara
-  metodologis (lihat TODO.md bagian 1.1) dan `label_kerusakan.lokasi_id` sudah
-  ada sejak sebelum rewrite, jadi tidak ada data yang hilang secara tidak sengaja.
-- Baris label lama mendapat `metode='manual'`, bukan `'klasterisasi'`, karena
-  nilainya berasal dari formula SDI. Menandainya `'klasterisasi'` akan berbohong
-  soal asal-usulnya dan membingungkan saat audit.
-
-Revision ID: 20260926_labeling_visual_kmeans
-Revises:
-Create Date: 2026-09-26
+MySQL yang schema-nya sudah dibuat di luar Alembic harus di-stamp dulu
+(`flask db stamp 0001_baseline_mysql`) sebelum upgrade, atau Alembic akan
+mencoba membuat ulang tabel yang sudah ada. Kolom SDI dihapus tanpa backup:
+nilainya memang tidak valid metodologis dan `lokasi_id` sudah ada sejak
+sebelum rewrite, jadi tidak ada data yang hilang tak sengaja.
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = '20260926_labeling_visual_kmeans'
-down_revision = None
+down_revision = '0001_baseline_mysql'
 branch_labels = None
 depends_on = None
 
@@ -80,8 +68,7 @@ def upgrade():
     )
 
     with op.batch_alter_table('label_kerusakan', schema=None) as batch:
-        # server_default dipakai supaya baris label lama yang sudah ada tidak
-        # melanggar NOT NULL saat kolom ditambahkan.
+        # server_default menjaga baris label lama agar tidak melanggar NOT NULL.
         batch.add_column(sa.Column(
             'metode', sa.Enum('klasterisasi', 'manual', name='label_metode'),
             nullable=False, server_default='manual',
@@ -102,6 +89,17 @@ def upgrade():
     # Label lama berasal dari formula SDI, bukan klasterisasi.
     op.execute("UPDATE label_kerusakan SET metode = 'manual' WHERE metode IS NULL")
 
+    # server_default hanya alat bantu backfill. Membiarkannya membuat DB mengisi
+    # 'manual' sementara model menyatakan default 'klasterisasi'.
+    # SQLite tidak mendukung `ALTER COLUMN ... DROP DEFAULT`, dan tidak perlu.
+    if op.get_bind().dialect.name != 'sqlite':
+        op.alter_column(
+            'label_kerusakan', 'metode',
+            existing_type=sa.Enum('klasterisasi', 'manual', name='label_metode'),
+            existing_nullable=False,
+            server_default=None,
+        )
+
 
 def downgrade():
     with op.batch_alter_table('label_kerusakan', schema=None) as batch:
@@ -112,7 +110,7 @@ def downgrade():
         batch.drop_column('cluster_id')
         batch.add_column(sa.Column('persen_retak', sa.Numeric(precision=5, scale=2),
                                    nullable=False, server_default='0'))
-        batch.add_column(sa.Column('jenis_retak', sa.String(length=5),
+        batch.add_column(sa.Column('jenis_retak', sa.Enum('halus', 'lebar'),
                                    nullable=False, server_default='halus'))
         batch.add_column(sa.Column('jumlah_lubang', sa.Integer(),
                                    nullable=False, server_default='0'))
