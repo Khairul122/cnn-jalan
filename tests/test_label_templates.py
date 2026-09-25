@@ -1,13 +1,8 @@
-"""
-Render guard untuk template subsistem labeling.
+"""Menjaga setiap route labeling benar-benar merender HTML.
 
-Task 7 mengklaim "empty/loading/error states" dan "review" sudah dicek, tetapi
-hanya ada py_compile terhadap file Python — tidak satu pun template pernah
-dirender. Test ini menutup celah itu: setiap route labeling harus benar-benar
-merender HTML, baik pada kondisi terisi maupun kondisi kosong (0 lokasi,
-0 konfigurasi, 0 run, 0 item review).
+py_compile hanya memeriksa sintaks Python, tidak pernah menyentuh template.
+Test ini menutup celah itu pada kondisi terisi maupun kosong.
 
-Jalankan dari root project:
   .\\.venv\\Scripts\\python.exe -m unittest tests.test_label_templates -v
 """
 import json
