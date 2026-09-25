@@ -16,12 +16,12 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 ## Phase 2 — Algorithm and persistence
 
 - [x] Task 3: Implement feature extraction and clustering core — focused suite 4/4
-- [ ] Task 4: Implement run persistence, apply, and discard
+- [x] Task 4: Implement run persistence, apply, and discard — focused persistence suite 3/3
 
 ### Checkpoint: Algorithm
-- [ ] Focused labeling tests pass
-- [ ] Defaults and deterministic mapping are proven
-- [ ] Existing labels remain unchanged until apply
+- [x] Focused labeling tests pass
+- [x] Defaults and deterministic mapping are proven
+- [x] Existing labels remain unchanged until apply
 
 ## Phase 3 — HTTP workflow
 

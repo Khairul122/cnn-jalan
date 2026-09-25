@@ -9,8 +9,10 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 
+from app import db, utcnow
 from app.models.hasil_labeling import HasilLabeling
 from app.models.hasil_labeling_item import HasilLabelingItem
+from app.models.label_kerusakan import LabelKerusakan
 from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.tingkat_kerusakan import TingkatKerusakan
 
@@ -163,3 +165,111 @@ def urutkan_klaster_ke_tingkat(hasil_klaster, fitur_dict):
             raise LookupError(f'tingkat kerusakan tidak ditemukan: {name}')
         mapping[cluster_id] = tingkat.id
     return mapping
+
+
+def jalankan_klasterisasi(config, upload_folder, pengguna_id):
+    """Run clustering into reviewable rows without changing existing labels."""
+    try:
+        lokasi_list = LokasiKerusakan.query.order_by(LokasiKerusakan.id).all()
+        fitur_dict, dilewati = ekstrak_fitur_lokasi(
+            lokasi_list,
+            upload_folder,
+            canny_low=config.canny_low,
+            canny_high=config.canny_high,
+        )
+        if not fitur_dict:
+            run = HasilLabeling(
+                config_id=config.id,
+                jumlah_lokasi=0,
+                jumlah_dilewati=len(dilewati),
+                status='gagal',
+                catatan='Tidak ada lokasi dengan foto valid untuk dilabeli.',
+                pengguna_id=pengguna_id,
+            )
+            db.session.add(run)
+            db.session.commit()
+            return run
+
+        hasil_klaster, variansi_pca = klasterisasi(
+            fitur_dict,
+            n_cluster=config.n_cluster,
+            pca_komponen=config.pca_komponen,
+            random_state=config.random_state,
+        )
+        mapping = urutkan_klaster_ke_tingkat(hasil_klaster, fitur_dict)
+        distribution = {}
+        for cluster_id, tingkat_id in mapping.items():
+            tingkat = db.session.get(TingkatKerusakan, tingkat_id)
+            if tingkat is not None:
+                distribution[tingkat.nama_tingkat] = sum(
+                    result['klaster'] == cluster_id for result in hasil_klaster.values()
+                )
+
+        run = HasilLabeling(
+            config_id=config.id,
+            jumlah_lokasi=len(fitur_dict),
+            jumlah_dilewati=len(dilewati),
+            variansi_pca=variansi_pca,
+            distribusi_kelas=json.dumps(distribution, ensure_ascii=False),
+            status='selesai',
+            pengguna_id=pengguna_id,
+        )
+        db.session.add(run)
+        db.session.flush()
+        for lokasi_id, result in hasil_klaster.items():
+            db.session.add(HasilLabelingItem(
+                run_id=run.id,
+                lokasi_id=lokasi_id,
+                klaster=result['klaster'],
+                kepadatan_tepi=fitur_dict[lokasi_id]['kepadatan_tepi'],
+                jarak_centroid=result['jarak_centroid'],
+                tingkat_kerusakan_id=mapping[result['klaster']],
+            ))
+        db.session.commit()
+        return run
+    except Exception as exc:
+        db.session.rollback()
+        run = HasilLabeling(
+            config_id=config.id,
+            status='gagal',
+            catatan=str(exc),
+            pengguna_id=pengguna_id,
+        )
+        db.session.add(run)
+        db.session.commit()
+        return run
+
+
+def terapkan_hasil(run):
+    """Apply a completed review run exactly once."""
+    if run.status != 'selesai' or run.is_diterapkan:
+        return 0
+
+    jumlah = 0
+    for item in run.item_list:
+        label = LabelKerusakan.query.filter_by(lokasi_id=item.lokasi_id).first()
+        if label is None:
+            label = LabelKerusakan(
+                lokasi_id=item.lokasi_id,
+                pengguna_id=run.pengguna_id,
+            )
+            db.session.add(label)
+        label.tingkat_kerusakan_id = item.tingkat_kerusakan_id
+        label.metode = 'klasterisasi'
+        label.cluster_id = item.klaster
+        label.kepadatan_tepi = item.kepadatan_tepi
+        label.jarak_centroid = item.jarak_centroid
+        label.hasil_labeling_id = run.id
+        label.pengguna_id = run.pengguna_id
+        jumlah += 1
+
+    run.is_diterapkan = True
+    run.diterapkan_at = utcnow()
+    db.session.commit()
+    return jumlah
+
+
+def buang_hasil(run):
+    """Discard a temporary run and its items without changing labels."""
+    db.session.delete(run)
+    db.session.commit()
