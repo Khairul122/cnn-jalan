@@ -216,5 +216,95 @@ class TestShellContract(unittest.TestCase):
                       "toggleSidebar harus memutar kelas .is-open, bukan utility Tailwind")
 
 
+class TestToastContract(unittest.TestCase):
+    TOAST = Path(__file__).resolve().parent.parent / "app" / "static" / "js" / "toast.js"
+
+    def setUp(self):
+        self.js = self.TOAST.read_text(encoding="utf-8")
+
+    def test_toast_uses_component_classes_and_no_tailwind_utilities(self):
+        for utility in (
+            "flex", "items-start", "gap-3", "p-4", "bg-red-50", "absolute",
+            "overflow-hidden", "w-5", "h-5", "text-sm", "font-medium",
+        ):
+            self.assertNotRegex(self.js, rf"(?:className|class)\s*[^\n]*\b{re.escape(utility)}\b")
+        self.assertIn("toast toast--ok", self.js)
+        self.assertIn("toast toast--warn", self.js)
+        self.assertIn("toast toast--danger", self.js)
+        self.assertIn("toast toast--info", self.js)
+        self.assertIn("tw-progress-bar", self.js)
+
+    def test_toast_maps_error_to_danger_and_uses_bootstrap_icons(self):
+        self.assertRegex(self.js, r"error:\s*['\"]toast toast--danger['\"]")
+        self.assertIn("bi bi-", self.js)
+        self.assertNotIn("<svg", self.js)
+        self.assertNotRegex(self.js, r"style\.cssText\s*=.*width|transition:width")
+
+
+class TestRailAndDrawerContract(unittest.TestCase):
+    LAYOUT = Path(__file__).resolve().parent.parent / "app" / "static" / "css" / "layout.css"
+    TEMPLATE = Path(__file__).resolve().parent.parent / "app" / "templates" / "base.html"
+
+    def setUp(self):
+        self.css = self.LAYOUT.read_text(encoding="utf-8")
+        self.html = self.TEMPLATE.read_text(encoding="utf-8")
+
+    def test_tablet_rail_width_is_200px(self):
+        tablet = re.search(
+            r"@media\s*\(min-width:\s*1024px\)\s*and\s*\(max-width:\s*1279px\)\s*\{(?P<body>.*?)\}",
+            self.css,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(tablet, "tablet rail media query is missing")
+        self.assertRegex(tablet.group("body"), r"(?s)#sidebar\s*\{[^}]*width:\s*200px;[^}]*min-width:\s*200px;")
+
+    def test_mobile_rail_remains_off_canvas(self):
+        mobile = re.search(
+            r"@media\s*\(max-width:\s*1023px\)\s*\{(?P<body>.*?)\}",
+            self.css,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(mobile)
+        self.assertRegex(mobile.group("body"), r"(?s)#sidebar\s*\{.*?transform:\s*translateX\(-100%\);")
+
+    def test_drawer_functions_guard_missing_sidebar_and_manage_focus(self):
+        toggle = re.search(r"window\.toggleSidebar\s*=\s*function \(\)\s*\{(?P<body>.*?)\n\s*\};", self.html, re.DOTALL)
+        close = re.search(r"window\.closeSidebar\s*=\s*function \(\)\s*\{(?P<body>.*?)\n\s*\};", self.html, re.DOTALL)
+        self.assertIsNotNone(toggle)
+        self.assertIsNotNone(close)
+        self.assertRegex(toggle.group("body"), r"var\s+sidebar\s*=\s*document\.getElementById\(['\"]sidebar['\"]\)")
+        self.assertIn("if (!sidebar) return", toggle.group("body"))
+        self.assertIn("focusFirstInSidebar(sidebar)", toggle.group("body"))
+        self.assertRegex(close.group("body"), r"button\.focus\(\)")
+        self.assertRegex(self.html, r"(?s)function focusFirstInSidebar\(sidebar\).*?\.focus\(\)")
+        self.assertRegex(self.html, r"(?s)function focusablesInSidebar\(sidebar\).*?querySelectorAll")
+
+    def test_drawer_handles_tab_trapping_and_safe_escape(self):
+        self.assertRegex(self.html, r"e\.key\s*===\s*['\"]Tab['\"]")
+        self.assertIn("shiftKey", self.html)
+        self.assertRegex(
+            self.html,
+            r"var\s+sidebar\s*=\s*document\.getElementById\(['\"]sidebar['\"]\);\s*if\s*\(!sidebar\)\s*return",
+        )
+        self.assertRegex(
+            self.html,
+            r"(?s)if\s*\(e\.key\s*===\s*['\"]Escape['\"]\).*?closeSidebar\(\)",
+        )
+
+    def test_visually_hidden_aliases_sr_only(self):
+        self.assertRegex(self.css, r"\.sr-only,\s*\.visually-hidden\s*\{")
+
+
+class TestDetailRowContract(unittest.TestCase):
+    PARTIAL = Path(__file__).resolve().parent.parent / "app" / "templates" / "components" / "detail_row.html"
+
+    def test_detail_row_is_a_list_item(self):
+        source = self.PARTIAL.read_text(encoding="utf-8").lstrip()
+        self.assertTrue(source.startswith("{#"))
+        markup = source[source.index("\n") + 1:].lstrip()
+        self.assertTrue(markup.startswith("<li"), "detail_row must be valid inside ul")
+        self.assertNotIn("<div class=\"dl__row\">", markup)
+
+
 if __name__ == "__main__":
     unittest.main()

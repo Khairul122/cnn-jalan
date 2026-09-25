@@ -1,9 +1,9 @@
 {# One label/value pair. Variables: dr_label, dr_value, dr_raw (optional). #}
-<div class="dl__row">
+<li class="dl__row">
   <span class="dl__k">{{ dr_label }}</span>
   {% if dr_raw is defined and dr_raw %}
   <span class="dl__v">{{ dr_value | safe }}</span>
   {% else %}
   <span class="dl__v">{{ dr_value }}</span>
   {% endif %}
-</div>
+</li>

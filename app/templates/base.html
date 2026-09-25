@@ -239,34 +239,82 @@
 /* The rail is a permanent column at >=1024px and an off-canvas drawer below.
    .is-open replaces the former utility transform; the CSS transition lives in
    layout.css. Leaflet maps must be told to re-measure when this runs. */
-function toggleSidebar() {
-  var s = document.getElementById('sidebar');
-  if (s.classList.contains('is-open')) {
-    closeSidebar();
-  } else {
-    s.classList.add('is-open');
-    document.getElementById('sidebar-overlay').setAttribute('aria-hidden', 'false');
+(function () {
+  var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function sidebarOverlay() { return document.getElementById('sidebar-overlay'); }
+  function hamburgerBtn() { return document.getElementById('hamburger-btn'); }
+
+  function focusablesInSidebar(sidebar) {
+    return Array.prototype.slice.call(sidebar.querySelectorAll(FOCUSABLE))
+      .filter(function (el) { return el.offsetParent !== null || el === document.activeElement; });
+  }
+
+  function focusFirstInSidebar(sidebar) {
+    var close = sidebar.querySelector('.rail__close');
+    var firstLink = sidebar.querySelector('.sidebar-nav-link');
+    var target = close || firstLink;
+    if (target) target.focus();
+  }
+
+  window.toggleSidebar = function () {
+    var sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (sidebar.classList.contains('is-open')) {
+      closeSidebar();
+      return;
+    }
+
+    sidebar.classList.add('is-open');
+    var overlay = sidebarOverlay();
+    if (overlay) overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'true');
+    var button = hamburgerBtn();
+    if (button) button.setAttribute('aria-expanded', 'true');
+    focusFirstInSidebar(sidebar);
     window.dispatchEvent(new Event('resize'));
-  }
-}
+  };
 
-function closeSidebar() {
-  var s = document.getElementById('sidebar');
-  s.classList.remove('is-open');
-  document.getElementById('sidebar-overlay').setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-  document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
-  window.dispatchEvent(new Event('resize'));
-}
+  window.closeSidebar = function () {
+    var sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    sidebar.classList.remove('is-open');
+    var overlay = sidebarOverlay();
+    if (overlay) overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    var button = hamburgerBtn();
+    if (button) {
+      button.setAttribute('aria-expanded', 'false');
+      button.focus();
+    }
+    window.dispatchEvent(new Event('resize'));
+  };
 
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' &&
-      document.getElementById('sidebar').classList.contains('is-open')) {
-    closeSidebar();
-  }
-});
+  document.addEventListener('keydown', function (e) {
+    var sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    if (!sidebar.classList.contains('is-open')) return;
+
+    if (e.key === 'Escape') {
+      closeSidebar();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      var items = focusablesInSidebar(sidebar);
+      if (!items.length) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  });
+}());
 </script>
 {% block extra_js %}{% endblock %}
 </body>

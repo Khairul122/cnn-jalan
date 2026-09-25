@@ -20,8 +20,10 @@ body {
 a { color: var(--accent); }
 
 /* Bootstrap defined .sr-only. base.html uses it once (the breadcrumb home
-   label) and the 38 inline <style> blocks assume it exists. */
-.sr-only {
+   label) and the 38 inline <style> blocks assume it exists. .visually-hidden
+   is the design-system name for the same utility. */
+.sr-only,
+.visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
   padding: 0; margin: -1px;
@@ -104,6 +106,13 @@ a { color: var(--accent); }
 @media (min-width: 1024px) {
   #hamburger-btn { display: none; }
   #sidebar-overlay { display: none !important; }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  #sidebar {
+    width: 200px;
+    min-width: 200px;
+  }
 }
 
 @media (max-width: 1023px) {
