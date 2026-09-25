@@ -1,5 +1,3 @@
-import os
-import tempfile
 import unittest
 from unittest import mock
 
@@ -8,20 +6,15 @@ from flask import request
 from app import create_app, db
 from app.controllers.label_controller import _config_from_form
 from app.models.pengguna import Pengguna
+from tests.isolated_app import make_isolated_app, release_isolated_app
 
 
 class LabelControllerContractTest(unittest.TestCase):
     def setUp(self):
-        self.database = tempfile.NamedTemporaryFile(suffix='.sqlite', delete=False)
-        self.database.close()
-        os.environ['DATABASE_URL'] = f'sqlite:///{self.database.name}'
-        os.environ['SECRET_KEY'] = 'label-controller-secret'
-        self.app = create_app()
+        self.app, self.database_path = make_isolated_app('label-controller-secret')
 
     def tearDown(self):
-        with self.app.app_context():
-            db.session.remove()
-        os.unlink(self.database.name)
+        release_isolated_app(self.app, self.database_path)
 
     def test_new_configuration_rejects_invalid_canny_order(self):
         with self.app.test_request_context(

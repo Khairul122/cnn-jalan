@@ -8,7 +8,6 @@ Test ini menutup celah itu pada kondisi terisi maupun kosong.
 import json
 import os
 import re
-import tempfile
 import unittest
 
 from app import create_app, db
@@ -18,6 +17,7 @@ from app.models.labeling_config import LabelingConfig
 from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.pengguna import Pengguna
 from app.models.tingkat_kerusakan import TingkatKerusakan
+from tests.isolated_app import make_isolated_app, release_isolated_app
 
 PASSWORD = 'uji-password-123'
 LEVELS = [
@@ -36,11 +36,7 @@ def _token(html):
 
 class LabelTemplateRenderTest(unittest.TestCase):
     def setUp(self):
-        self.database = tempfile.NamedTemporaryFile(suffix='.sqlite', delete=False)
-        self.database.close()
-        os.environ['DATABASE_URL'] = f'sqlite:///{self.database.name}'
-        os.environ['SECRET_KEY'] = 'label-template-secret'
-        self.app = create_app()
+        self.app, self.database_path = make_isolated_app('label-template-secret')
         with self.app.app_context():
             db.create_all()
             user = Pengguna(nama='Admin Uji', email='template@example.test', role='admin')
@@ -57,9 +53,7 @@ class LabelTemplateRenderTest(unittest.TestCase):
             self.user_id = user.id
 
     def tearDown(self):
-        with self.app.app_context():
-            db.session.remove()
-        os.unlink(self.database.name)
+        release_isolated_app(self.app, self.database_path)
 
     def _client(self):
         client = self.app.test_client()

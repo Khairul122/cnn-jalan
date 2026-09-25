@@ -1,4 +1,3 @@
-import os
 import tempfile
 import unittest
 from types import SimpleNamespace
@@ -9,6 +8,7 @@ import numpy as np
 from app import create_app, db
 from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.services import labeling_service
+from tests.isolated_app import make_isolated_app, release_isolated_app
 
 
 class LabelingServiceContractTest(unittest.TestCase):
@@ -37,23 +37,26 @@ class LabelingServiceContractTest(unittest.TestCase):
             13: {'klaster': 1},
         }
 
-        app = create_app()
-        with app.app_context():
-            db.create_all()
-            levels = {
-                'Baik': 4,
-                'Sedang': 3,
-                'Rusak Ringan': 2,
-                'Rusak Berat': 1,
-            }
-            for name, level_id in levels.items():
-                db.session.add(
-                    TingkatKerusakan(
-                        id=level_id, nama_tingkat=name, warna_peta='#000000', skor_prioritas=level_id
+        app, database_path = make_isolated_app('labeling-service-secret')
+        try:
+            with app.app_context():
+                db.create_all()
+                levels = {
+                    'Baik': 4,
+                    'Sedang': 3,
+                    'Rusak Ringan': 2,
+                    'Rusak Berat': 1,
+                }
+                for name, level_id in levels.items():
+                    db.session.add(
+                        TingkatKerusakan(
+                            id=level_id, nama_tingkat=name, warna_peta='#000000', skor_prioritas=level_id
+                        )
                     )
-                )
-            db.session.commit()
-            mapping = labeling_service.urutkan_klaster_ke_tingkat(clusters, feature_map)
+                db.session.commit()
+                mapping = labeling_service.urutkan_klaster_ke_tingkat(clusters, feature_map)
+        finally:
+            release_isolated_app(app, database_path)
 
         self.assertEqual(mapping, {0: 3, 1: 1, 2: 4, 3: 2})
 

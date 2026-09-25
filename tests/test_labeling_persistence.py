@@ -15,15 +15,12 @@ from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.pengguna import Pengguna
 from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.services import labeling_service
+from tests.isolated_app import make_isolated_app, release_isolated_app
 
 
 class LabelingPersistenceTest(unittest.TestCase):
     def setUp(self):
-        self.database = tempfile.NamedTemporaryFile(suffix='.sqlite', delete=False)
-        self.database.close()
-        os.environ['DATABASE_URL'] = f'sqlite:///{self.database.name}'
-        os.environ['SECRET_KEY'] = 'labeling-test-secret'
-        self.app = create_app()
+        self.app, self.database_path = make_isolated_app('labeling-test-secret')
         with self.app.app_context():
             db.create_all()
             self.user = Pengguna(nama='Admin Uji', email='labeling@example.test', role='admin')
@@ -48,9 +45,7 @@ class LabelingPersistenceTest(unittest.TestCase):
             self.location_id = self.location.id
 
     def tearDown(self):
-        with self.app.app_context():
-            db.session.remove()
-        os.unlink(self.database.name)
+        release_isolated_app(self.app, self.database_path)
 
     def test_run_persists_items_without_writing_labels(self):
         with self.app.app_context():
