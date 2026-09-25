@@ -1,4 +1,7 @@
 from app.models.jenis_kerusakan import JenisKerusakan
+from app.models.labeling_config import LabelingConfig
+from app.models.hasil_labeling import HasilLabeling
+from app.models.hasil_labeling_item import HasilLabelingItem
 from app.models.label_kerusakan import LabelKerusakan
 from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.models.pengguna import Pengguna

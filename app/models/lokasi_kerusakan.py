@@ -18,7 +18,7 @@ class LokasiKerusakan(db.Model):
 
     foto_list = db.relationship('DokumentasiFoto', backref='lokasi', lazy=True, cascade='all, delete-orphan')
     peta      = db.relationship('PetaKerusakan', backref='lokasi', uselist=False, lazy=True)
-    label_sdi = db.relationship('LabelKerusakan', backref='lokasi', uselist=False, lazy=True)
+    label = db.relationship('LabelKerusakan', backref='lokasi', uselist=False, lazy=True)
 
     def __repr__(self):
         return f'<LokasiKerusakan {self.nama_citra}>'

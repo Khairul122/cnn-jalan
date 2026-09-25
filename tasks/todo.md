@@ -6,12 +6,12 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 ## Phase 1 — Foundation
 
 - [x] Task 1: Establish failing labeling contract tests — RED: `ImportError: cannot import name 'labeling_service'`
-- [ ] Task 2: Implement labeling models and relationships
+- [x] Task 2: Implement labeling models and relationships — metadata/import check lulus
 
 ### Checkpoint: Foundation
-- [ ] Model imports succeed
-- [ ] Focused tests fail only for unimplemented service behavior
-- [ ] No out-of-scope files changed
+- [x] Model imports succeed
+- [x] Focused tests fail only for unimplemented service behavior
+- [x] No out-of-scope files changed
 
 ## Phase 2 — Algorithm and persistence
 
