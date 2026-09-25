@@ -40,11 +40,12 @@ Design spec: `docs/superpowers/specs/2026-09-25-kmeans-labeling-rewrite-design.m
 
 ## Phase 5 — Migration and verification
 
-- [x] Task 8: Create and validate database migration — syntax/compile check lulus; production upgrade belum dijalankan tanpa DATABASE_URL terverifikasi
+- [x] Task 8: Create and validate database migration — `flask db upgrade` terhadap DB legacy berisi data: exit 0; autogenerate sesudahnya "No changes in schema detected"; `downgrade base`: exit 0
 - [x] Task 9: Full test, scope, and data-preservation verification — focused 9/9; full suite 16 pass, 4 environment/data setup errors
 
 ### Checkpoint: Complete
-- [x] All labeling acceptance criteria met; production DB upgrade remains pending until DATABASE_URL is verified
+- [x] All labeling acceptance criteria met; upgrade terbukti jalan di SQLite, tetap perlu dijalankan di MySQL target setelah DATABASE_URL diverifikasi
+- [x] Code review completed — C1 reviewer ditolak dengan bukti (kolom `lokasi_id` sudah ada di 2241c7e); temuan `alembic.ini` 0-byte dikonfirmasi dan diperbaiki
 - [ ] Code review completed
 - [x] Verification evidence recorded
 
