@@ -8,15 +8,15 @@
 
 {% block content %}
 
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+<div class="flex items-center justify-between">
   <div>
     {% set ph_title = 'Arsitektur CNN' %}{% include 'components/page_header.html' %}
-    <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
+    <p>
       Transfer learning MobileNetV2 & EfficientNetB0 untuk klasifikasi tingkat kerusakan
     </p>
   </div>
-  <div class="d-flex gap-2 flex-wrap">
-    <a href="{{ url_for('arsitektur.ringkasan_ulangan') }}" class="btn btn-outline-secondary btn-sm">
+  <div class="flex">
+    <a href="{{ url_for('arsitektur.ringkasan_ulangan') }}" class="btn btn--ghost btn--sm">
       <i class="bi bi-collection"></i> Ringkasan Repeated CV
     </a>
     <a href="{{ url_for('arsitektur.new') }}" class="btn-cnn-primary">
@@ -26,15 +26,15 @@
 </div>
 
 <!-- Stats -->
-<div class="row g-2 mb-4">
+<div class="grid">
   {% for lbl, val, color, icon in [
       ('Total Konfigurasi', configs|length,  '#A78BFA', 'bi-cpu-fill'),
       ('Selesai Training',  total_selesai,   '#10B981', 'bi-check-circle-fill'),
       ('Draft / Gagal',     total_draft,     '#64748B', 'bi-hourglass-split'),
   ] %}
-  <div class="col">
+  <div>
     <div class="cnn-stat-card">
-      <i class="bi {{ icon }}" style="color:{{ color }};font-size:1rem;"></i>
+      <i class="bi {{ icon }}" style="--fc:{{ color }};"></i>
       <div>
         <div class="cnn-stat-val">{{ val }}</div>
         <div class="cnn-stat-lbl">{{ lbl }}</div>
@@ -46,18 +46,18 @@
 
 {% if configs %}
 <div class="cnn-table-wrap">
-  <table class="table table-hover align-middle mb-0 cnn-table">
+  <table class="table align-middle cnn-table">
     <thead>
       <tr>
-        <th style="width:36px;">#</th>
+        <th>#</th>
         <th>Nama</th>
-        <th style="text-align:center;">Model</th>
-        <th style="text-align:center;width:72px;">Epoch</th>
+        <th>Model</th>
+        <th>Epoch</th>
         <th>Split</th>
-        <th style="text-align:center;width:72px;">Fold Val</th>
-        <th style="text-align:center;width:90px;">Status</th>
-        <th style="text-align:center;width:90px;">Akurasi</th>
-        <th style="text-align:center;width:110px;">Aksi</th>
+        <th>Fold Val</th>
+        <th>Status</th>
+        <th>Akurasi</th>
+        <th>Aksi</th>
       </tr>
     </thead>
     <tbody>
@@ -65,31 +65,31 @@
       {% set is_best = (cfg.id == best_id) %}
       {% set disp = display_map.get(cfg.id) %}
       <tr {% if is_best %}class="row-best"{% endif %}>
-        <td style="font-size:.75rem;color:var(--c-muted);">{{ loop.index }}</td>
+        <td>{{ loop.index }}</td>
         <td>
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span style="font-weight:600;font-size:.85rem;color:var(--c-text);">{{ cfg.nama }}</span>
+          <div class="flex items-center">
+            <span>{{ cfg.nama }}</span>
             {% if is_best %}
             <span class="badge-best"><i class="bi bi-trophy-fill"></i> Terbaik</span>
             {% endif %}
           </div>
-          <div style="font-size:.7rem;color:var(--c-muted);">{{ cfg.created_at.strftime('%d %b %Y') }}</div>
+          <div>{{ cfg.created_at.strftime('%d %b %Y') }}</div>
         </td>
-        <td style="text-align:center;">
+        <td>
           <span class="model-badge model-badge--{{ cfg.model_type }}">
             {{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}
           </span>
         </td>
-        <td style="text-align:center;font-size:.83rem;color:var(--c-text);font-variant-numeric:tabular-nums;">
+        <td>
           {{ cfg.epochs }}
         </td>
-        <td style="font-size:.78rem;color:var(--c-muted);">
+        <td>
           {{ cfg.split_config.nama if cfg.split_config else '—' }}
         </td>
-        <td style="text-align:center;font-size:.8rem;color:var(--c-muted);">
+        <td>
           Fold {{ cfg.fold_val + 1 }}
         </td>
-        <td style="text-align:center;">
+        <td>
           <span class="status-badge status-badge--{{ cfg.status }}">
             {% if cfg.status == 'draft' %}Draft
             {% elif cfg.status == 'training' %}Training…
@@ -97,24 +97,24 @@
             {% else %}Gagal{% endif %}
           </span>
         </td>
-        <td style="text-align:center;font-variant-numeric:tabular-nums;">
+        <td>
           {% if disp %}
-          <span style="font-weight:700;font-size:.85rem;color:{% if is_best %}#F59E0B{% else %}#10B981{% endif %};">
+          <span style="--fc:{% if is_best %};">
             {{ disp.akurasi }}%
           </span>
-          <div style="font-size:.65rem;line-height:1;margin-top:2px;">
+          <div>
             {% if disp.sumber == 'cv' %}
-            <span style="color:#10B981;font-weight:600;">CV K-Fold</span>
+            <span>CV K-Fold</span>
             {% else %}
-            <span style="color:var(--c-danger);font-weight:600;" title="1 fold saja, bukan metrik resmi — jalankan Prediksi CV K-Fold">1 fold, belum CV</span>
+            <span title="1 fold saja, bukan metrik resmi — jalankan Prediksi CV K-Fold">1 fold, belum CV</span>
             {% endif %}
           </div>
           {% else %}
-          <span style="color:var(--c-muted);font-size:.78rem;">—</span>
+          <span>—</span>
           {% endif %}
         </td>
-        <td style="text-align:center;">
-          <div class="d-flex align-items-center justify-content-center gap-1">
+        <td>
+          <div class="flex items-center justify-center">
             <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>
@@ -137,9 +137,9 @@
 
 {% else %}
 <div class="cnn-empty">
-  <i class="bi bi-cpu" style="font-size:2rem;color:var(--c-muted);display:block;margin-bottom:.625rem;"></i>
-  <p style="font-size:.88rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada konfigurasi</p>
-  <p style="font-size:.75rem;color:var(--c-muted);margin:0 0 1rem;max-width:340px;">
+  <i class="bi bi-cpu"></i>
+  <p>Belum ada konfigurasi</p>
+  <p>
     Buat konfigurasi CNN untuk melatih model MobileNetV2 atau EfficientNetB0
   </p>
   <a href="{{ url_for('arsitektur.new') }}" class="btn-cnn-primary">

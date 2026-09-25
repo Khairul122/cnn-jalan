@@ -1,68 +1,121 @@
 {% extends 'base.html' %}
 {% block title %}Labeling Visual{% endblock %}
-
-{% block breadcrumb %}
-<span class="sep">›</span><span class="current">Labeling Visual</span>
-{% endblock %}
-
+{% block breadcrumb %}<span class="sep">›</span><span class="current">Labeling Visual</span>{% endblock %}
 {% block content %}
-{% set total = lokasi_list|length %}
-{% set labeled = lokasi_list|selectattr('label')|list|length %}
-<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-  <div>
-    {% set ph_title = 'Labeling visual jalan' %}
-    {% set ph_subtitle = 'Konfigurasikan klasterisasi, review hasil, lalu terapkan label secara eksplisit.' %}
-    {% include 'components/page_header.html' %}
-  </div>
-  {% if current_user.role == 'admin' %}
-  <a class="btn btn-primary" href="{{ url_for('label.config_new') }}">
-    <i class="bi bi-sliders2"></i> Konfigurasi baru
-  </a>
-  {% endif %}
+{% set total = lokasi_list|length %}{% set labeled = lokasi_list|selectattr('label')|list|length %}
+<div class="flex items-start justify-between">
+  <div>{% set ph_title = 'Labeling visual jalan' %}{% set ph_subtitle = 'Konfigurasikan klasterisasi, review hasil, lalu
+    terapkan label secara eksplisit.' %}{% include 'components/page_header.html' %}</div>
+  {% if current_user.role == 'admin' %}<a class="btn btn--primary" href="{{ url_for('label.config_new') }}"><i
+      class="bi bi-sliders2"></i> Konfigurasi baru</a>{% endif %}
 </div>
-
-<div class="row g-3 mb-4">
-  <div class="col-sm-4"><div class="card p-3"><small class="text-muted">Lokasi</small><strong class="fs-4">{{ total }}</strong></div></div>
-  <div class="col-sm-4"><div class="card p-3"><small class="text-muted">Sudah berlabel</small><strong class="fs-4">{{ labeled }}</strong></div></div>
-  <div class="col-sm-4"><div class="card p-3"><small class="text-muted">Belum berlabel</small><strong class="fs-4">{{ total - labeled }}</strong></div></div>
-</div>
-
-<section class="card mb-4" aria-labelledby="config-title">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h2 id="config-title" class="h6 mb-0">Konfigurasi klasterisasi</h2>
-    <span class="text-muted small">Default: 4 klaster · PCA 50 · Canny 50/150</span>
+<div class="grid grid--3">
+  <div class="kpi">
+    <div><span class="kpi__label">Lokasi</span><strong class="kpi__value">{{ total }}</strong></div>
   </div>
-  <div class="card-body">
-    {% if config_list %}
-    <div class="table-responsive"><table class="table align-middle mb-0">
-      <thead><tr><th>Nama</th><th>Parameter</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
-      <tbody>{% for config in config_list %}<tr>
-        <td><strong>{{ config.nama_config }}</strong></td>
-        <td class="small text-muted">k={{ config.n_cluster }} · PCA={{ config.pca_komponen }} · seed={{ config.random_state }} · Canny={{ config.canny_low }}/{{ config.canny_high }}</td>
-        <td>{% if config.is_default %}<span class="badge text-bg-success">Default</span>{% else %}<span class="text-muted small">Kustom</span>{% endif %}</td>
-        <td class="text-end"><div class="d-flex justify-content-end gap-2 flex-wrap">
-          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('label.config_edit', config_id=config.id) }}">Edit</a>
-          {% if current_user.role == 'admin' %}<form method="post" action="{{ url_for('label.run', config_id=config.id) }}" class="d-inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-primary" type="submit">Jalankan</button></form>{% endif %}
-        </div></td>
-      </tr>{% endfor %}</tbody>
-    </table></div>
-    {% else %}<p class="mb-0 text-muted">Belum ada konfigurasi. Buat konfigurasi pertama untuk memulai run.</p>{% endif %}
+  <div class="kpi">
+    <div><span class="kpi__label">Sudah berlabel</span><strong class="kpi__value">{{ labeled }}</strong></div>
+  </div>
+  <div class="kpi">
+    <div><span class="kpi__label">Belum berlabel</span><strong class="kpi__value">{{ total - labeled }}</strong></div>
+  </div>
+</div>
+<section class="panel">
+  <div class="panel__head">
+    <h2 id="config-title">Konfigurasi klasterisasi</h2><span class="panel__head-note">Default: 4 klaster · PCA 50 ·
+      Canny 50/150</span>
+  </div>
+  <div class="panel__body">
+    {% if config_list %}<div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Parameter</th>
+            <th>Status</th>
+            <th class="align-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for config in config_list %}<tr>
+            <td><strong>{{ config.nama_config }}</strong></td>
+            <td class="hint">k={{ config.n_cluster }} · PCA={{ config.pca_komponen }} · seed={{ config.random_state }} ·
+              Canny={{ config.canny_low }}/{{ config.canny_high }}</td>
+            <td>{% if config.is_default %}<span class="status-chip status-chip--ok">Default</span>{% else %}<span
+                class="hint">Kustom</span>{% endif %}</td>
+            <td class="align-right">
+              <div class="flex justify-end"><a class="btn btn--sm btn--ghost"
+                  href="{{ url_for('label.config_edit', config_id=config.id) }}">Edit</a>{% if current_user.role ==
+                'admin' %}<form method="post" action="{{ url_for('label.run', config_id=config.id) }}"><input
+                    type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--sm btn--primary"
+                    type="submit">Jalankan</button></form>{% endif %}</div>
+            </td>
+          </tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>{% else %}<p class="hint">Belum ada konfigurasi. Buat konfigurasi pertama untuk memulai run.</p>{% endif %}
   </div>
 </section>
-
-<section class="card mb-4" aria-labelledby="run-title">
-  <div class="card-header"><h2 id="run-title" class="h6 mb-0">Run terbaru</h2></div>
-  <div class="card-body">
-    {% if run_list %}<div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>ID</th><th>Status</th><th>Lokasi</th><th>Dibuat</th><th class="text-end">Aksi</th></tr></thead><tbody>
-      {% for run in run_list %}<tr><td>#{{ run.id }}</td><td>{% if run.status == 'selesai' %}<span class="badge text-bg-success">Selesai</span>{% else %}<span class="badge text-bg-danger">Gagal</span>{% endif %}{% if run.is_diterapkan %}<span class="badge text-bg-info ms-1">Diterapkan</span>{% endif %}</td><td>{{ run.jumlah_lokasi }} diproses · {{ run.jumlah_dilewati }} dilewati</td><td class="small text-muted">{{ run.created_at }}</td><td class="text-end">{% if run.status == 'selesai' %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('label.review', run_id=run.id) }}">Review</a>{% endif %}</td></tr>{% endfor %}
-    </tbody></table></div>{% else %}<p class="mb-0 text-muted">Belum ada run. Hasil otomatis akan muncul di sini setelah dijalankan.</p>{% endif %}
+<section class="panel">
+  <div class="panel__head">
+    <h2 id="run-title">Run terbaru</h2>
+  </div>
+  <div class="panel__body">
+    {% if run_list %}<div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Lokasi</th>
+            <th>Dibuat</th>
+            <th class="align-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>{% for run in run_list %}<tr>
+            <td>#{{ run.id }}</td>
+            <td>{% if run.status == 'selesai' %}<span class="status-chip status-chip--ok">Selesai</span>{% else %}<span
+                class="status-chip status-chip--danger">Gagal</span>{% endif %}{% if run.is_diterapkan %}<span
+                class="status-chip status-chip--info">Diterapkan</span>{% endif %}</td>
+            <td>{{ run.jumlah_lokasi }} diproses · {{ run.jumlah_dilewati }} dilewati</td>
+            <td class="hint">{{ run.created_at }}</td>
+            <td class="align-right">{% if run.status == 'selesai' %}<a class="btn btn--sm btn--ghost"
+                href="{{ url_for('label.review', run_id=run.id) }}">Review</a>{% endif %}</td>
+          </tr>{% endfor %}</tbody>
+      </table>
+    </div>{% else %}<p class="hint">Belum ada run. Hasil otomatis akan muncul di sini setelah dijalankan.</p>{% endif %}
   </div>
 </section>
-
-<section class="card" aria-labelledby="location-title">
-  <div class="card-header"><h2 id="location-title" class="h6 mb-0">Label per lokasi</h2></div>
-  <div class="card-body p-0"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Lokasi</th><th>Tingkat</th><th>Metode</th><th>Kepadatan tepi</th><th class="text-end">Aksi</th></tr></thead><tbody>
-    {% for lokasi in lokasi_list %}<tr><td>{{ lokasi.nama_citra }}</td><td>{% if lokasi.label %}<span class="badge" style="background:{{ lokasi.label.tingkat.warna_peta }}">{{ lokasi.label.tingkat.nama_tingkat }}</span>{% else %}<span class="text-muted">Belum berlabel</span>{% endif %}</td><td>{% if lokasi.label %}{{ lokasi.label.metode }}{% else %}—{% endif %}</td><td>{% if lokasi.label and lokasi.label.kepadatan_tepi is not none %}{{ '%.4f'|format(lokasi.label.kepadatan_tepi) }}{% else %}—{% endif %}</td><td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('label.edit', lokasi_id=lokasi.id) }}">{{ 'Edit' if lokasi.label else 'Beri label' }}</a></td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted py-4">Belum ada lokasi jalan.</td></tr>{% endfor %}
-  </tbody></table></div></div>
+<section class="panel">
+  <div class="panel__head">
+    <h2 id="location-title">Label per lokasi</h2>
+  </div>
+  <div class="panel__body">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Lokasi</th>
+            <th>Tingkat</th>
+            <th>Metode</th>
+            <th>Kepadatan tepi</th>
+            <th class="align-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>{% for lokasi in lokasi_list %}<tr>
+            <td>{{ lokasi.nama_citra }}</td>
+            <td>{% if lokasi.label %}<span class="status-chip" style="--fc: {{ lokasi.label.tingkat.warna_peta }};">{{ lokasi.label.tingkat.nama_tingkat }}</span>{% else %}<span class="hint">Belum berlabel</span>{% endif %}</td>
+            <td>{% if lokasi.label %}{{ lokasi.label.metode }}{% else %}—{% endif %}</td>
+            <td class="text-mono">{% if lokasi.label and lokasi.label.kepadatan_tepi is not none %}{{
+              '%.4f'|format(lokasi.label.kepadatan_tepi) }}{% else %}—{% endif %}</td>
+            <td class="align-right"><a class="btn btn--sm btn--ghost"
+                href="{{ url_for('label.edit', lokasi_id=lokasi.id) }}">{{ 'Edit' if lokasi.label else 'Beri label'
+                }}</a></td>
+          </tr>{% else %}<tr>
+            <td colspan="5" class="align-center hint">Belum ada lokasi jalan.</td>
+          </tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
 </section>
 {% endblock %}

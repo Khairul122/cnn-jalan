@@ -9,31 +9,26 @@
 {% block content %}
 
 <!-- Header -->
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+<div class="flex items-center justify-between">
   <div>{% set ph_title = 'Pipeline Preprocessing' %}{% include 'components/page_header.html' %}</div>
   <a href="{{ url_for('preprocessing.config_new') }}"
-     style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;
-            border-radius:var(--r-input);font-size:.82rem;font-weight:700;text-decoration:none;
-            background:linear-gradient(135deg,#0369A1,#0EA5E9);color:#fff;
-            box-shadow:0 3px 10px rgba(3,105,161,.3);transition:opacity .15s;"
      onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
     <i class="bi bi-plus-lg"></i> Buat Konfigurasi
   </a>
 </div>
 
 <!-- Info banner -->
-<div style="background:linear-gradient(135deg,#0F2744,#1a3a60);border-radius:var(--r-card);
-            padding:.875rem 1.25rem;margin-bottom:1.25rem;border:1px solid rgba(56,189,248,.15);">
-  <div class="d-flex align-items-start gap-2">
-    <i class="bi bi-info-circle-fill" style="color:#38BDF8;flex-shrink:0;margin-top:.1rem;"></i>
+<div>
+  <div class="flex items-start">
+    <i class="bi bi-info-circle-fill"></i>
     <div>
-      <p style="font-size:.78rem;font-weight:600;color:#38BDF8;margin:0 0 .15rem;">Pipeline Preprocessing Gambar</p>
-      <p style="font-size:.73rem;color:rgba(255,255,255,.55);margin:0;line-height:1.55;">
-        <strong style="color:rgba(255,255,255,.8);">Resize</strong> →
-        <strong style="color:rgba(255,255,255,.8);">Center Crop</strong> →
-        <strong style="color:rgba(255,255,255,.8);">Normalisasi</strong> →
-        <strong style="color:rgba(255,255,255,.8);">Denoise</strong>
-        &nbsp;|&nbsp; Output disimpan di <code style="color:#38BDF8;font-size:.72rem;">uploads/preprocessed/</code>
+      <p>Pipeline Preprocessing Gambar</p>
+      <p>
+        <strong>Resize</strong> →
+        <strong>Center Crop</strong> →
+        <strong>Normalisasi</strong> →
+        <strong>Denoise</strong>
+        &nbsp;|&nbsp; Output disimpan di <code>uploads/preprocessed/</code>
         <br>Augmentasi tidak ada di tahap ini: augmentasi training ada di dalam model dan diatur di form Arsitektur CNN.
       </p>
     </div>
@@ -41,47 +36,43 @@
 </div>
 
 <!-- Stats -->
-<div class="d-flex gap-2 mb-3 flex-wrap">
+<div class="flex">
   {% for lbl, val, color, icon in [
       ('Total Foto',    total_foto,   '#38BDF8', 'bi-images'),
       ('Sudah Diproses',total_hasil,  '#10B981', 'bi-check-circle-fill'),
       ('Konfigurasi',   total_config, '#A78BFA', 'bi-gear-fill'),
   ] %}
-  <div style="flex:1;min-width:120px;background:var(--c-surface);border:1px solid var(--c-border);
-              border-radius:var(--r-card);padding:.625rem .875rem;
-              display:flex;align-items:center;gap:.45rem;">
-    <i class="bi {{ icon }}" style="color:{{ color }};font-size:.95rem;flex-shrink:0;"></i>
+  <div>
+    <i class="bi {{ icon }}" style="--fc:{{ color }};"></i>
     <div>
-      <p style="font-size:1.15rem;font-weight:700;color:var(--c-text);margin:0;font-variant-numeric:tabular-nums;">{{ val }}</p>
-      <p style="font-size:.68rem;color:var(--c-muted);margin:0;">{{ lbl }}</p>
+      <p>{{ val }}</p>
+      <p>{{ lbl }}</p>
     </div>
   </div>
   {% endfor %}
 </div>
 
 <!-- Pipeline steps visual -->
-<div class="d-flex align-items-center gap-1 mb-3 flex-wrap" style="font-size:.78rem;">
+<div class="flex items-center">
   {% for step, icon, color in [
       ('Resize',       'bi-aspect-ratio',        '#38BDF8'),
       ('Center Crop',  'bi-crop',                '#6366F1'),
       ('Normalisasi',  'bi-distribute-vertical', '#10B981'),
       ('Denoise',      'bi-eraser-fill',         '#A78BFA'),
   ] %}
-  <div style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;
-              border-radius:999px;background:{{ color }}18;border:1px solid {{ color }}40;
-              color:{{ color }};font-weight:600;">
+  <div style="--fc:{{ color }};">
     <i class="bi {{ icon }}"></i> {{ step }}
   </div>
   {% if not loop.last %}
-  <i class="bi bi-arrow-right" style="color:var(--c-muted);font-size:.75rem;"></i>
+  <i class="bi bi-arrow-right"></i>
   {% endif %}
   {% endfor %}
 </div>
 
 <!-- Tabel konfigurasi -->
 {% if config_list %}
-<div style="border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--c-border);">
-  <table class="table table-hover align-middle mb-0 cnn-table">
+<div>
+  <table class="table align-middle cnn-table">
     <thead>
       <tr>
         <th>#</th>
@@ -89,49 +80,45 @@
         <th>Resize</th>
         <th>Normalisasi</th>
         <th>Denoise</th>
-        <th style="text-align:center;width:160px;">Aksi</th>
+        <th>Aksi</th>
       </tr>
     </thead>
     <tbody>
       {% for cfg in config_list %}
       <tr>
-        <td style="font-size:.78rem;color:var(--c-muted);">{{ loop.index }}</td>
+        <td>{{ loop.index }}</td>
         <td>
-          <div style="font-weight:600;font-size:.85rem;color:var(--c-text);">{{ cfg.nama_config }}</div>
+          <div>{{ cfg.nama_config }}</div>
           {% if cfg.id == aktif_id %}
-          <span style="font-size:.68rem;color:#059669;font-weight:700;">Aktif (dipakai training &amp; klasifikasi)</span>
+          <span>Aktif (dipakai training &amp; klasifikasi)</span>
           {% elif cfg.is_default %}
-          <span style="font-size:.68rem;color:#10B981;font-weight:500;">Default</span>
+          <span>Default</span>
           {% endif %}
         </td>
         <td>
-          <span style="font-size:.78rem;color:var(--c-text);font-variant-numeric:tabular-nums;">
+          <span>
             {{ cfg.target_width }}×{{ cfg.target_height }}
           </span>
-          <div style="font-size:.69rem;color:var(--c-muted);">{{ cfg.resize_method }}</div>
+          <div>{{ cfg.resize_method }}</div>
         </td>
         <td>
           {% set norm_label = {'minmax':'Min-Max','zscore':'Z-Score','none':'Tidak Ada'} %}
-          <span style="font-size:.78rem;color:var(--c-text);">{{ norm_label.get(cfg.norm_method, cfg.norm_method) }}</span>
+          <span>{{ norm_label.get(cfg.norm_method, cfg.norm_method) }}</span>
         </td>
         <td>
           {% if cfg.denoise_method == 'none' %}
-          <span style="font-size:.75rem;color:var(--c-muted);">—</span>
+          <span>—</span>
           {% else %}
-          <span style="font-size:.75rem;color:var(--c-text);text-transform:capitalize;">
+          <span>
             {{ cfg.denoise_method }} (k={{ cfg.denoise_ksize }})
           </span>
           {% endif %}
         </td>
-        <td style="text-align:center;">
-          <div class="d-flex align-items-center justify-content-center gap-1 flex-wrap">
+        <td>
+          <div class="flex items-center justify-center">
             <!-- Jalankan -->
             <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" title="Jalankan"
-                      style="display:inline-flex;align-items:center;gap:.3rem;
-                             padding:.35rem .7rem;border-radius:var(--r-input);
-                             font-size:.75rem;font-weight:600;cursor:pointer;border:none;
-                             background:linear-gradient(135deg,#059669,#10B981);color:#fff;"
                       onclick="showConfirmForm(this,
                         'Jalankan Preprocessing',
                         'Pipeline 4 tahap akan dijalankan pada <strong>semua {{ total_foto }} foto</strong> dengan konfigurasi <strong>{{ cfg.nama_config }}</strong>. Semua hasil preprocessing sebelumnya <strong>diganti</strong> (hanya satu config yang aktif), dan model yang sudah dilatih dengan config lama perlu dilatih ulang.',
@@ -141,19 +128,12 @@
             </form>
             <!-- Edit -->
             <a href="{{ url_for('preprocessing.config_edit', config_id=cfg.id) }}"
-               style="display:inline-flex;align-items:center;justify-content:center;
-                      width:30px;height:30px;border-radius:var(--r-input);
-                      background:#0369A1;color:#fff;text-decoration:none;font-size:.8rem;"
                title="Edit">
               <i class="bi bi-pencil-fill"></i>
             </a>
             <!-- Hapus -->
             <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" title="Hapus"
-                      style="display:inline-flex;align-items:center;justify-content:center;
-                             width:30px;height:30px;border-radius:var(--r-input);
-                             background:transparent;color:#DC2626;border:1px solid #DC262640;cursor:pointer;
-                             font-size:.8rem;"
                       onclick="showConfirmForm(this,
                         'Hapus Konfigurasi',
                         'Konfigurasi <strong>{{ cfg.nama_config }}</strong> beserta semua hasil preprocessing terkait akan dihapus permanen.',
@@ -169,24 +149,19 @@
   </table>
 </div>
 
-<div class="mt-2 d-flex justify-content-end">
-  <a href="{{ url_for('preprocessing.hasil') }}"
-     style="font-size:.78rem;color:var(--c-accent);text-decoration:none;">
+<div class="flex justify-end">
+  <a href="{{ url_for('preprocessing.hasil') }}">
     Lihat semua hasil preprocessing <i class="bi bi-arrow-right"></i>
   </a>
 </div>
 
 {% else %}
 <!-- Empty state -->
-<div style="text-align:center;padding:3rem 1rem;background:var(--c-surface);
-            border-radius:var(--r-card);border:1px solid var(--c-border);">
-  <i class="bi bi-sliders" style="font-size:2.5rem;color:var(--c-muted);display:block;margin-bottom:.75rem;"></i>
-  <p style="font-size:.9rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada konfigurasi</p>
-  <p style="font-size:.78rem;color:var(--c-muted);margin:0 0 1rem;">Buat konfigurasi pipeline pertama untuk mulai preprocessing gambar</p>
-  <a href="{{ url_for('preprocessing.config_new') }}"
-     style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1.1rem;
-            border-radius:var(--r-input);font-size:.82rem;font-weight:700;text-decoration:none;
-            background:linear-gradient(135deg,#0369A1,#0EA5E9);color:#fff;">
+<div>
+  <i class="bi bi-sliders"></i>
+  <p>Belum ada konfigurasi</p>
+  <p>Buat konfigurasi pipeline pertama untuk mulai preprocessing gambar</p>
+  <a href="{{ url_for('preprocessing.config_new') }}">
     <i class="bi bi-plus-lg"></i> Buat Konfigurasi Pertama
   </a>
 </div>

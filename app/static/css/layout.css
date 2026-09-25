@@ -129,6 +129,20 @@ a { color: var(--accent); }
   #main-content { padding: var(--s-3); }
 }
 
+/* Small structural utilities used by migrated internal templates. */
+.flex { display: flex; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.justify-center { justify-content: center; }
+.flex-wrap { flex-wrap: wrap; }
+.align-center { text-align: center; }
+.align-right { text-align: right; }
+.text-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.full-width { width: 100%; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ── Skip link (accessibility) ──────────────────────────────────────── */
 /* Dipindah dari style.css 86-105. Token tetap warisan, nilainya kini
    diterjemahkan lewat alias block di tokens.css. */

@@ -71,8 +71,8 @@
 {% include 'components/page_header.html' %}
 
 <!-- Layer switcher -->
-<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-  <span style="font-size:.72rem;color:var(--c-muted);font-weight:600;">Layer:</span>
+<div class="flex items-center">
+  <span>Layer:</span>
   <button id="tabStatus" class="layer-tab active-status" onclick="switchLayer('status')">
     <i class="bi bi-layers-fill"></i> Status Pemetaan
   </button>
@@ -83,15 +83,10 @@
 
 <!-- === PANEL STATUS === -->
 <div id="panelStatus">
-  <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.875rem;flex-wrap:wrap;">
-    <div style="position:relative;">
-      <i class="bi bi-funnel" style="position:absolute;left:.625rem;top:50%;
-                transform:translateY(-50%);color:var(--c-muted);font-size:.8rem;pointer-events:none;"></i>
+  <div>
+    <div>
+      <i class="bi bi-funnel"></i>
       <select id="filterStatus"
-              style="padding:.45rem 1.5rem .45rem 1.875rem;border:1px solid var(--c-border);
-                     border-radius:var(--r-input);font-size:.82rem;color:var(--c-text);
-                     background:var(--c-surface);outline:none;cursor:pointer;appearance:none;
-                     transition:border-color .15s,box-shadow .15s;"
               onfocus="this.style.borderColor='var(--c-accent)'"
               onblur="this.style.borderColor='var(--c-border)'">
         <option value="">Semua Status</option>
@@ -100,41 +95,34 @@
         <option value="diperbaiki">Diperbaiki</option>
       </select>
     </div>
-    <button id="btnFilter" class="btn-cnn-primary" style="padding:.45rem 1rem;font-size:.82rem;">
+    <button id="btnFilter" class="btn-cnn-primary">
       <i class="bi bi-search"></i> Tampilkan
     </button>
   </div>
 
   <!-- Legenda status -->
-  <div style="display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;">
+  <div>
     {% for k in KELAS %}{% set label = k.nama %}{% set color = k.warna %}
-    <div style="display:inline-flex;align-items:center;gap:.375rem;padding:.3rem .625rem;
-                background:{{ color }}18;border:1px solid {{ color }}40;
-                border-radius:999px;font-size:.72rem;font-weight:600;color:{{ color }};">
-      <span style="width:.4rem;height:.4rem;border-radius:50%;background:{{ color }};flex-shrink:0;"></span>
+    <div style="--fc:{{ color }};">
+      <span style="--fc:{{ color }};"></span>
       {{ label }}
     </div>
     {% endfor %}
-    <div style="display:inline-flex;align-items:center;gap:.375rem;padding:.3rem .625rem;
-                background:#64748B18;border:1px solid #64748B40;border-radius:999px;
-                font-size:.72rem;font-weight:600;color:#64748B;">
-      <span style="width:.4rem;height:.4rem;border-radius:50%;background:#94A3B8;flex-shrink:0;"></span>
+    <div>
+      <span></span>
       Belum Diklasifikasi
     </div>
   </div>
 </div>
 
 <!-- === PANEL CNN === -->
-<div id="panelCnn" style="display:none;">
+<div id="panelCnn">
   {% if prediksi_configs %}
 
   <!-- Model selector + stats -->
-  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-    <i class="bi bi-cpu" style="color:var(--c-muted);font-size:.85rem;"></i>
+  <div class="flex items-center">
+    <i class="bi bi-cpu"></i>
     <select id="modelSelect"
-            style="padding:.4rem .875rem;border:1px solid var(--c-border);
-                   border-radius:var(--r-input);font-size:.8rem;color:var(--c-text);
-                   background:var(--c-surface);outline:none;cursor:pointer;"
             onchange="loadCnnMarkers()">
       {% for c in prediksi_configs %}
       {% set disp = display_map.get(c.id) %}
@@ -149,42 +137,41 @@
   </div>
 
   <!-- Stats bar -->
-  <div class="row g-2 mb-2" id="cnnStatsBar">
-    <div class="col-4">
+  <div class="grid" id="cnnStatsBar">
+    <div>
       <div class="peta-stat"><span id="cnnTotal" class="peta-stat-val">—</span><span class="peta-stat-lbl">Total Foto</span></div>
     </div>
-    <div class="col-4">
-      <div class="peta-stat"><span id="cnnBenar" class="peta-stat-val" style="color:#10B981;">—</span><span class="peta-stat-lbl">Prediksi Benar</span></div>
+    <div>
+      <div class="peta-stat"><span id="cnnBenar" class="peta-stat-val">—</span><span class="peta-stat-lbl">Prediksi Benar</span></div>
     </div>
-    <div class="col-4">
-      <div class="peta-stat"><span id="cnnSalah" class="peta-stat-val" style="color:#EF4444;">—</span><span class="peta-stat-lbl">Prediksi Salah</span></div>
+    <div>
+      <div class="peta-stat"><span id="cnnSalah" class="peta-stat-val">—</span><span class="peta-stat-lbl">Prediksi Salah</span></div>
     </div>
   </div>
 
   <!-- Filter pills -->
-  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-    <span style="font-size:.72rem;color:var(--c-muted);">Filter:</span>
+  <div class="flex items-center">
+    <span>Filter:</span>
     <button class="peta-filter active" data-cnn-filter="all" onclick="applyCnnFilter(this)">Semua</button>
   {% for k in KELAS %}
   <button class="peta-filter" data-cnn-filter="{{ loop.index0 }}" style="--fc:{{ k.warna }};" onclick="applyCnnFilter(this)">
-    <span class="peta-dot" style="background:{{ k.warna }};"></span>{{ k.nama }}
+    <span class="peta-dot" style="--fc:{{ k.warna }};"></span>{{ k.nama }}
   </button>
   {% endfor %}
-    <button class="peta-filter" data-cnn-filter="salah" style="--fc:#94a3b8;" onclick="applyCnnFilter(this)">
-      <span class="peta-dot" style="background:#94a3b8;border:2px dashed #fff;"></span>Salah Prediksi
+    <button class="peta-filter" data-cnn-filter="salah" onclick="applyCnnFilter(this)">
+      <span class="peta-dot"></span>Salah Prediksi
     </button>
-    <span id="cnnFilterCount" style="font-size:.72rem;color:var(--c-muted);margin-left:auto;"></span>
+    <span id="cnnFilterCount"></span>
   </div>
 
   {% else %}
-  <div style="padding:1.5rem;text-align:center;background:var(--c-surface);
-              border-radius:var(--r-card);border:1px dashed var(--c-border);margin-bottom:.875rem;">
-    <i class="bi bi-cpu" style="font-size:1.75rem;color:var(--c-muted);display:block;margin-bottom:.5rem;"></i>
-    <p style="font-size:.85rem;font-weight:600;color:var(--c-text);margin:0 0 .25rem;">Belum ada prediksi CNN</p>
-    <p style="font-size:.78rem;color:var(--c-muted);margin:0 0 .875rem;">
+  <div>
+    <i class="bi bi-cpu"></i>
+    <p>Belum ada prediksi CNN</p>
+    <p>
       Latih model di halaman Arsitektur CNN, lalu jalankan prediksi dari halaman GIS model tersebut.
     </p>
-    <a href="{{ url_for('arsitektur.index') }}" class="btn-cnn-primary" style="font-size:.8rem;padding:.4rem .9rem;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;">
+    <a href="{{ url_for('arsitektur.index') }}" class="btn-cnn-primary">
       <i class="bi bi-arrow-right"></i> Ke Arsitektur CNN
     </a>
   </div>
@@ -192,44 +179,38 @@
 </div>
 
 <!-- Error state -->
-<div id="map-error" style="display:none;padding:.75rem 1rem;margin-bottom:.75rem;
-     background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.3);border-radius:var(--r-input);
-     color:#EF4444;font-size:.85rem;">
-  <i class="bi bi-exclamation-triangle me-2"></i>
+<div id="map-error">
+  <i class="bi bi-exclamation-triangle"></i>
   <span id="map-error-msg">Gagal memuat data peta.</span>
-  <button onclick="reloadActive()" style="margin-left:.75rem;background:none;border:none;
-          color:var(--c-accent);cursor:pointer;font-size:.82rem;font-weight:600;padding:0;text-decoration:underline;">
+  <button onclick="reloadActive()">
     Coba lagi
   </button>
 </div>
 
 <!-- Skeleton -->
-<div id="map-skeleton" class="cnn-skeleton" style="border-radius:var(--r-card);"></div>
+<div id="map-skeleton" class="cnn-skeleton"></div>
 
 <!-- Map container (relative for legend overlay) -->
-<div style="position:relative;">
-  <div id="map" style="display:none;"></div>
+<div>
+  <div id="map"></div>
 
   <!-- CNN Legend (only shown in CNN mode) -->
-  <div id="cnnLegend" class="peta-legend" style="display:none;">
-    <div style="font-size:.65rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;
-                letter-spacing:.05em;margin-bottom:.5rem;">Legenda Prediksi CNN</div>
+  <div id="cnnLegend" class="peta-legend">
+    <div>Legenda Prediksi CNN</div>
     {% for k in KELAS %}{% set lbl = k.nama %}{% set clr = k.warna %}
-    <div class="d-flex align-items-center gap-2 mb-1">
-      <span style="width:11px;height:11px;border-radius:50%;background:{{ clr }};display:inline-block;flex-shrink:0;"></span>
-      <span style="font-size:.72rem;color:var(--c-text);">{{ lbl }}</span>
+    <div class="flex items-center">
+      <span style="--fc:{{ clr }};"></span>
+      <span>{{ lbl }}</span>
     </div>
     {% endfor %}
-    <div style="border-top:1px solid var(--c-border);padding-top:.4rem;margin-top:.4rem;">
-      <div class="d-flex align-items-center gap-2 mb-1">
-        <span style="width:11px;height:11px;border-radius:50%;background:transparent;
-                     border:2px solid #fff;display:inline-block;flex-shrink:0;"></span>
-        <span style="font-size:.68rem;color:var(--c-muted);">Benar</span>
+    <div>
+      <div class="flex items-center">
+        <span></span>
+        <span>Benar</span>
       </div>
-      <div class="d-flex align-items-center gap-2">
-        <span style="width:11px;height:11px;border-radius:50%;background:transparent;
-                     border:2px dashed #aaa;display:inline-block;flex-shrink:0;"></span>
-        <span style="font-size:.68rem;color:var(--c-muted);">Salah</span>
+      <div class="flex items-center">
+        <span></span>
+        <span>Salah</span>
       </div>
     </div>
   </div>
@@ -323,7 +304,7 @@
           m.bindPopup(
             '<strong>' + p.nama_citra + '</strong><br>' +
             'Jenis: ' + p.jenis + '<br>' +
-            'Tingkat: <span style="color:' + p.warna + ';font-weight:bold">' + p.tingkat + '</span><br>' +
+            'Tingkat: <span>' + p.tingkat + '</span><br>' +
             'Status: ' + p.status + '<br>' +
             'Prioritas: ' + p.prioritas
           );
@@ -400,15 +381,15 @@
       m.bindPopup(
         '<img src="/static/' + p.path_file + '" class="popup-img" onerror="this.style.display=\'none\'">' +
         '<div class="popup-row"><span class="popup-label">Lokasi</span>' +
-          '<span style="font-weight:600;font-size:.72rem;">' + p.nama_citra + '</span></div>' +
+          '<span>' + p.nama_citra + '</span></div>' +
         '<div class="popup-row"><span class="popup-label">Prediksi</span>' +
-          '<span class="popup-chip" style="background:' + clr + '22;color:' + clr + ';">' + p.label_pred + '</span></div>' +
+          '<span class="popup-chip">' + p.label_pred + '</span></div>' +
         '<div class="popup-row"><span class="popup-label">Aktual</span>' +
-          '<span class="popup-chip" style="background:' + aktualClr + '22;color:' + aktualClr + ';">' + p.label_aktual + '</span></div>' +
+          '<span class="popup-chip">' + p.label_aktual + '</span></div>' +
         '<div class="popup-row"><span class="popup-label">Confidence</span>' +
           '<strong>' + p.confidence + '%</strong></div>' +
         '<div class="popup-row"><span class="popup-label">Hasil</span>' +
-          '<strong style="color:' + (p.benar ? '#10B981' : '#EF4444') + ';">' +
+          '<strong>' +
           (p.benar ? '✓ Benar' : '✗ Salah') + '</strong></div>',
         { maxWidth: 220 }
       );

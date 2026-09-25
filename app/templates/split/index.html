@@ -8,10 +8,10 @@
 
 {% block content %}
 
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+<div class="flex items-center justify-between">
   <div>
     {% set ph_title = 'Split Data' %}{% include 'components/page_header.html' %}
-    <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
+    <p>
       Stratified K-Fold Cross-Validation — pembagian dataset berlabel ke K fold dengan distribusi kelas seimbang
     </p>
   </div>
@@ -21,16 +21,16 @@
 </div>
 
 <!-- Stats -->
-<div class="row g-2 mb-4">
+<div class="grid">
   {% for lbl, val, color, icon in [
       ('Konfigurasi',   configs|length,     '#A78BFA', 'bi-diagram-3-fill'),
       ('Data Berlabel (Foto)', total_berlabel, '#38BDF8', 'bi-images'),
       ('Kelas',         tingkat_list|length, '#10B981', 'bi-layers-fill'),
       ('Sampel Training Efektif', total_sampel, '#F59E0B', 'bi-collection-fill'),
   ] %}
-  <div class="col">
+  <div>
     <div class="split-stat-card">
-      <i class="bi {{ icon }}" style="color:{{ color }};font-size:1rem;"></i>
+      <i class="bi {{ icon }}" style="--fc:{{ color }};"></i>
       <div>
         <div class="split-stat-val">{{ val }}</div>
         <div class="split-stat-lbl">{{ lbl }}</div>
@@ -39,28 +39,26 @@
   </div>
   {% endfor %}
   <!-- Preprocessing coverage -->
-  <div class="col">
-    <div class="split-stat-card" style="flex-direction:column;align-items:flex-start;gap:.3rem;">
-      <div style="display:flex;align-items:center;gap:.4rem;width:100%;">
-        <i class="bi bi-filter-circle-fill" style="color:#F472B6;font-size:1rem;flex-shrink:0;"></i>
-        <div style="flex:1;">
-          <div class="split-stat-val">{{ total_prep }}<span style="font-size:.72rem;font-weight:400;color:var(--c-muted);"> / {{ total_berlabel }}</span></div>
+  <div>
+    <div class="split-stat-card">
+      <div>
+        <i class="bi bi-filter-circle-fill"></i>
+        <div>
+          <div class="split-stat-val">{{ total_prep }}<span> / {{ total_berlabel }}</span></div>
           <div class="split-stat-lbl">Terpreproses (Semua Tahap)</div>
         </div>
       </div>
       {% if total_berlabel > 0 %}
       {% set pct = (total_prep / total_berlabel * 100) | round | int %}
-      <div style="width:100%;height:4px;background:var(--c-border);border-radius:999px;overflow:hidden;">
-        <div style="height:100%;width:{{ pct }}%;border-radius:999px;
-                    background:{% if pct == 100 %}#10B981{% elif pct > 0 %}#F59E0B{% else %}#DC2626{% endif %};
-                    transition:width .4s;"></div>
+      <div>
+        <div style="width:{{ pct }}%;"></div>
       </div>
       {% endif %}
     </div>
   </div>
 </div>
 
-<p style="font-size:.7rem;color:var(--c-muted);margin:-.75rem 0 1rem;">
+<p>
   <i class="bi bi-info-circle"></i>
   Fold K-Fold ditentukan per <strong>foto</strong> ({{ total_berlabel }}) supaya tidak ada kebocoran data antar fold.
   "Sampel Training Efektif" ({{ total_sampel }}) adalah jumlah gambar training yang benar-benar dimuat,
@@ -71,42 +69,41 @@
 
 {% if configs %}
 <div class="split-table-wrap">
-  <table class="table table-hover align-middle mb-0 cnn-table">
+  <table class="table align-middle cnn-table">
     <thead>
       <tr>
-        <th style="width:36px;">#</th>
+        <th>#</th>
         <th>Nama</th>
-        <th style="text-align:center;width:80px;">Tipe</th>
-        <th style="text-align:center;width:96px;">Seed</th>
-        <th style="text-align:center;width:80px;">Data</th>
-        <th style="width:130px;">Dibuat</th>
-        <th style="text-align:center;width:110px;">Aksi</th>
+        <th>Tipe</th>
+        <th>Seed</th>
+        <th>Data</th>
+        <th>Dibuat</th>
+        <th>Aksi</th>
       </tr>
     </thead>
     <tbody>
       {% for cfg in configs %}
       <tr>
-        <td style="font-size:.75rem;color:var(--c-muted);">{{ loop.index }}</td>
+        <td>{{ loop.index }}</td>
         <td>
-          <span style="font-weight:600;font-size:.85rem;color:var(--c-text);">{{ cfg.nama }}</span>
+          <span>{{ cfg.nama }}</span>
         </td>
-        <td style="text-align:center;">
-          <span style="padding:.15rem .5rem;border-radius:999px;font-size:.7rem;font-weight:600;
-                       background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#10B981;">
+        <td>
+          <span>
             K={{ cfg.n_splits }}
           </span>
         </td>
-        <td style="text-align:center;font-size:.8rem;color:var(--c-muted);font-variant-numeric:tabular-nums;">
-          {{ cfg.random_state }}{% if cfg.radius_grup_m %}<div style="font-size:.66rem;">grup {{ cfg.radius_grup_m }} m</div>{% endif %}
+        <td>
+          {{ cfg.random_state }}{% if cfg.radius_grup_m %}<div>grup {{ cfg.radius_grup_m }} m</div>{% endif %}
         </td>
-        <td style="text-align:center;font-size:.85rem;font-weight:600;color:var(--c-text);font-variant-numeric:tabular-nums;">
+        <td>
           {{ cfg.total_data }}
         </td>
-        <td style="font-size:.73rem;color:var(--c-muted);">
+        <td>
           {{ cfg.created_at.strftime('%d %b %Y') }}
         </td>
-        <td style="text-align:center;">
-          <div class="d-flex align-items-center justify-content-center gap-1">
+        <td>
+          <div class="flex items-center justify-center">
             <a href="{{ url_for('split.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat Detail">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>
@@ -129,13 +126,13 @@
 
 {% else %}
 <div class="split-empty">
-  <i class="bi bi-diagram-3" style="font-size:2rem;color:var(--c-muted);display:block;margin-bottom:.625rem;"></i>
-  <p style="font-size:.88rem;font-weight:600;color:var(--c-text);margin:0 0 .35rem;">Belum ada split</p>
-  <p style="font-size:.75rem;color:var(--c-muted);margin:0 0 1rem;max-width:320px;">
+  <i class="bi bi-diagram-3"></i>
+  <p>Belum ada split</p>
+  <p>
     Buat split K-Fold untuk membagi dataset ke K fold secara stratified
   </p>
   {% if total_berlabel == 0 %}
-  <p style="font-size:.73rem;color:#F59E0B;margin:0 0 1rem;">
+  <p>
     <i class="bi bi-exclamation-triangle-fill"></i>
     Belum ada data berlabel — tambah label SDI terlebih dahulu
   </p>
