@@ -331,6 +331,11 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--s-1);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rail__nav::-webkit-scrollbar {
+  display: none;
 }
 .rail__user {
   display: flex;

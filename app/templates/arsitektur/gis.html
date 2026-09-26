@@ -33,13 +33,15 @@
       <i class="bi bi-arrow-left"></i> Kembali
     </a>
     {% if not cv_running %}
-    <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}"
+          data-progress="Prediksi Semua Foto" data-progress-interval="4000"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="gis-btn gis-btn-primary" title="Prediksi model tunggal pada semua foto berkoordinat">
         <i class="bi bi-cpu-fill"></i>
         {{ 'Perbarui' if total_prediksi else 'Jalankan Prediksi' }}
       </button>
     </form>
-    <form method="POST" action="{{ url_for('arsitektur.predict_cv_route', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" action="{{ url_for('arsitektur.predict_cv_route', config_id=cfg.id) }}"
+          data-progress="Prediksi CV K-Fold — melatih model per fold" data-progress-interval="6000"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="button" class="gis-btn gis-btn-cv"
               title="Tiap foto diprediksi oleh model yang dilatih tanpa fold-nya — akurasi lebih jujur"
               onclick="showConfirmForm(this,
@@ -176,7 +178,8 @@
   <p style="font-size:.78rem;color:var(--c-muted);margin:0 0 1.25rem;">
     Klik "Jalankan Prediksi" untuk menjalankan inferensi pada semua 280 foto.
   </p>
-  <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <form method="POST" action="{{ url_for('arsitektur.predict', config_id=cfg.id) }}" style="display:inline;"
+        data-progress="Prediksi Semua Foto" data-progress-interval="4000"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="gis-btn gis-btn-primary">
       <i class="bi bi-cpu-fill"></i> Jalankan Prediksi
     </button>
@@ -269,6 +272,13 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+  progressSteps([
+    'Memuat model fold tersimpan',
+    'Prediksi ensemble + TTA per foto',
+    'Menyimpan titik peta'
+  ]);
+</script>
 {% if total_prediksi %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>

@@ -1,6 +1,7 @@
 import os
+import threading
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func
 
@@ -15,6 +16,11 @@ from app.services import augmentation_service as aug
 import json
 
 augmentasi_bp = Blueprint('augmentasi', __name__, url_prefix='/augmentasi')
+
+# Progres run augmentasi di background, per config_id.
+_progress = {}
+_progress_hasil = {}
+_progress_lock = threading.Lock()
 
 LABEL = {
     'flip': 'Flip horizontal', 'rotasi': 'Rotasi', 'zoom': 'Zoom', 'translasi': 'Translasi',
@@ -41,6 +47,11 @@ def index():
     total_hasil = HasilAugmentasi.query.filter_by(status='selesai').count()
     aktif = AugmentasiConfig.aktif() if total_hasil else None
     galeri = (HasilAugmentasi.query.filter_by(status='selesai').order_by(HasilAugmentasi.id.desc()).limit(24).all())
+    if request.args.get('proses') == 'selesai' and _progress_hasil:
+        stat = _progress_hasil.pop(next(iter(_progress_hasil)))
+        flash(f'Augmentasi selesai: {stat["foto"]} foto × salinan = {stat["salinan"]} gambar, {stat["gagal"]} gagal. '
+              'Salinan hanya dipakai training untuk foto fold-train; buat/ulangi Split sesudah ini bila belum.',
+              'success' if not stat['gagal'] else 'warning')
     return render_template('augmentasi/index.html', config_list=config_list, aktif_id=aktif.id if aktif else None,
                            total_foto=DokumentasiFoto.query.count(), total_denoise=_foto_berdenoise(),
                            total_hasil=total_hasil, galeri=galeri)
@@ -115,6 +126,38 @@ def config_delete(config_id):
     return redirect(url_for('augmentasi.index'))
 
 
+def _simpan_progress(config_id, data):
+    with _progress_lock:
+        _progress[config_id] = data
+
+
+def _sisa_progress(config_id):
+    with _progress_lock:
+        return _progress.get(config_id)
+
+
+def _run_augmentasi(app, config_id):
+    """Background thread: salinan augmentasi untuk semua foto + tulis progres tiap 20 foto."""
+    total_foto = _foto_berdenoise()
+    try:
+        stat = aug.jalankan(db.session.get(AugmentasiConfig, config_id), _static_root(),
+                            on_progress=lambda selesai, total: _simpan_progress(config_id, {
+                                'status': 'running',
+                                'pct': round(selesai / total * 100) if total else 100,
+                                'current': selesai, 'total': total,
+                                'step': f'Membuat salinan — foto {selesai} / {total}',
+                            }))
+        db.session.commit()
+        _progress_hasil[config_id] = stat
+        _simpan_progress(config_id, {'status': 'selesai', 'pct': 100,
+                                     'reload': url_for('augmentasi.index', proses='selesai')})
+    except Exception as exc:      # noqa: BLE001 — semua error jadi pesan UI
+        db.session.rollback()
+        _simpan_progress(config_id, {'status': 'error', 'error': f'Augmentasi gagal: {exc}'})
+    finally:
+        db.session.remove()
+
+
 @augmentasi_bp.route('/run/<int:config_id>', methods=['POST'])
 @admin_required
 def run(config_id):
@@ -122,14 +165,29 @@ def run(config_id):
     if not _foto_berdenoise():
         flash('Belum ada hasil preprocessing (tahap denoise). Jalankan Preprocessing dulu.', 'warning')
         return redirect(url_for('augmentasi.index'))
+    if (_sisa_progress(config_id) or {}).get('status') == 'running':
+        flash('Augmentasi untuk konfigurasi ini sedang berjalan.', 'warning')
+        return redirect(url_for('augmentasi.index'))
+
     # Satu config aktif: hasil augmentasi sebelumnya (config manapun) diganti.
     aug.hapus_semua_hasil(_static_root())
     db.session.commit()
-    stat = aug.jalankan(cfg, _static_root())
-    db.session.commit()
-    flash(f'Augmentasi selesai: {stat["foto"]} foto × {cfg.n_salinan} salinan = {stat["salinan"]} gambar, {stat["gagal"]} gagal. '
-          'Salinan hanya dipakai training untuk foto fold-train; buat/ulangi Split sesudah ini bila belum.', 'success' if not stat['gagal'] else 'warning')
+
+    total = _foto_berdenoise()
+    _simpan_progress(config_id, {'status': 'running', 'pct': 0, 'current': 0, 'total': total,
+                                 'step': f'Membuat {cfg.n_salinan} salinan per foto…'})
+    app = current_app._get_current_object()
+    threading.Thread(target=_run_augmentasi, args=(app, config_id), daemon=True).start()
     return redirect(url_for('augmentasi.index'))
+
+
+@augmentasi_bp.route('/progress/<int:config_id>')
+@login_required
+def progress(config_id):
+    prog = _sisa_progress(config_id)
+    if prog is None:
+        return jsonify({'status': 'idle'})
+    return jsonify(prog)
 
 
 @augmentasi_bp.route('/hasil/reset', methods=['POST'])

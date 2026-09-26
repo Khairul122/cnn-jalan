@@ -44,7 +44,10 @@
             <td class="align-right">
               <div class="d-flex justify-content-end"><a class="btn btn--sm btn--ghost"
                   href="{{ url_for('label.config_edit', config_id=config.id) }}">Edit</a>{% if current_user.role ==
-                'admin' %}<form method="post" action="{{ url_for('label.run', config_id=config.id) }}"><input
+                'admin' %}<form method="post" action="{{ url_for('label.run', config_id=config.id) }}"
+                  data-progress="Menjalankan Klasterisasi"
+                  data-progress-url="{{ url_for('label.progress_config', config_id=config.id) }}"
+                  data-progress-poll="2"><input
                     type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--sm btn--primary"
                     type="submit">Jalankan</button></form>{% endif %}</div>
             </td>
@@ -72,7 +75,9 @@
         </thead>
         <tbody>{% for run in run_list %}<tr>
             <td>#{{ run.id }}</td>
-            <td>{% if run.status == 'selesai' %}<span class="status-chip status-chip--ok">Selesai</span>{% else %}<span
+            <td>{% if run.status == 'selesai' %}<span class="status-chip status-chip--ok">Selesai</span>
+              {% elif run.status == 'proses' %}<span class="status-chip status-chip--info">Berjalan…</span>
+              {% else %}<span
                 class="status-chip status-chip--danger">Gagal</span>{% endif %}{% if run.is_diterapkan %}<span
                 class="status-chip status-chip--info">Diterapkan</span>{% endif %}</td>
             <td>{{ run.jumlah_lokasi }} diproses · {{ run.jumlah_dilewati }} dilewati</td>
@@ -116,4 +121,17 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  progressSteps([
+    'Memuat daftar lokasi',
+    'Ekstraksi embedding MobileNetV2 per foto',
+    'Menghitung kepadatan tepi (Canny)',
+    'PCA + StandardScaler',
+    'K-Means clustering',
+    'Menyimpan hasil untuk review'
+  ]);
+</script>
 {% endblock %}

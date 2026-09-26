@@ -11,7 +11,7 @@ class HasilLabeling(db.Model):
     jumlah_dilewati = db.Column(db.Integer, nullable=False, default=0)
     variansi_pca = db.Column(db.Numeric(5, 4), nullable=True)
     distribusi_kelas = db.Column(db.Text, nullable=True)
-    status = db.Column(db.Enum('selesai', 'gagal'), nullable=False, default='selesai')
+    status = db.Column(db.Enum('proses', 'selesai', 'gagal'), nullable=False, default='selesai')
     catatan = db.Column(db.Text, nullable=True)
     is_diterapkan = db.Column(db.Boolean, nullable=False, default=False)
     diterapkan_at = db.Column(db.DateTime, nullable=True)

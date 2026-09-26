@@ -46,7 +46,10 @@
   </div>
   <div class="d-flex gap-2 align-items-center flex-wrap">
     {% if cfg.status != 'training' %}
-    <form method="POST" action="{{ url_for('arsitektur.train', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" action="{{ url_for('arsitektur.train', config_id=cfg.id) }}"
+          data-progress="{{ 'Re-train Model' if cfg.status == 'selesai' else 'Mulai Training CNN' }}"
+          data-progress-interval="6000"
+          data-progress-poll="{{ url_for('arsitektur.progress', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {% if cfg.status == 'selesai' %}
       <button type="button" class="btn-train"
               onclick="showConfirmForm(this,
@@ -161,7 +164,8 @@
   {% elif final_running %}
     <span style="font-size:.75rem;color:#F59E0B;"><i class="bi bi-hourglass-split"></i> Sedang dilatih… muat ulang halaman nanti</span>
   {% elif current_user.is_admin() %}
-    <form method="POST" action="{{ url_for('arsitektur.train_final', config_id=cfg.id) }}">
+    <form method="POST" action="{{ url_for('arsitektur.train_final', config_id=cfg.id) }}"
+          data-progress="Melatih Model Final" data-progress-interval="6000">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-sm btn-cnn-primary">Latih Model Final</button>
     </form>
@@ -579,6 +583,15 @@
 
 {% block extra_js %}
 {% if cfg.status == 'training' %}
+<script>
+  progressSteps([
+    'Menyiapkan dataset & augmentasi',
+    'Phase 1 — backbone beku',
+    'Phase 2 — fine-tuning',
+    'Evaluasi fold uji',
+    'Prediksi peta GIS'
+  ]);
+</script>
 <script>
 (function () {
   const url     = "{{ url_for('arsitektur.progress', config_id=cfg.id) }}";

@@ -107,7 +107,9 @@
             </td>
             <td>
               <div class="table-actions justify-content-end">
-                <form method="POST" action="{{ url_for('augmentasi.run', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <form method="POST" action="{{ url_for('augmentasi.run', config_id=cfg.id) }}"
+                      data-progress="Menjalankan Augmentasi"
+                      data-progress-url="{{ url_for('augmentasi.progress', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="button" class="btn btn--primary btn--sm"
                           onclick="showConfirmForm(this,'Jalankan Augmentasi','Membuat <strong>{{ cfg.n_salinan }} salinan</strong> per foto dengan <strong>{{ cfg.nama_config }}</strong>. Hasil augmentasi sebelumnya diganti.','success','Ya, Jalankan')">
                     <i class="bi bi-play-fill" aria-hidden="true"></i> Jalankan
@@ -158,4 +160,15 @@
   </div>
 </section>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  progressSteps([
+    'Menghapus hasil augmentasi sebelumnya',
+    'Memuat 10 transformasi aktif',
+    'Membuat salinan ber-seed per foto',
+    'Menyimpan ke uploads/augmented/'
+  ]);
+</script>
 {% endblock %}

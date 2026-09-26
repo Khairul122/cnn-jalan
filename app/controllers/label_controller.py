@@ -1,6 +1,7 @@
 import json
+import threading
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for, jsonify
 from flask_login import current_user, login_required
 
 from app import db
@@ -13,6 +14,10 @@ from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.services import labeling_service
 
 label_bp = Blueprint('label', __name__, url_prefix='/label')
+
+# Progres klasterisasi di background, per run_id (satu run sekaligus).
+_progress = {}
+_progress_lock = threading.Lock()
 
 
 def _config_from_form(config=None):
@@ -150,21 +155,77 @@ def config_delete(config_id):
     return redirect(url_for('label.index'))
 
 
+RUTE_REVIEW = 'rute review belum diketahui'
+
+
+def _progres(run_id, **nilai):
+    """Kabari UI. `rute_review` diisi begitu jalankan_klasterisasi memanggil on_run."""
+    with _progress_lock:
+        if run_id in _progress:
+            _progress[run_id].update(nilai)
+
+
+def _run_klasterisasi(app, config_id, run_id, upload_folder, pengguna_id):
+    """Background thread: klasterisasi + tulis hasil, lalu tandai selesai untuk polling UI."""
+    with app.app_context():
+        def on_progress(selesai, total):
+            _progres(run_id, pct=round(selesai / total * 90) if total else 5,
+                     step=f'Mengekstrak fitur visual — lokasi {selesai} / {total}')
+
+        def on_run(run):
+            _progres(run_id, step='Menyimpan hasil klasterisasi…', rute_review=url_for('label.review', run_id=run.id))
+
+        try:
+            hasil = labeling_service.jalankan_klasterisasi(
+                db.session.get(LabelingConfig, config_id), upload_folder, pengguna_id,
+                on_progress=on_progress, on_run=on_run)
+            if hasil.status == 'gagal':
+                _progres(run_id, status='error', error=f'Klasterisasi gagal: {hasil.catatan or "tidak ada hasil"}')
+            else:
+                _progres(run_id, status='selesai', pct=100, reload=url_for('label.review', run_id=hasil.id))
+        except Exception as exc:      # noqa: BLE001 — thread background: semua error jadi pesan UI
+            db.session.rollback()
+            _progres(run_id, status='error', error=f'Klasterisasi gagal: {exc}')
+        finally:
+            db.session.remove()
+
+
 @label_bp.route('/config/<int:config_id>/run', methods=['POST'])
 @admin_required
 def run(config_id):
     config = LabelingConfig.query.get_or_404(config_id)
-    hasil = labeling_service.jalankan_klasterisasi(
-        config, current_app.config['UPLOAD_FOLDER'], current_user.id
-    )
-    if hasil.status == 'gagal':
-        flash(f'Klasterisasi gagal: {hasil.catatan}', 'danger')
-        return redirect(url_for('label.index'))
-    flash(
-        f'Klasterisasi selesai — {hasil.jumlah_lokasi} lokasi diproses, '
-        f'{hasil.jumlah_dilewati} dilewati. Review sebelum menerapkan.', 'info'
-    )
-    return redirect(url_for('label.review', run_id=hasil.id))
+    run_row = HasilLabeling(config_id=config.id, status='proses', pengguna_id=current_user.id)
+    db.session.add(run_row)
+    db.session.commit()
+
+    _progress[run_row.id] = {'config_id': config.id, 'status': 'running', 'pct': None,
+                             'step': 'Memuat embedding MobileNetV2…', 'rute_review': None}
+    app = current_app._get_current_object()
+    threading.Thread(
+        target=_run_klasterisasi,
+        args=(app, config.id, run_row.id, current_app.config['UPLOAD_FOLDER'], current_user.id),
+        daemon=True,
+    ).start()
+    return redirect(url_for('label.index'))
+
+
+@label_bp.route('/progress')
+@login_required
+def progress():
+    """Ringkasan semua run aktif. `config_id` dari UI memilih barisnya di JS."""
+    with _progress_lock:
+        return jsonify([dict(p, run_id=rid) for rid, p in _progress.items()])
+
+
+@label_bp.route('/progress/<int:config_id>')
+@login_required
+def progress_config(config_id):
+    """Progres run untuk `config_id`. Dipakai form Jalankan (config_id ada di URL form)."""
+    with _progress_lock:
+        prog = next((p for p in _progress.values() if p.get('config_id') == config_id), None)
+    if prog is None:
+        return jsonify({'status': 'idle'})
+    return jsonify(prog)
 
 
 @label_bp.route('/review/<int:run_id>')

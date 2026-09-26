@@ -13,7 +13,8 @@
 <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);
             box-shadow:var(--shadow-card);max-width:560px;overflow:hidden;">
   <div style="padding:1.5rem;">
-    <form method="POST" enctype="multipart/form-data" id="klasifikasi-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" enctype="multipart/form-data" id="klasifikasi-form"
+          data-progress="Klasifikasi CNN" data-progress-interval="4000"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <!-- Pilih Lokasi -->
       <div class="mb-3">
@@ -68,6 +69,13 @@
 
 {% block extra_js %}
 <script>
+  progressSteps([
+    'Menyimpan foto upload',
+    'Preprocessing (config aktif)',
+    'Inferensi ensemble + TTA',
+    'Menyimpan hasil klasifikasi'
+  ]);
+
   function handleFileSelect(input) {
     var sub     = document.getElementById('dropzone-sub');
     var icon    = document.getElementById('dz-icon');
@@ -101,6 +109,7 @@
     var btn  = document.getElementById('submit-btn');
     var txt  = document.getElementById('submit-text');
     var spin = document.getElementById('submit-spinner');
+    if (txt.dataset.done) return;   // sudah dijalankan runWithProgress: jangan dobel
     btn.disabled = true;
     btn.style.opacity = '.7';
     txt.textContent = 'Memproses…';

@@ -152,7 +152,9 @@
             <td class="align-right">
               <div class="d-flex justify-content-end gap-1">
                 <!-- Jalankan -->
-                <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}">
+                <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}"
+                      data-progress="Menjalankan Preprocessing"
+                      data-progress-url="{{ url_for('preprocessing.progress', config_id=cfg.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="button" class="btn btn--sm btn--primary" title="Jalankan Preprocessing"
                           onclick="showConfirmForm(this,
@@ -206,4 +208,17 @@
   </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  progressSteps([
+    'Menghapus hasil preprocessing sebelumnya',
+    'Resize + koreksi iluminasi',
+    'Center crop',
+    'Normalisasi',
+    'Denoise (bilateral/NLM)',
+    'Menyimpan hasil ke uploads/preprocessed/'
+  ]);
+</script>
 {% endblock %}

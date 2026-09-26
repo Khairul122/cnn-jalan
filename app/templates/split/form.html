@@ -63,7 +63,9 @@
   <span>{{ prep_text | safe }}</span>
 </div>
 
-<form method="POST" action="{{ url_for('split.new') }}" class="panel">
+<form method="POST" action="{{ url_for('split.new') }}" class="panel"
+      data-progress="Membuat Split K-Fold"
+      data-progress-interval="3000">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <div class="panel__head">
@@ -170,6 +172,14 @@
 {% block extra_js %}
 <script>
   const totalBerlabel = {{ total_berlabel }};
+
+  progressSteps([
+    'Memuat data berlabel',
+    'Mendeteksi foto near-duplicate',
+    'Mengelompokkan foto radius GPS',
+    'Membagi fold secara stratified',
+    'Menyimpan item split'
+  ]);
 
   function updatePreview() {
     const el = document.getElementById('previewText');

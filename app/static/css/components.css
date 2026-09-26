@@ -1575,3 +1575,68 @@ select.control { padding-right: var(--s-2); }
   font-size: 14px;
   flex-shrink: 0;
 }
+
+/* -- Overlay progres (komponen loading_overlay.html + js/progress.js) ------ */
+.pv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4);
+  background: rgba(18, 22, 28, .55);
+}
+.pv-overlay[hidden] { display: none; }
+.pv-card {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--s-6);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-card, 0 10px 30px rgba(0, 0, 0, .25));
+  text-align: center;
+}
+.pv-ring {
+  display: block;
+  width: 34px;
+  height: 34px;
+  margin: 0 auto var(--s-3);
+  border: 3px solid var(--surface-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: pv-spin .8s linear infinite;
+}
+@keyframes pv-spin { to { transform: rotate(360deg); } }
+.pv-overlay--error .pv-ring { border-top-color: var(--danger); animation: none; }
+.pv-title { margin: 0; font-size: var(--t-md); font-weight: 700; color: var(--ink-1); }
+.pv-sub { margin: var(--s-1) 0 var(--s-3); font-size: var(--t-sm); color: var(--ink-2); min-height: 1.2em; }
+.pv-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.pv-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width var(--dur-2) var(--ease);
+}
+.pv-overlay--error .pv-fill { background: var(--danger); }
+.pv-pct { margin: var(--s-1) 0 var(--s-3); font-family: var(--font-mono); font-size: var(--t-xs); color: var(--ink-3); }
+.pv-steps { margin: 0; padding: 0; list-style: none; text-align: left; }
+.pv-step {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 3px 0;
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+.pv-step::before { content: '�'; width: 10px; text-align: center; color: var(--rule-strong); }
+.pv-step.is-active { color: var(--ink-1); font-weight: 600; }
+.pv-step.is-active::before { content: '?'; color: var(--accent); }
+.pv-step.is-done { color: var(--ok); }
+.pv-step.is-done::before { content: '?'; color: var(--ok); }

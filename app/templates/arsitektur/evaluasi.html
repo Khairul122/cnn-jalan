@@ -31,7 +31,9 @@
       <i class="bi bi-arrow-left"></i> Kembali
     </a>
     {% if cfg.status == 'selesai' %}
-    <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}"
+          data-progress="{{ 'Menjalankan Ulang Evaluasi' if hasil else 'Menjalankan Evaluasi' }}"
+          data-progress-interval="2500"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="ev-btn ev-btn-primary">
         <i class="bi bi-play-circle-fill"></i>
         {{ 'Jalankan Ulang' if hasil else 'Jalankan Evaluasi' }}
@@ -62,7 +64,8 @@
     Klik "Jalankan Evaluasi" untuk menghitung confusion matrix dan metrik per kelas.
   </p>
   {% if cfg.status == 'selesai' %}
-  <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}" style="display:inline;"
+        data-progress="Menjalankan Evaluasi" data-progress-interval="2500"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="ev-btn ev-btn-primary">
       <i class="bi bi-play-circle-fill"></i> Jalankan Evaluasi
     </button>
@@ -307,4 +310,16 @@
   padding: .15rem .45rem; border-radius: 999px;
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  progressSteps([
+    'Memuat model tersimpan',
+    'Memuat data validasi fold',
+    'Inferensi semua foto validasi',
+    'Confusion matrix + metrik per kelas',
+    'Menyimpan hasil evaluasi'
+  ]);
+</script>
 {% endblock %}

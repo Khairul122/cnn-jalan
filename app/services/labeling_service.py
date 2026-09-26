@@ -70,14 +70,21 @@ def ekstrak_fitur_foto(image_path, canny_low=50, canny_high=150):
     return embedding, edge_density
 
 
-def ekstrak_fitur_lokasi(lokasi_list, upload_folder, canny_low=50, canny_high=150):
+def ekstrak_fitur_lokasi(lokasi_list, upload_folder, canny_low=50, canny_high=150, on_progress=None):
+    """
+    Ekstraksi embedding MobileNetV2 + kepadatan tepi per lokasi.
+    on_progress(selesai, total) dipanggil tiap lokasi supaya UI bisa menampilkan persen.
+    """
     fitur_dict = {}
     dilewati = []
+    total = len(lokasi_list)
 
-    for lokasi in lokasi_list:
+    for nomor, lokasi in enumerate(lokasi_list, start=1):
         foto_list = list(getattr(lokasi, 'foto_list', None) or [])
         if not foto_list:
             dilewati.append({'lokasi_id': lokasi.id, 'alasan': 'lokasi tidak memiliki foto'})
+            if on_progress:
+                on_progress(nomor, total)
             continue
 
         embeddings = []
@@ -103,12 +110,16 @@ def ekstrak_fitur_lokasi(lokasi_list, upload_folder, canny_low=50, canny_high=15
         if not embeddings:
             reason = '; '.join(errors) or 'tidak ada foto valid'
             dilewati.append({'lokasi_id': lokasi.id, 'alasan': reason})
+            if on_progress:
+                on_progress(nomor, total)
             continue
 
         fitur_dict[lokasi.id] = {
             'embedding': np.mean(np.stack(embeddings), axis=0),
             'kepadatan_tepi': float(np.mean(edge_densities)),
         }
+        if on_progress:
+            on_progress(nomor, total)
 
     return fitur_dict, dilewati
 
@@ -167,15 +178,36 @@ def urutkan_klaster_ke_tingkat(hasil_klaster, fitur_dict):
     return mapping
 
 
-def jalankan_klasterisasi(config, upload_folder, pengguna_id):
-    """Run clustering into reviewable rows without changing existing labels."""
+def _persen_ekstraksi(persen_ekstraksi, selesai, total):
+    """Peta (0..90% dari 280 lokasi) → (0..100%) supaya sisa waktu klasterisasi terlihat."""
+    if not total:
+        return 5
+    return round(5 + (selesai / total) * persen_ekstraksi)
+
+
+def jalankan_klasterisasi(config, upload_folder, pengguna_id,
+                          on_progress=None, on_run=None, progress=None):
+    """
+    Jalankan klasterisasi menjadi baris review tanpa mengubah label yang sudah ada.
+
+    on_progress(selesai, total)  — progres ekstraksi fitur per lokasi.
+    on_run(run)                  — dipanggil setelah baris HasilLabeling tersimpan, agar
+                                   pemanggil bisa memberi tahu UI ke mana harus redirect.
+    progress(pct, step)          — progres gabungan 0..100 untuk UI.
+    """
+    def lapor(pct, step):
+        if progress:
+            progress(pct, step)
+
     try:
         lokasi_list = LokasiKerusakan.query.order_by(LokasiKerusakan.id).all()
+        lapor(2, f'Memuat {len(lokasi_list)} lokasi…')
         fitur_dict, dilewati = ekstrak_fitur_lokasi(
             lokasi_list,
             upload_folder,
             canny_low=config.canny_low,
             canny_high=config.canny_high,
+            on_progress=on_progress,
         )
         if not fitur_dict:
             run = HasilLabeling(
@@ -190,6 +222,7 @@ def jalankan_klasterisasi(config, upload_folder, pengguna_id):
             db.session.commit()
             return run
 
+        lapor(92, 'Menjalankan PCA + K-Means…')
         hasil_klaster, variansi_pca = klasterisasi(
             fitur_dict,
             n_cluster=config.n_cluster,
@@ -226,6 +259,9 @@ def jalankan_klasterisasi(config, upload_folder, pengguna_id):
                 tingkat_kerusakan_id=mapping[result['klaster']],
             ))
         db.session.commit()
+        lapor(100, 'Selesai.')
+        if on_run:
+            on_run(run)
         return run
     except Exception as exc:
         db.session.rollback()

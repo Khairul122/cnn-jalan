@@ -129,11 +129,13 @@
   {% if current_user.is_authenticated %}
     </div>
   </div>
+  {% include 'components/loading_overlay.html' %}
   {% endif %}
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/progress.js') }}"></script>
 
   <!-- ── Global Confirm Dialog (Bootstrap 5 modal) ────────────────────────── -->
   <div class="modal fade" id="gcModal" tabindex="-1" aria-labelledby="gcTitle" aria-hidden="true" data-type="danger">
@@ -227,7 +229,10 @@
           subtitle: subtitle || 'Tindakan ini tidak dapat dibatalkan',
           message: message,
           confirmText: confirmText || 'Ya, Lanjutkan',
-          onConfirm: function () { form.submit(); }
+          onConfirm: function () {
+            if (form.dataset.progress) window.runWithProgress(form);
+            else form.submit();
+          }
         });
       };
 

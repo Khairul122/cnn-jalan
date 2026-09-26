@@ -1,0 +1,12 @@
+{# Overlay progres global. Dipakai bersama app/static/js/progress.js lewat form
+   ber-atribut data-progress (lihat makro progress_script.html). #}
+<div id="pv-overlay" class="pv-overlay" hidden aria-hidden="true">
+  <div class="pv-card" role="status" aria-live="polite">
+    <span class="pv-ring" aria-hidden="true"></span>
+    <h2 class="pv-title" id="pvTitle">Memproses…</h2>
+    <p class="pv-sub" id="pvSub">Menyiapkan…</p>
+    <div class="pv-track"><div class="pv-fill" id="pvFill"></div></div>
+    <p class="pv-pct" id="pvPct">0%</p>
+    <ol class="pv-steps" id="pvSteps"></ol>
+  </div>
+</div>
