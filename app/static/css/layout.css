@@ -78,10 +78,29 @@ a { color: var(--accent); }
   align-items: center;
   gap: var(--s-3);
   height: 48px;
-  padding: 0 var(--s-4);
+  padding: 0 var(--s-3);
   background: var(--surface-1);
   border-bottom: 1px solid var(--rule);
   flex-shrink: 0;
+}
+
+/* The icon rail no longer carries a wordmark, so the product name lives here.
+   Dropped below 768px where the breadcrumb needs the room. */
+.shell__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-shrink: 0;
+  padding-right: var(--s-3);
+  border-right: 1px solid var(--rule);
+}
+.shell__brand img { height: 22px; width: auto; display: block; }
+.shell__brand span {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--ink-1);
+  white-space: nowrap;
 }
 
 #hamburger-btn {
@@ -110,8 +129,8 @@ a { color: var(--accent); }
 
 @media (min-width: 1024px) and (max-width: 1279px) {
   #sidebar {
-    width: 200px;
-    min-width: 200px;
+    width: 64px;
+    min-width: 64px;
   }
 }
 
@@ -120,6 +139,10 @@ a { color: var(--accent); }
     position: fixed;
     top: 0; left: 0;
     height: 100%;
+    /* Full width again inside the drawer: labels are shown, so the rail is no
+       longer icon-only. */
+    width: 240px;
+    min-width: 240px;
     transform: translateX(-100%);
     transition: transform var(--dur-2) var(--ease);
   }
@@ -162,75 +185,106 @@ a { color: var(--accent); }
 }
 
 /* ── Sidebar nav link ────────────────────────────────────────────────── */
-/* Dipindah dari style.css 107-182.
+/* Ikon saja, terpusat, label muncul sebagai tooltip. Nilai warna eksplisit
+   dari tokens.css, bukan alpha di atas latar.
 
-   PERUBAHAN: warna item tidak aktif tadinya berasal dari alpha putih
-   `rgba(255,255,255,.55)`. Sekarang diganti warna eksplisit
-   `var(--rail-ink-dim)` supaya warna rail berasal dari tokens.css dan tidak
-   lagi bergantung pada alpha yang dikomposisikan di atas warna latar.
-
-   Catatan: alasan di rencana bahwa nilai lama "sekitar 4,0:1" tidak
-   akurat. Angka sebenarnya, dihitung dengan WCAG 2.x:
-     rgba(255,255,255,.55) di atas #0F1E35 -> #939AA4, 5,88:1
-     #8A94A0 di atas #0F1E35 (latar rail sekarang) -> 5,43:1
-     #8A94A0 di atas #12161C (--rail, setelah inline style dibuang di Task 2) -> 5,90:1
-   Ketiganya di atas 4,5:1, jadi ini perubahan tokenisasi, bukan perbaikan
-   kontras darurat. Yang dipertahankan adalah persyaratannya: warna eksplisit
-   dan minimal 4,5:1. */
+   Kontras (WCAG 2.x), dihitung terhadap --rail #12161C:
+     --rail-ink-dim #8A94A0 -> 5,90:1   (item istirahat)
+     --rail-ink     #E7EBEF -> 15,4:1   (item hover/fokus/aktif)
+   Keduanya lolos AA untuk teks normal. */
 .sidebar-nav-link {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: .7rem;
-  padding: .575rem .75rem;
-  border-radius: .5rem;
-  font-size: .835rem;
-  font-weight: 500;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+  border-radius: var(--r-2);
   color: var(--rail-ink-dim);
   text-decoration: none;
-  transition: background var(--duration-fast), color var(--duration-fast),
-              transform var(--duration-fast), box-shadow var(--duration-fast);
-  position: relative;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
   cursor: pointer;
-  min-height: 40px;
 }
 .sidebar-nav-link .nav-ico {
-  width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: .375rem;
-  flex-shrink: 0;
-  transition: background var(--duration-fast), color var(--duration-fast);
-  font-size: .9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.05rem;
 }
 .sidebar-nav-link:hover {
   background: var(--sidebar-hover-bg);
   color: var(--rail-ink);
-  transform: translateX(3px);
   text-decoration: none;
 }
-.sidebar-nav-link:hover .nav-ico {
-  background: rgba(255, 255, 255, .1);
-  color: #fff;
-}
 .sidebar-nav-link.is-active {
-  background: var(--sidebar-active-bg);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(15, 76, 129, .4);
-}
-.sidebar-nav-link.is-active .nav-ico {
-  background: var(--c-accent);
+  background: var(--rail-active);
   color: #fff;
 }
 .sidebar-nav-link.is-active::before {
   content: '';
   position: absolute;
-  left: 0; top: 15%; bottom: 15%;
+  left: -10px;
+  top: 20%;
+  bottom: 20%;
   width: 3px;
-  background: linear-gradient(180deg, #38BDF8, var(--c-accent));
   border-radius: 0 3px 3px 0;
+  background: #38BDF8;
 }
 .sidebar-nav-link:focus-visible {
   outline: 2px solid rgba(56, 189, 248, .6);
   outline-offset: 1px;
+}
+
+/* Tooltip. Purely visual: the name is already on aria-label and title, so a
+   hover reveals it without turning the rail back into a text column. */
+.rail__tip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-1);
+  background: var(--ink-1);
+  color: #fff;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--dur-1) var(--ease), visibility var(--dur-1) var(--ease);
+}
+.sidebar-nav-link:hover .rail__tip,
+.sidebar-nav-link:focus-visible .rail__tip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 1023px) {
+  /* Inside the drawer the rail is full width again, so labels are simply shown
+     and the tooltip is suppressed. */
+  .sidebar-nav-link {
+    width: 100%;
+    margin: 0;
+    height: 44px;
+    justify-content: flex-start;
+    gap: var(--s-3);
+    padding: 0 var(--s-3);
+  }
+  .sidebar-nav-link .nav-ico { width: 24px; height: 24px; flex-shrink: 0; }
+  .rail__tip {
+    position: static;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    background: none;
+    color: inherit;
+    padding: 0;
+  }
 }
 
 .sidebar-section-label {
@@ -329,12 +383,11 @@ button:focus-visible {
 .rail__brand {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2);
-  padding: var(--s-3) var(--s-4);
+  justify-content: center;
+  padding: var(--s-2);
   border-bottom: 1px solid rgba(255, 255, 255, .06);
 }
-.rail__logo { height: 44px; width: auto; max-width: 100%; object-fit: contain; }
+.rail__logo { height: 34px; width: auto; max-width: 100%; object-fit: contain; }
 .rail__close {
   display: none;
   min-width: 32px; min-height: 32px;
@@ -346,24 +399,22 @@ button:focus-visible {
 .rail__nav {
   flex: 1;
   overflow-y: auto;
-  padding: var(--s-2);
-}
-.rail__num {
-  font-family: var(--font-mono);
-  font-size: var(--t-xs);
-  color: var(--rail-ink-dim);
-  flex-shrink: 0;
-  width: 20px;
+  overflow-x: hidden;
+  padding: var(--s-2) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
 }
 .rail__user {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: var(--s-2);
-  padding: var(--s-2) var(--s-3);
+  padding: var(--s-3) var(--s-2);
   border-top: 1px solid rgba(255, 255, 255, .06);
 }
 .rail__avatar {
-  width: 30px; height: 30px;
+  width: 32px; height: 32px;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--accent);
@@ -406,10 +457,7 @@ button:focus-visible {
 .rail__logout:hover { color: var(--danger); }
 .rail__logout:focus-visible { outline: 2px solid var(--rail-ink); outline-offset: 2px; }
 
-.sidebar-nav-link { color: var(--rail-ink); }
-.sidebar-nav-link:hover { color: var(--rail-ink); background: var(--sidebar-hover-bg); }
-.sidebar-nav-link.is-active { background: var(--rail-active); color: #fff; }
-.sidebar-nav-link.is-active .rail__num { color: rgba(255, 255, 255, .8); }
+.sidebar-nav-link { color: var(--rail-ink-dim); }
 .sidebar-nav-link:focus-visible { outline: 2px solid var(--rail-ink); outline-offset: -2px; }
 
 /* .sidebar-section-label sekarang memakai --rail-ink-dim juga, bukan
@@ -446,4 +494,6 @@ button:focus-visible {
 @media (max-width: 639px) {
   .shell__logout span { display: none; }
   .cnn-role-badge { display: none; }
+  .shell__brand span { display: none; }
+  .shell__brand { padding-right: var(--s-2); }
 }

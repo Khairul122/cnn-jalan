@@ -316,20 +316,86 @@ class TestToastContract(unittest.TestCase):
 
 class TestRailAndDrawerContract(unittest.TestCase):
     LAYOUT = Path(__file__).resolve().parent.parent / "app" / "static" / "css" / "layout.css"
+    TOKENS = Path(__file__).resolve().parent.parent / "app" / "static" / "css" / "tokens.css"
     TEMPLATE = Path(__file__).resolve().parent.parent / "app" / "templates" / "base.html"
 
     def setUp(self):
         self.css = self.LAYOUT.read_text(encoding="utf-8")
+        self.tokens = self.TOKENS.read_text(encoding="utf-8")
         self.html = self.TEMPLATE.read_text(encoding="utf-8")
 
-    def test_tablet_rail_width_is_200px(self):
+    def rail_token(self):
+        token = re.search(r"--rail-w:\s*(\d+)px", self.tokens)
+        self.assertIsNotNone(token, "--rail-w hilang dari tokens.css")
+        return int(token.group(1))
+
+    def test_tablet_rail_width_matches_the_token(self):
+        """Rail sekarang ikon-saja. Lebarnya harus tetap sama di tablet dan di
+        desktop lebar: kalau salah satu media query tertinggal di nilai lama,
+        rail melompat lebar saat viewport melewati 1280px."""
         tablet = re.search(
-            r"@media\s*\(min-width:\s*1024px\)\s*and\s*\(max-width:\s*1279px\)\s*\{(?P<body>.*?)\}",
+            r"@media\s*\(min-width:\s*1024px\)\s*and\s*\(max-width:\s*1279px\)\s*\{(?P<body>.*?)\n\}",
             self.css,
             re.DOTALL,
         )
         self.assertIsNotNone(tablet, "tablet rail media query is missing")
-        self.assertRegex(tablet.group("body"), r"(?s)#sidebar\s*\{[^}]*width:\s*200px;[^}]*min-width:\s*200px;")
+        width = re.search(r"#sidebar\s*\{[^}]*width:\s*(\d+)px;[^}]*min-width:\s*(\d+)px;", tablet.group("body"))
+        self.assertIsNotNone(width, "tablet rail width tidak ditemukan")
+        token = str(self.rail_token())
+        self.assertEqual(width.group(1), token)
+        self.assertEqual(width.group(2), token)
+
+    def test_rail_is_icon_only_and_labels_stay_reachable(self):
+        """Rail 64px hanya masuk akal kalau setiap item tetap punya nama yang
+        bisa dibaca. Label harus ada di aria-label DAN title; tooltip visual
+        tidak boleh jadi satu-satunya sumber."""
+        rail_w = self.rail_token()
+        self.assertLessEqual(rail_w, 80,
+                             "rail lebih lebar dari 80px bukan lagi ikon-saja")
+        for label in ("Dashboard", "Lokasi", "Labeling Visual", "Preprocessing",
+                      "Augmentasi", "Split Data", "Arsitektur CNN", "Peta GIS"):
+            self.assertIn(f"'{label}'", self.html, f"nav_link {label} hilang dari base.html")
+        self.assertIn("aria-label=\"{{ label }}\"", self.html)
+        self.assertIn("title=\"{{ label }}\"", self.html)
+        self.assertNotIn("rail__num", self.html,
+                         "nomor urut masih dirender padahal rail ikon-saja")
+
+    def test_rail_hit_target_is_at_least_44px(self):
+        """Tombol navigasi ikon-saja harus tetap nyaman disentuh."""
+        nav = re.search(r"\.sidebar-nav-link\s*\{(?P<body>.*?)\}", self.css, re.DOTALL)
+        self.assertIsNotNone(nav)
+        w = re.search(r"width:\s*(\d+)px", nav.group("body"))
+        h = re.search(r"height:\s*(\d+)px", nav.group("body"))
+        self.assertIsNotNone(w)
+        self.assertIsNotNone(h)
+        self.assertGreaterEqual(int(w.group(1)), 44)
+        self.assertGreaterEqual(int(h.group(1)), 44)
+
+    def test_drawer_widens_back_to_a_labelled_column(self):
+        """Di bawah 1024px rail jadi drawer; di sana label ditampilkan penuh,
+        jadi lebarnya harus lebih besar dari rail desktop."""
+        mobile = re.search(
+            r"@media\s*\(max-width:\s*1023px\)\s*\{(?P<body>.*?)\n\}",
+            self.css,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(mobile)
+        width = re.search(r"#sidebar\s*\{[^}]*width:\s*(\d+)px;", mobile.group("body"))
+        self.assertIsNotNone(width, "lebar drawer tidak dideklarasikan")
+        desktop = self.rail_token()
+        self.assertGreater(int(width.group(1)), desktop,
+                           "drawer harus lebih lebar dari rail ikon-saja")
+        self.assertIn(".rail__tip", self.css)
+
+    def test_header_brand_is_a_plain_container(self):
+        """Merek di topbar menggantikan wordmark rail. Bukan link, dan tidak
+        boleh memakai kelas Bootstrap yang menyeret gaya lain."""
+        self.assertIn('class="shell__brand"', self.html)
+        brand = re.search(r'<div class="shell__brand">(?P<body>.*?)</div>', self.html, re.DOTALL)
+        self.assertIsNotNone(brand)
+        self.assertNotIn("<a ", brand.group("body"))
+        header = re.search(r"\.shell__brand\s*\{(?P<body>.*?)\}", self.css, re.DOTALL)
+        self.assertIsNotNone(header, ".shell__brand tidak punya aturan di layout.css")
 
     def test_mobile_rail_remains_off_canvas(self):
         mobile = re.search(
