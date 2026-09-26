@@ -873,6 +873,9 @@ select.control { padding-right: var(--s-2); }
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+/* Numeric value tinted by a per-item custom property instead of a colour
+   literal, so the hue stays a token the caller supplies. */
+.table__num--fc { font-family: var(--font-mono); font-weight: 600; color: var(--fc, var(--ink-1)); }
 .table__key {
   position: sticky;
   left: 0;
@@ -928,6 +931,7 @@ select.control { padding-right: var(--s-2); }
   background: var(--surface-2);
 }
 .meter > span { display: block; height: 100%; }
+.meter__fill { width: var(--pct, 0%); background: var(--ok); }
 
 .dl { display: flex; flex-direction: column; margin: 0; }
 .dl__row {

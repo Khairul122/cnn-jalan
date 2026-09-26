@@ -7,12 +7,13 @@
 {% endblock %}
 
 {% block content %}
-{% set ph_title = 'Split Data' %}
-{% set ph_subtitle = 'Stratified K-Fold Cross-Validation — pembagian dataset berlabel ke K fold dengan distribusi kelas seimbang.' %}
-{% include 'components/page_header.html' %}
-
-<div class="d-flex flex-wrap gap-2 mb-3">
-  <a href="{{ url_for('split.new') }}" class="btn btn--primary btn--sm">
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    {% set ph_title = 'Split Data' %}
+    {% set ph_subtitle = 'Stratified K-Fold Cross-Validation — pembagian dataset berlabel ke K fold dengan distribusi kelas seimbang.' %}
+    {% include 'components/page_header.html' %}
+  </div>
+  <a href="{{ url_for('split.new') }}" class="btn btn--primary">
     <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Split Baru
   </a>
 </div>
@@ -51,7 +52,7 @@
   </div>
   <div class="panel__body">
     <div class="meter" role="img" aria-label="Preprocessing {{ prep_pct }} persen dari {{ total_berlabel }} foto">
-      <span style="width: {{ prep_pct }}%;"></span>
+      <span class="meter__fill" style="--pct: {{ prep_pct }}%;"></span>
     </div>
     <p class="hint hint--flush mt-2">
       Fold K-Fold ditentukan per <strong>foto</strong> ({{ total_berlabel }}) supaya tidak ada kebocoran data antar fold.

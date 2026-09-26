@@ -30,10 +30,10 @@
       </span>
       {% for t in tingkat_list %}
       {% set col = KELAS[t.id - 1].warna %}
-      <span class="d-inline-flex align-items-center gap-1">
-        <span class="dl__swatch" style="--fc: {{ col }};" aria-hidden="true"></span>
+      <span class="d-inline-flex align-items-center gap-1" style="--fc: {{ col }};">
+        <span class="dl__swatch" aria-hidden="true"></span>
         <span class="hint">{{ t.nama_tingkat }}</span>
-        <strong class="text-mono" style="color: {{ col }};">{{ kelas_count.get(t.id, 0) }}</strong>
+        <strong class="text-mono table__num--fc">{{ kelas_count.get(t.id, 0) }}</strong>
       </span>
       {% endfor %}
       {% if total_berlabel == 0 %}
@@ -122,11 +122,11 @@
       <div class="col-12">
         <div class="field">
           <label class="field__label" for="radius_grup_m">Radius grup spasial (meter)</label>
-          <input type="number" id="radius_grup_m" name="radius_grup_m" value="50" min="0" max="500"
+          <input type="number" id="radius_grup_m" name="radius_grup_m" value="0" min="0" max="500"
                  class="control text-mono">
           <p class="hint">
             Foto yang berjarak &le; radius (GPS) dipaksa satu fold, supaya lokasi berdekatan di ruas jalan yang sama
-            tidak terbelah antara train dan val. 0 = nonaktif. Pada dataset ini 50 m menggabungkan &plusmn;79 foto ke
+            tidak terbelah antara train dan val. 0 = nonaktif (sama dengan notebook Colab). Pada dataset ini 50 m menggabungkan &plusmn;79 foto ke
             grup &le; 5 foto; 100 m mulai membentuk grup raksasa (47 foto), dan radius yang membuat grup lebih besar
             dari satu fold ditolak.
           </p>

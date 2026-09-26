@@ -79,7 +79,7 @@ class TestNoTailwindClasses(unittest.TestCase):
             "arsitektur/form.html", "arsitektur/gis.html", "arsitektur/index.html",
             "dashboard/index.html", "peta/index.html",
             "preprocessing/config_form.html", "preprocessing/hasil.html",
-            "split/detail.html", "split/form.html", "split/index.html",
+            "split/detail.html",
             # Tetap: satu-satunya inline style yang sah, mengunci layout auth.
             "auth/login.html", "auth/register.html",
         }
@@ -123,6 +123,43 @@ class TestNoTailwindClasses(unittest.TestCase):
                       "hue", "saturasi", "noise", "erasing"):
             self.assertIn(f'name="{{{{ kunci }}}}_aktif"', form)
             self.assertIn(f'name="{{{{ kunci }}}}_{{{{ k }}}}"', form)
+
+    def test_split_pages_use_the_design_system(self):
+        """Index dan form split dulu membawa blok <style> masing-masing 2 KB
+        dengan kelas ad-hoc (split-stat-card, sf-input, btn-split-primary) dan
+        grid KPI tanpa gap. Keduanya sudah pindah ke components.css."""
+        index = (TEMPLATES / "split" / "index.html").read_text(encoding="utf-8")
+        form = (TEMPLATES / "split" / "form.html").read_text(encoding="utf-8")
+
+        legacy = ("btn-split-primary", "btn-split-cancel", "split-stat-card",
+                  "split-stat-val", "split-stat-lbl", "split-table-wrap",
+                  "split-empty", "btn-action-view", "btn-action-del", "fold-badge",
+                  "sf-info-bar", "sf-info-item", "sf-info-sep", "sf-card", "sf-field",
+                  "sf-label", "sf-input", "sf-tag")
+        for rel, html in (("index.html", index), ("form.html", form)):
+            self.assertNotIn("<style>", html, f"{rel} punya blok <style>")
+            for cls in legacy:
+                self.assertNotIn(cls, html, f"{rel} masih memakai kelas ad-hoc {cls}")
+            self.assertIn('include \'components/page_header.html\'', html)
+
+        self.assertIn("kpi_card.html", index, "KPI tidak memakai komponen bersama")
+        self.assertIn('class="panel"', index)
+        self.assertIn("table-actions", index)
+
+        # Nilai warna tidak boleh ditulis sebagai deklarasi literal di markup;
+        # hanya custom property, supaya token tetap satu sumber.
+        for rel, html in (("index.html", index), ("form.html", form)):
+            for decl in re.findall(r'style="([^"]*)"', html):
+                for prop in ("color:", "background:", "border:", "padding:", "font-size:"):
+                    self.assertNotIn(prop, decl, f"{rel} punya deklarasi {prop} inline: {decl}")
+
+        for nama in ("nama", "n_splits", "random_state", "radius_grup_m", "ulangan"):
+            self.assertIn(f'name="{nama}"', form, f"field {nama} hilang dari form split")
+        self.assertIn("previewText", form, "target pratinjau JS hilang")
+        self.assertIn("function updatePreview", form, "updatePreview hilang")
+        self.assertIn('name="n_splits"', form)
+        self.assertIn("onchange=\"updatePreview()\"", form)
+        self.assertIn("oninput=\"updatePreview()\"", form)
 
 
 if __name__ == "__main__":
