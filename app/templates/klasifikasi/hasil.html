@@ -40,16 +40,16 @@
 
     {% set dr_label = 'Jenis Kerusakan' %}
     {% if hasil.jenis_kerusakan %}
-    {% set dr_value = '<span class="badge bg-dark fs-6">' ~ hasil.jenis_kerusakan.kode ~ ' — ' ~ hasil.jenis_kerusakan.nama_jenis ~ '</span>' %}
+    {% set dr_value = '<span class="chip chip--muted">' ~ hasil.jenis_kerusakan.kode ~ ' — ' ~ hasil.jenis_kerusakan.nama_jenis ~ '</span>' %}
     {% else %}
-    {% set dr_value = '<span style="color:var(--c-muted);">Tidak diklasifikasi (model hanya memprediksi tingkat)</span>' %}
+    {% set dr_value = '<span class="hint">Tidak diklasifikasi (model hanya memprediksi tingkat)</span>' %}
     {% endif %}
     {% set dr_raw = true %}
     {% include 'components/detail_row.html' %}
     {% set dr_raw = false %}
 
     {% set dr_label = 'Tingkat Kerusakan' %}
-    {% set dr_value = '<span class="badge fs-6" style="background-color:' ~ hasil.tingkat_kerusakan.warna_peta ~ '">' ~ hasil.tingkat_kerusakan.nama_tingkat ~ '</span>' %}
+    {% set dr_value = '<span class="chip" style="--chip-color:' ~ hasil.tingkat_kerusakan.warna_peta ~ ';">' ~ hasil.tingkat_kerusakan.nama_tingkat ~ '</span>' %}
     {% set dr_raw = true %}
     {% include 'components/detail_row.html' %}
     {% set dr_raw = false %}
@@ -58,7 +58,7 @@
     <li class="list-group-item py-2 px-3">
       <div class="d-flex justify-content-between align-items-center gap-2">
         <span class="text-muted small">Confidence Score</span>
-        <strong style="font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;">
+        <strong class="table__num">
           {{ (hasil.confidence_score * 100) | round(2) }}%
         </strong>
       </div>
@@ -71,9 +71,9 @@
 
     {% set dr_label = 'Status' %}
     {% if hasil.is_valid %}
-      {% set dr_value = '<span class="badge bg-success">Confidence memadai</span>' %}
+      {% set dr_value = '<span class="chip chip--ok">Confidence memadai</span>' %}
     {% else %}
-      {% set dr_value = '<span class="badge bg-warning text-dark">Perlu verifikasi manual</span>' %}
+      {% set dr_value = '<span class="chip chip--warn">Perlu verifikasi manual</span>' %}
     {% endif %}
     {% set dr_raw = true %}
     {% include 'components/detail_row.html' %}

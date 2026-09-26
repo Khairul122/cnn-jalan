@@ -845,35 +845,24 @@ select.control { padding-right: var(--s-2); }
   max-width: calc(100vw - 2rem);
 }
 
-/* Confirm dialog. Type colours are driven by [data-type] on the dialog, not
-   by inline styles set from JavaScript, so tokens.css stays authoritative. */
-#gcModal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: rgba(0, 0, 0, .65);
-  align-items: center;
-  justify-content: center;
-  padding: var(--s-4);
-}
-#gcModal.is-open { display: flex; }
-#gcModal .dialog {
-  background: var(--surface-1);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-1);
-  width: 100%;
-  max-width: 420px;
-  box-shadow: var(--shadow-2);
-  overflow: hidden;
+/* Confirm dialog. Bootstrap 5 owns the modal shell (backdrop, focus trap,
+   Escape, scroll lock); these rules only recolour it by [data-type] so the
+   tokens stay authoritative and no colour is ever set from JavaScript. */
+#gcModal.modal {
   --gc-accent: var(--danger);
   --gc-wash: var(--danger-bg);
 }
-#gcModal[data-type="warning"] .dialog { --gc-accent: var(--warn); --gc-wash: var(--warn-bg); }
-#gcModal[data-type="info"]    .dialog { --gc-accent: var(--info); --gc-wash: var(--info-bg); }
-#gcModal[data-type="success"] .dialog { --gc-accent: var(--ok);   --gc-wash: var(--ok-bg); }
-#gcHeader {
-  display: flex;
+#gcModal[data-type="warning"] { --gc-accent: var(--warn); --gc-wash: var(--warn-bg); }
+#gcModal[data-type="info"]    { --gc-accent: var(--info); --gc-wash: var(--info-bg); }
+#gcModal[data-type="success"] { --gc-accent: var(--ok);   --gc-wash: var(--ok-bg); }
+
+#gcModal .modal-content {
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  box-shadow: var(--shadow-2);
+}
+#gcModal .modal-header {
   align-items: center;
   gap: var(--s-2);
   padding: var(--s-3) var(--s-4);
@@ -891,20 +880,22 @@ select.control { padding-right: var(--s-2); }
   border: 1px solid var(--rule);
   color: var(--gc-accent);
 }
-#gcTitle { font-size: var(--t-md); font-weight: 700; margin: 0; }
+#gcTitle { font-size: var(--t-md); font-weight: 700; margin: 0; color: var(--ink-1); }
 #gcSubtitle { font-size: var(--t-xs); color: var(--ink-2); margin: 0; }
-#gcConfirmBtn { background: var(--gc-accent); color: #fff; }
 #gcIcon { color: var(--gc-accent); }
-#gcModal .dialog__body { padding: var(--s-4); }
-#gcMessage { font-size: var(--t-base); margin: 0; line-height: 1.6; }
-#gcModal .dialog__foot {
-  display: flex;
+#gcModal .modal-body { padding: var(--s-4); }
+#gcMessage { font-size: var(--t-base); margin: 0; line-height: 1.6; color: var(--ink-1); }
+#gcModal .modal-footer {
   justify-content: flex-end;
   gap: var(--s-2);
   padding: var(--s-2) var(--s-4);
   border-top: 1px solid var(--rule);
   background: var(--surface-0);
 }
+#gcModal .modal-footer .btn--danger,
+#gcModal #gcConfirmBtn { background: var(--gc-accent); color: #fff; border-color: transparent; }
+#gcModal .modal-footer .btn--danger:hover,
+#gcModal #gcConfirmBtn:hover { filter: brightness(.92); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,307 +18,319 @@
 
   {% block extra_css %}{% endblock %}
 </head>
+
 <body>
 
-<a href="#main-content" class="skip-link">Lewati navigasi</a>
+  <a href="#main-content" class="skip-link">Lewati navigasi</a>
 
-<div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+  <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
-<script id="flash-data" type="application/json">{{ messages | tojson }}</script>
-{% endif %}{% endwith %}
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+  <script id="flash-data" type="application/json">{{ messages | tojson }}</script>
+  {% endif %}{% endwith %}
 
-{% if current_user.is_authenticated %}
+  {% if current_user.is_authenticated %}
 
-{# Rail item. The number is positional, matching the 01-08 order of the
-   pipeline: dashboard, lokasi, label, preprocessing, augmentasi, split,
-   arsitektur, peta. #}
-{% macro nav_link(href, label, active, num, icon_class) %}
-<a href="{{ href }}" class="sidebar-nav-link{{ ' is-active' if active else '' }}"
-   {% if active %}aria-current="page"{% endif %}>
-  <span class="rail__num" aria-hidden="true">{{ num }}</span>
-  <span class="nav-ico" aria-hidden="true"><i class="{{ icon_class }}"></i></span>
-  <span class="sidebar-nav-link__label">{{ label }}</span>
-</a>
-{% endmacro %}
+  {# Rail item. The number is positional, matching the 01-08 order of the
+  pipeline: dashboard, lokasi, label, preprocessing, augmentasi, split,
+  arsitektur, peta. #}
+  {% macro nav_link(href, label, active, num, icon_class) %}
+  <a href="{{ href }}" class="sidebar-nav-link{{ ' is-active' if active else '' }}" {% if active %}aria-current="page"
+    {% endif %}>
+    <span class="rail__num" aria-hidden="true">{{ num }}</span>
+    <span class="nav-ico" aria-hidden="true"><i class="{{ icon_class }}"></i></span>
+    <span class="sidebar-nav-link__label">{{ label }}</span>
+  </a>
+  {% endmacro %}
 
-<div id="wrapper">
+  <div id="wrapper">
 
-  <div id="sidebar-overlay" onclick="closeSidebar()" aria-hidden="true"></div>
+    <div id="sidebar-overlay" onclick="closeSidebar()" aria-hidden="true"></div>
 
-  <aside id="sidebar" aria-label="Navigasi utama">
-    <div class="rail__brand">
-      <img src="{{ url_for('static', filename='logo/logo.png') }}"
-           alt="Logo" class="rail__logo">
-      <button onclick="closeSidebar()" class="rail__close" aria-label="Tutup menu">
-        <i class="bi bi-x" aria-hidden="true"></i>
-      </button>
-    </div>
-
-    <nav class="rail__nav" aria-label="Menu">
-      {{ nav_link(url_for('dashboard.index'),      'Dashboard',      request.endpoint == 'dashboard.index', '01', 'bi bi-house-door-fill') }}
-      {{ nav_link(url_for('lokasi.index'),         'Lokasi',         request.blueprint == 'lokasi',         '02', 'bi bi-geo-alt-fill') }}
-      {{ nav_link(url_for('label.index'),          'Labeling Visual', request.blueprint == 'label',         '03', 'bi bi-tags-fill') }}
-      {{ nav_link(url_for('preprocessing.index'),  'Preprocessing',  request.blueprint == 'preprocessing', '04', 'bi bi-sliders') }}
-      {{ nav_link(url_for('augmentasi.index'),     'Augmentasi',     request.blueprint == 'augmentasi',    '05', 'bi bi-shuffle') }}
-      {{ nav_link(url_for('split.index'),          'Split Data',     request.blueprint == 'split',         '06', 'bi bi-diagram-3-fill') }}
-      {{ nav_link(url_for('arsitektur.index'),     'Arsitektur CNN', request.blueprint == 'arsitektur',    '07', 'bi bi-cpu-fill') }}
-      {{ nav_link(url_for('peta.index'),           'Peta GIS',       request.blueprint == 'peta',          '08', 'bi bi-map-fill') }}
-    </nav>
-
-    <div class="rail__user">
-      <div class="rail__avatar" aria-hidden="true">
-        {{ current_user.nama[:2].upper() if current_user.nama|length >= 2 else current_user.nama[0].upper() }}
-      </div>
-      <div class="rail__user-text">
-        <p class="rail__user-name">{{ current_user.nama }}</p>
-        <p class="rail__user-role">{{ current_user.role }}</p>
-      </div>
-      <form method="POST" action="{{ url_for('auth.logout') }}" class="rail__logout-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="rail__logout" aria-label="Logout" title="Logout">
-          <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+    <aside id="sidebar" aria-label="Navigasi utama">
+      <div class="rail__brand">
+        <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo" class="rail__logo">
+        <button onclick="closeSidebar()" class="rail__close" aria-label="Tutup menu">
+          <i class="bi bi-x" aria-hidden="true"></i>
         </button>
-      </form>
-    </div>
+      </div>
 
-  </aside>
-
-  <div class="shell__main">
-
-    <header class="shell__header">
-      <button onclick="toggleSidebar()" id="hamburger-btn"
-              aria-label="Buka menu" aria-expanded="false" aria-controls="sidebar">
-        <i class="bi bi-list" aria-hidden="true"></i>
-      </button>
-
-      <nav class="cnn-breadcrumb" aria-label="Alur navigasi">
-        <a href="{{ url_for('dashboard.index') }}" title="Dashboard">
-          <i class="bi bi-house-door" aria-hidden="true"></i>
-          <span class="sr-only">Dashboard</span>
-        </a>
-        {% block breadcrumb %}{% endblock %}
+      <nav class="rail__nav" aria-label="Menu">
+        {{ nav_link(url_for('dashboard.index'), 'Dashboard', request.endpoint == 'dashboard.index', '01', 'bi
+        bi-house-door-fill') }}
+        {{ nav_link(url_for('lokasi.index'), 'Lokasi', request.blueprint == 'lokasi', '02', 'bi bi-geo-alt-fill') }}
+        {{ nav_link(url_for('label.index'), 'Labeling Visual', request.blueprint == 'label', '03', 'bi bi-tags-fill') }}
+        {{ nav_link(url_for('preprocessing.index'), 'Preprocessing', request.blueprint == 'preprocessing', '04', 'bi
+        bi-sliders') }}
+        {{ nav_link(url_for('augmentasi.index'), 'Augmentasi', request.blueprint == 'augmentasi', '05', 'bi bi-shuffle')
+        }}
+        {{ nav_link(url_for('split.index'), 'Split Data', request.blueprint == 'split', '06', 'bi bi-diagram-3-fill') }}
+        {{ nav_link(url_for('arsitektur.index'), 'Arsitektur CNN', request.blueprint == 'arsitektur', '07', 'bi
+        bi-cpu-fill') }}
+        {{ nav_link(url_for('peta.index'), 'Peta GIS', request.blueprint == 'peta', '08', 'bi bi-map-fill') }}
       </nav>
 
-      <div class="shell__header-right">
-        <span class="cnn-role-badge" aria-label="Role: {{ current_user.role }}">{{ current_user.role }}</span>
+      <div class="rail__user">
+        <div class="rail__avatar" aria-hidden="true">
+          {{ current_user.nama[:2].upper() if current_user.nama|length >= 2 else current_user.nama[0].upper() }}
+        </div>
+        <div class="rail__user-text">
+          <p class="rail__user-name">{{ current_user.nama }}</p>
+          <p class="rail__user-role">{{ current_user.role }}</p>
+        </div>
         <form method="POST" action="{{ url_for('auth.logout') }}" class="rail__logout-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="shell__logout" aria-label="Logout dari aplikasi">
+          <button type="submit" class="rail__logout" aria-label="Logout" title="Logout">
             <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-            <span>Logout</span>
           </button>
         </form>
       </div>
-    </header>
 
-    <main id="main-content" role="main" tabindex="-1">
+    </aside>
 
-{% else %}
-<div class="auth-page">
-{% endif %}
+    <div class="shell__main">
 
-{% block content %}{% endblock %}
+      <header class="shell__header">
+        <button onclick="toggleSidebar()" id="hamburger-btn" aria-label="Buka menu" aria-expanded="false"
+          aria-controls="sidebar">
+          <i class="bi bi-list" aria-hidden="true"></i>
+        </button>
 
-{% if current_user.is_authenticated %}
-    </main>
+        <nav class="cnn-breadcrumb" aria-label="Alur navigasi">
+          <a href="{{ url_for('dashboard.index') }}" title="Dashboard">
+            <i class="bi bi-house-door" aria-hidden="true"></i>
+            <span class="sr-only">Dashboard</span>
+          </a>
+          {% block breadcrumb %}{% endblock %}
+        </nav>
+
+        <div class="shell__header-right">
+          <span class="cnn-role-badge" aria-label="Role: {{ current_user.role }}">{{ current_user.role }}</span>
+          <form method="POST" action="{{ url_for('auth.logout') }}" class="rail__logout-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="shell__logout" aria-label="Logout dari aplikasi">
+              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+              <span>Logout</span>
+            </button>
+          </form>
+        </div>
+      </header>
+
+      <main id="main-content" role="main" tabindex="-1">
+
+        {% else %}
+        <div class="auth-page">
+          {% endif %}
+
+          {% block content %}{% endblock %}
+
+          {% if current_user.is_authenticated %}
+      </main>
+    </div>
   </div>
-</div>
-{% else %}
-</div>
-{% endif %}
+  {% else %}
+  </div>
+  {% endif %}
 
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
 
-<!-- ── Global Confirm Dialog ────────────────────────────────────────────── -->
-<div id="gcModal" role="dialog" aria-modal="true" aria-labelledby="gcTitle"
-     data-type="danger" onclick="if(event.target===this)_gcClose()">
-  <div class="dialog">
-    <div id="gcHeader">
-      <span id="gcIconWrap" aria-hidden="true">
-        <i id="gcIcon" class="bi bi-exclamation-triangle-fill"></i>
-      </span>
-      <div>
-        <p id="gcTitle">Konfirmasi</p>
-        <p id="gcSubtitle">Tindakan ini memerlukan konfirmasi</p>
+  <!-- ── Global Confirm Dialog (Bootstrap 5 modal) ────────────────────────── -->
+  <div class="modal fade" id="gcModal" tabindex="-1" aria-labelledby="gcTitle" aria-hidden="true" data-type="danger">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header" id="gcHeader">
+          <span id="gcIconWrap" aria-hidden="true">
+            <i id="gcIcon" class="bi bi-exclamation-triangle-fill"></i>
+          </span>
+          <div>
+            <p id="gcTitle" class="modal-title">Konfirmasi</p>
+            <p id="gcSubtitle">Tindakan ini memerlukan konfirmasi</p>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <p id="gcMessage"></p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn--ghost" data-bs-dismiss="modal">Batal</button>
+          <button id="gcConfirmBtn" type="button" class="btn btn--primary"></button>
+        </div>
       </div>
     </div>
-
-    <div class="dialog__body">
-      <p id="gcMessage"></p>
-    </div>
-
-    <div class="dialog__foot">
-      <button type="button" onclick="_gcClose()" class="btn btn--ghost">Batal</button>
-      <button id="gcConfirmBtn" type="button" class="btn btn--primary"></button>
-    </div>
   </div>
-</div>
 
-<script>
-(function () {
-  var _gcCallback = null;
+  <script>
+    (function () {
+      var _gcCallback = null;
 
-  /* Colour now comes from CSS via #gcModal[data-type]; this table holds only
-     the icon name. Tokens live in tokens.css and nowhere else. */
-  var ICONS = {
-    danger:  'bi-exclamation-triangle-fill',
-    warning: 'bi-exclamation-circle-fill',
-    info:    'bi-info-circle-fill',
-    success: 'bi-play-circle-fill'
-  };
-  var CONFIRM_ICONS = {
-    danger:  'bi-trash-fill',
-    warning: 'bi-exclamation-triangle-fill',
-    info:    'bi-check-lg',
-    success: 'bi-play-fill'
-  };
+      /* Colour now comes from CSS via #gcModal[data-type]; this table holds only
+         the icon name. Tokens live in tokens.css and nowhere else. */
+      var ICONS = {
+        danger: 'bi-exclamation-triangle-fill',
+        warning: 'bi-exclamation-circle-fill',
+        info: 'bi-info-circle-fill',
+        success: 'bi-play-circle-fill'
+      };
+      var CONFIRM_ICONS = {
+        danger: 'bi-trash-fill',
+        warning: 'bi-exclamation-triangle-fill',
+        info: 'bi-check-lg',
+        success: 'bi-play-fill'
+      };
 
-  function _gcModal() { return document.getElementById('gcModal'); }
+      function _gcModal() { return document.getElementById('gcModal'); }
 
-  window.showConfirm = function (opts) {
-    var type        = opts.type || 'danger';
-    var modal       = _gcModal();
-
-    modal.dataset.type = type;
-
-    document.getElementById('gcTitle').textContent    = opts.title || 'Konfirmasi';
-    document.getElementById('gcSubtitle').textContent = opts.subtitle || 'Tindakan ini memerlukan konfirmasi';
-    document.getElementById('gcMessage').innerHTML    = opts.message || 'Lanjutkan?';
-
-    var icon = document.getElementById('gcIcon');
-    icon.className = 'bi ' + (ICONS[type] || ICONS.danger);
-
-    var btn = document.getElementById('gcConfirmBtn');
-    btn.textContent = '';
-    var iEl = document.createElement('i');
-    iEl.className = 'bi ' + (opts.confirmIcon || CONFIRM_ICONS[type] || CONFIRM_ICONS.danger);
-    iEl.setAttribute('aria-hidden', 'true');
-    btn.appendChild(iEl);
-    btn.appendChild(document.createTextNode(' ' + (opts.confirmText || 'Ya, Lanjutkan')));
-    btn.className = 'btn ' + (type === 'danger' ? 'btn--danger' : 'btn--primary');
-
-    _gcCallback = opts.onConfirm || null;
-
-    modal.classList.add('is-open');
-    document.body.style.overflow = 'hidden';
-    setTimeout(function () { document.getElementById('gcConfirmBtn').focus(); }, 80);
-  };
-
-  window.showConfirmForm = function (btn, title, message, type, confirmText, subtitle) {
-    var form = btn.closest('form');
-    showConfirm({
-      type: type || 'danger',
-      title: title,
-      subtitle: subtitle || 'Tindakan ini tidak dapat dibatalkan',
-      message: message,
-      confirmText: confirmText || 'Ya, Lanjutkan',
-      onConfirm: function () { form.submit(); }
-    });
-  };
-
-  window._gcClose = function () {
-    _gcModal().classList.remove('is-open');
-    document.body.style.overflow = '';
-    _gcCallback = null;
-  };
-
-  document.getElementById('gcConfirmBtn').addEventListener('click', function () {
-    var cb = _gcCallback;
-    _gcClose();
-    if (cb) cb();
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (!_gcModal().classList.contains('is-open')) return;
-    if (e.key === 'Escape') _gcClose();
-    if (e.key === 'Enter')  { var cb = _gcCallback; _gcClose(); if (cb) cb(); }
-  });
-})();
-</script>
-<script>
-/* The rail is a permanent column at >=1024px and an off-canvas drawer below.
-   .is-open replaces the former utility transform; the CSS transition lives in
-   layout.css. Leaflet maps must be told to re-measure when this runs. */
-(function () {
-  var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-  function sidebarOverlay() { return document.getElementById('sidebar-overlay'); }
-  function hamburgerBtn() { return document.getElementById('hamburger-btn'); }
-
-  function focusablesInSidebar(sidebar) {
-    return Array.prototype.slice.call(sidebar.querySelectorAll(FOCUSABLE))
-      .filter(function (el) { return el.offsetParent !== null || el === document.activeElement; });
-  }
-
-  function focusFirstInSidebar(sidebar) {
-    var close = sidebar.querySelector('.rail__close');
-    var firstLink = sidebar.querySelector('.sidebar-nav-link');
-    var target = close || firstLink;
-    if (target) target.focus();
-  }
-
-  window.toggleSidebar = function () {
-    var sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    if (sidebar.classList.contains('is-open')) {
-      closeSidebar();
-      return;
-    }
-
-    sidebar.classList.add('is-open');
-    var overlay = sidebarOverlay();
-    if (overlay) overlay.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-    var button = hamburgerBtn();
-    if (button) button.setAttribute('aria-expanded', 'true');
-    focusFirstInSidebar(sidebar);
-    window.dispatchEvent(new Event('resize'));
-  };
-
-  window.closeSidebar = function () {
-    var sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    sidebar.classList.remove('is-open');
-    var overlay = sidebarOverlay();
-    if (overlay) overlay.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-    var button = hamburgerBtn();
-    if (button) {
-      button.setAttribute('aria-expanded', 'false');
-      button.focus();
-    }
-    window.dispatchEvent(new Event('resize'));
-  };
-
-  document.addEventListener('keydown', function (e) {
-    var sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    if (!sidebar.classList.contains('is-open')) return;
-
-    if (e.key === 'Escape') {
-      closeSidebar();
-      return;
-    }
-
-    if (e.key === 'Tab') {
-      var items = focusablesInSidebar(sidebar);
-      if (!items.length) return;
-      var first = items[0];
-      var last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
+      /* Confirmation now rides Bootstrap 5's modal: it owns the backdrop, the
+         focus trap, Escape and body scroll locking. The public API is unchanged so
+         the twelve showConfirmForm call sites keep working. */
+      function _gcInstance() {
+        var el = _gcModal();
+        if (!el) return null;
+        return bootstrap.Modal.getOrCreateInstance(el);
       }
-    }
-  });
-}());
-</script>
-{% block extra_js %}{% endblock %}
+
+      window.showConfirm = function (opts) {
+        var type = opts.type || 'danger';
+        var el = _gcModal();
+        if (!el) return;
+
+        el.dataset.type = type;
+
+        document.getElementById('gcTitle').textContent = opts.title || 'Konfirmasi';
+        document.getElementById('gcSubtitle').textContent = opts.subtitle || 'Tindakan ini memerlukan konfirmasi';
+        document.getElementById('gcMessage').innerHTML = opts.message || 'Lanjutkan?';
+
+        var icon = document.getElementById('gcIcon');
+        icon.className = 'bi ' + (ICONS[type] || ICONS.danger);
+
+        var btn = document.getElementById('gcConfirmBtn');
+        btn.textContent = '';
+        var iEl = document.createElement('i');
+        iEl.className = 'bi ' + (opts.confirmIcon || CONFIRM_ICONS[type] || CONFIRM_ICONS.danger);
+        iEl.setAttribute('aria-hidden', 'true');
+        btn.appendChild(iEl);
+        btn.appendChild(document.createTextNode(' ' + (opts.confirmText || 'Ya, Lanjutkan')));
+        btn.className = 'btn ' + (type === 'danger' ? 'btn--danger' : 'btn--primary');
+
+        _gcCallback = opts.onConfirm || null;
+
+        _gcInstance().show();
+      };
+
+      window.showConfirmForm = function (btn, title, message, type, confirmText, subtitle) {
+        var form = btn.closest('form');
+        showConfirm({
+          type: type || 'danger',
+          title: title,
+          subtitle: subtitle || 'Tindakan ini tidak dapat dibatalkan',
+          message: message,
+          confirmText: confirmText || 'Ya, Lanjutkan',
+          onConfirm: function () { form.submit(); }
+        });
+      };
+
+      window._gcClose = function () {
+        var inst = _gcInstance();
+        if (inst) inst.hide();
+        _gcCallback = null;
+      };
+
+      document.getElementById('gcConfirmBtn').addEventListener('click', function () {
+        var cb = _gcCallback;
+        _gcClose();
+        if (cb) cb();
+      });
+
+      /* Confirm fires the callback the moment the modal is dismissed, whether by
+         the button above or programmatically, so the pending action is cleared. */
+      _gcModal().addEventListener('hidden.bs.modal', function () { _gcCallback = null; });
+    })();
+  </script>
+  <script>
+    /* The rail is a permanent column at >=1024px and an off-canvas drawer below.
+       .is-open replaces the former utility transform; the CSS transition lives in
+       layout.css. Leaflet maps must be told to re-measure when this runs. */
+    (function () {
+      var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+      function sidebarOverlay() { return document.getElementById('sidebar-overlay'); }
+      function hamburgerBtn() { return document.getElementById('hamburger-btn'); }
+
+      function focusablesInSidebar(sidebar) {
+        return Array.prototype.slice.call(sidebar.querySelectorAll(FOCUSABLE))
+          .filter(function (el) { return el.offsetParent !== null || el === document.activeElement; });
+      }
+
+      function focusFirstInSidebar(sidebar) {
+        var close = sidebar.querySelector('.rail__close');
+        var firstLink = sidebar.querySelector('.sidebar-nav-link');
+        var target = close || firstLink;
+        if (target) target.focus();
+      }
+
+      window.toggleSidebar = function () {
+        var sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        if (sidebar.classList.contains('is-open')) {
+          closeSidebar();
+          return;
+        }
+
+        sidebar.classList.add('is-open');
+        var overlay = sidebarOverlay();
+        if (overlay) overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        var button = hamburgerBtn();
+        if (button) button.setAttribute('aria-expanded', 'true');
+        focusFirstInSidebar(sidebar);
+        window.dispatchEvent(new Event('resize'));
+      };
+
+      window.closeSidebar = function () {
+        var sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        sidebar.classList.remove('is-open');
+        var overlay = sidebarOverlay();
+        if (overlay) overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        var button = hamburgerBtn();
+        if (button) {
+          button.setAttribute('aria-expanded', 'false');
+          button.focus();
+        }
+        window.dispatchEvent(new Event('resize'));
+      };
+
+      document.addEventListener('keydown', function (e) {
+        var sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        if (!sidebar.classList.contains('is-open')) return;
+
+        if (e.key === 'Escape') {
+          closeSidebar();
+          return;
+        }
+
+        if (e.key === 'Tab') {
+          var items = focusablesInSidebar(sidebar);
+          if (!items.length) return;
+          var first = items[0];
+          var last = items[items.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      });
+    }());
+  </script>
+  {% block extra_js %}{% endblock %}
 </body>
+
 </html>

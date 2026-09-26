@@ -219,6 +219,33 @@ class TestShellContract(unittest.TestCase):
         self.assertIn("is-open", html,
                       "toggleSidebar harus memutar kelas .is-open, bukan utility Tailwind")
 
+    def test_confirm_dialog_uses_bootstrap_modal(self):
+        """Dialog konfirmasi memakai modal Bootstrap 5, bukan markup custom."""
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn('class="modal fade"', html, "dialog bukan modal Bootstrap")
+        self.assertIn("modal-dialog", html)
+        self.assertIn("modal-content", html)
+        self.assertIn('data-bs-dismiss="modal"', html, "tombol Batal harus memakai dismiss Bootstrap")
+        self.assertNotIn('class="dialog"', html, "markup dialog custom masih tersisa")
+        self.assertNotIn("dialog__foot", html)
+
+    def test_confirm_api_preserved_over_bootstrap_modal(self):
+        """12 call site memanggil showConfirmForm/showConfirm; API tak boleh berubah."""
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("window.showConfirm = function", html)
+        self.assertIn("window.showConfirmForm = function", html)
+        self.assertIn("bootstrap.Modal.getOrCreateInstance", html)
+        self.assertNotIn("classList.add('is-open')", html.split("Global Confirm Dialog")[1].split("</script>")[0])
+
+    def test_dialog_styles_target_bootstrap_classes(self):
+        css = (Path(__file__).resolve().parent.parent
+               / "app" / "static" / "css" / "components.css").read_text(encoding="utf-8")
+        self.assertIn("#gcModal .modal-content", css)
+        self.assertIn("#gcModal .modal-header", css)
+        self.assertIn("#gcModal .modal-footer", css)
+        self.assertNotIn("#gcModal .dialog {", css, "aturan .dialog custom masih ada")
+        self.assertIn('#gcModal[data-type="warning"]', css)
+
 
 class TestToastContract(unittest.TestCase):
     TOAST = Path(__file__).resolve().parent.parent / "app" / "static" / "js" / "toast.js"
