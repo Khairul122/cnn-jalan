@@ -81,6 +81,7 @@
           <thead>
             <tr>
               <th scope="col">#</th>
+              <th scope="col">Pratinjau</th>
               <th scope="col">Nama File</th>
               <th scope="col" class="align-right">Ukuran</th>
               <th scope="col">Label</th>
@@ -89,8 +90,15 @@
           </thead>
           <tbody>
             {% for foto in lokasi.foto_list %}
+            {% set _foto_url = url_for('static', filename=foto.path_file) %}
             <tr>
               <td>{{ loop.index }}</td>
+              <td>
+                <a href="{{ _foto_url }}" target="_blank" rel="noopener" class="thumb"
+                   title="Buka {{ foto.nama_file }} di tab baru">
+                  <img src="{{ _foto_url }}" alt="Pratinjau {{ foto.nama_file }}" loading="lazy">
+                </a>
+              </td>
               <td class="truncate" title="{{ foto.nama_file }}">{{ foto.nama_file }}</td>
               <td class="table__num">{{ foto.ukuran_kb or '-' }} KB</td>
               <td>
@@ -104,7 +112,7 @@
                 {% endif %}
               </td>
               <td class="align-right">
-                <a href="{{ url_for('static', filename=foto.path_file) }}"
+                <a href="{{ _foto_url }}"
                    target="_blank"
                    rel="noopener"
                    class="btn btn--sm btn--ghost">

@@ -31,7 +31,7 @@ from app.models.split_item import SplitItem
 from app.services import cnn_service
 from app.services.metrics_service import cv_summary
 from app.services.split_service import jumlah_label_basi
-from app.uploads import UploadError, validate_image
+from app.uploads import UploadError, save_photo, validate_image
 
 PASSWORD = 'uji-password-123'
 
@@ -402,6 +402,45 @@ class P1Test(unittest.TestCase):
             validate_image(FileStorage(io.BytesIO(b'bukan gambar'), filename='a.jpg'))
         with self.assertRaises(UploadError):
             validate_image(FileStorage(io.BytesIO(_png_bytes()), filename='a.exe'))
+
+    def test_save_photo_cleans_filename_and_compresses(self):
+        """Upload 6 MB tidak boleh tersimpan apa adanya: sisi panjang dibatasi
+        1600px, dan spasi pada nama tidak boleh jadi hilang (gambar 182 →
+        gambar_182, bukan gambar182)."""
+        big = io.BytesIO()
+        Image.new('RGB', (3200, 2400), (200, 30, 30)).save(big, 'JPEG', quality=95)
+        n_bytes = big.tell()
+        big.seek(0)
+        with self.app.app_context():
+            before = set(os.listdir(self.app.config['UPLOAD_FOLDER']))
+            try:
+                nama, path, kb = save_photo(
+                    FileStorage(io.BytesIO(big.getvalue()), filename='gambar 182.jpg'))
+            finally:
+                pass
+            self.assertTrue(nama.endswith('_gambar_182.jpg'), nama)
+            self.assertIn('gambar_182', path)
+            self.assertNotIn(' ', path)
+            full = os.path.join(self.app.config['UPLOAD_FOLDER'], nama)
+            self.addCleanup(lambda: os.path.exists(full) and os.remove(full))
+            self.assertLess(os.path.getsize(full), n_bytes,
+                            'foto besar tidak dikompres')
+            with Image.open(full) as img:
+                self.assertLessEqual(max(img.size), 1600)
+            self.assertEqual(kb, os.path.getsize(full) // 1024)
+            self.assertEqual(set(os.listdir(self.app.config['UPLOAD_FOLDER'])) - before, {nama})
+
+    def test_save_photo_keeps_transparency_and_small_files(self):
+        small = io.BytesIO()
+        Image.new('RGBA', (32, 32), (0, 0, 255, 128)).save(small, 'PNG')
+        with self.app.app_context():
+            nama, path, kb = save_photo(
+                FileStorage(io.BytesIO(small.getvalue()), filename='logo miring.png'))
+            full = os.path.join(self.app.config['UPLOAD_FOLDER'], nama)
+            self.addCleanup(lambda: os.path.exists(full) and os.remove(full))
+            self.assertTrue(nama.endswith('_logo_miring.png'), nama)
+            with Image.open(full) as img:
+                self.assertIn('A', img.convert('RGBA').getbands())
 
     def test_klasifikasi_rejects_bad_location_and_missing_model(self):
         c = self.client()

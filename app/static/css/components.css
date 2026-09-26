@@ -737,6 +737,18 @@ select.control { padding-right: var(--s-2); }
   white-space: nowrap;
 }
 .table tbody td { height: 30px; vertical-align: middle; }
+/* Thumbnail cell: keeps the row at table height, the image never drives it. */
+.thumb {
+  display: block;
+  width: 44px;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .table__num {
   text-align: right;
   font-family: var(--font-mono);
