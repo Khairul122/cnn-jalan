@@ -272,6 +272,22 @@ class TestShellContract(unittest.TestCase):
         self.assertIn("box-shadow: none;", css, "box-shadow Bootstrap belum dinetralkan")
         self.assertNotIn(".table td {", css, "selector lama (0,1,1) kalah dari Bootstrap")
 
+    def test_colour_mix_has_an_opaque_fallback(self):
+        """color-mix() is a modern-only feature. Where a declaration depends on
+        it for text or background colour, an unconditional fallback must come
+        first, or an older browser paints white text on a grey background and
+        the chip disappears."""
+        css = (Path(__file__).resolve().parent.parent
+               / "app" / "static" / "css" / "components.css").read_text(encoding="utf-8")
+        self.assertIn('.chip[style*="--fc:"]', css)
+        chip_block = css[css.index(".status-chip[style*=\"--fc:\"]"):]
+        chip_block = chip_block[:chip_block.index("}")]
+        self.assertIn("color: var(--fc);", chip_block)
+        self.assertIn("background: var(--surface-2);", chip_block)
+        self.assertNotIn("color-mix(", chip_block,
+                         "color-mix tanpa fallback: chip bisa putih-di-abu")
+        self.assertIn("@supports (background: color-mix(", css)
+
 
 class TestToastContract(unittest.TestCase):
     TOAST = Path(__file__).resolve().parent.parent / "app" / "static" / "js" / "toast.js"

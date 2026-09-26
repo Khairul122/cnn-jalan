@@ -548,7 +548,11 @@
   border: 1px solid var(--rule);
   border-radius: var(--r-1);
   margin-bottom: var(--s-4);
+  /* Grid rows do not collapse margins, so a trailing panel would leave a
+     phantom gap. */
+  overflow: hidden;
 }
+.panel:last-child { margin-bottom: 0; }
 .panel__head {
   display: flex;
   align-items: center;
@@ -577,6 +581,15 @@
   line-height: inherit;
 }
 .panel__body { padding: var(--s-3); }
+.panel__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border-top: 1px solid var(--rule);
+  background: var(--surface-2);
+}
 
 /* display/align ditambahkan Task 2. kpi_card.html menaruh .kpi__text
    (flex: 1) dan .kpi__icon (32px) sebagai anak dari .kpi, jadi .kpi harus
@@ -654,6 +667,7 @@ textarea.control { height: auto; min-height: 72px; padding: var(--s-2); }
 select.control { padding-right: var(--s-2); }
 .control:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .control[aria-invalid="true"] { border-color: var(--danger); }
+.field__req { color: var(--danger); }
 .hint { font-size: var(--t-sm); color: var(--ink-3); }
 .error-text { font-size: var(--t-sm); color: var(--danger); }
 
@@ -751,11 +765,23 @@ select.control { padding-right: var(--s-2); }
   border-radius: var(--r-1);
   white-space: nowrap;
 }
+/* Severity chips are tinted per row through an inline `--fc` custom property.
+   The tint is computed in JS-free CSS, so it cannot assume color-mix(). When
+   the browser supports color-mix() the chip is a proper tint; otherwise the
+   two declarations below keep text and background readable instead of falling
+   through to a white foreground on a grey background. */
 .status-chip[style*="--fc:"],
 .chip[style*="--fc:"] {
-  background: color-mix(in srgb, var(--fc) 15%, transparent);
-  border-color: color-mix(in srgb, var(--fc) 35%, transparent);
   color: var(--fc);
+  background: var(--surface-2);
+  border-color: var(--rule-strong);
+}
+@supports (background: color-mix(in srgb, red 15%, transparent)) {
+  .status-chip[style*="--fc:"],
+  .chip[style*="--fc:"] {
+    background: color-mix(in srgb, var(--fc) 15%, transparent);
+    border-color: color-mix(in srgb, var(--fc) 35%, transparent);
+  }
 }
 .status-chip--ok, .chip--ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
 .status-chip--warn, .chip--warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
@@ -1048,7 +1074,9 @@ select.control { padding-right: var(--s-2); }
   border-radius: 50%;
   background: var(--sev-1);
   border: 2px solid var(--surface-1);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sev-1) 25%, transparent);
+}
+@supports (background: color-mix(in srgb, red 25%, transparent)) {
+  .detail-map__dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--sev-1) 25%, transparent); }
 }
 
 #detail-map { height: 220px; border-radius: var(--r-1); z-index: 0; }
@@ -1083,10 +1111,15 @@ select.control { padding-right: var(--s-2); }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--step-color, var(--accent)) 15%, transparent);
+  background: var(--surface-2);
   color: var(--step-color, var(--accent));
   flex-shrink: 0;
   font-size: 16px;
+}
+@supports (background: color-mix(in srgb, red 15%, transparent)) {
+  .pipeline-step__icon {
+    background: color-mix(in srgb, var(--step-color, var(--accent)) 15%, transparent);
+  }
 }
 .pipeline-step__info {
   display: flex;
