@@ -172,12 +172,16 @@ class TestShellContract(unittest.TestCase):
                     "lg:translate-x-0", "z-[9999]", "max-w-[calc(100vw-2rem)]"):
             self.assertNotIn(cls, html, f"utility class Tailwind {cls} masih dipakai")
 
-    def test_bootstrap_css_is_gone(self):
+    def test_bootstrap_css_and_js_are_loaded(self):
+        """Bootstrap 5 adalah sistem layout; ia harus dimuat dan dimuat lebih dulu
+        daripada lapisan tokens/components/layout agar bisa di-override."""
         html = self.TEMPLATE.read_text(encoding="utf-8")
-        self.assertNotIn("bootstrap@5.3.3/dist/css", html, "Bootstrap CSS masih dimuat")
-        self.assertNotIn(
-            "bootstrap.bundle.min.js", html, "Bootstrap JS masih dimuat dan tidak pernah dipanggil"
-        )
+        css_pos = html.find("bootstrap@5.3.3/dist/css/bootstrap.min.css")
+        js_pos = html.find("bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js")
+        tokens_pos = html.find("css/tokens.css")
+        self.assertNotEqual(css_pos, -1, "Bootstrap CSS belum dimuat")
+        self.assertNotEqual(js_pos, -1, "Bootstrap JS belum dimuat")
+        self.assertLess(css_pos, tokens_pos, "Bootstrap CSS harus dimuat sebelum tokens.css")
 
     def test_google_fonts_is_gone(self):
         html = self.TEMPLATE.read_text(encoding="utf-8")

@@ -7,9 +7,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-between">
+<div class="d-flex align-items-center justify-content-between">
   <div>{% set ph_title = 'Augmentasi Data' %}{% include 'components/page_header.html' %}</div>
-  <div class="flex">
+  <div class="d-flex">
     {% if total_hasil %}
     <form method="POST" action="{{ url_for('augmentasi.hasil_reset') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="button" class="btn btn--ghost btn--danger-ghost btn--sm"
@@ -29,7 +29,7 @@
   Mengubah hasil Preprocessing menghapus hasil augmentasi.
 </div>
 
-<div class="flex">
+<div class="d-flex">
   {% for lbl, val, color, icon in [
       ('Total Foto', total_foto, '#38BDF8', 'bi-images'),
       ('Foto Siap (denoise)', total_denoise, '#A78BFA', 'bi-droplet-half'),
@@ -66,7 +66,7 @@
         <td>{{ cfg.seed }}</td>
         <td>{% for k, v in p.items() if v.aktif %}{{ k }}{{ ', ' if not loop.last }}{% else %}<span>—</span>{% endfor %}</td>
         <td>
-          <div class="flex justify-center">
+          <div class="d-flex justify-content-center">
             <form method="POST" action="{{ url_for('augmentasi.run', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" class="btn btn--primary btn--sm"
                       onclick="showConfirmForm(this,'Jalankan Augmentasi','Membuat <strong>{{ cfg.n_salinan }} salinan</strong> per foto dengan <strong>{{ cfg.nama_config }}</strong>. Hasil augmentasi sebelumnya diganti.','success','Ya, Jalankan')">

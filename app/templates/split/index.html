@@ -8,7 +8,7 @@
 
 {% block content %}
 
-<div class="flex items-center justify-between">
+<div class="d-flex align-items-center justify-content-between">
   <div>
     {% set ph_title = 'Split Data' %}{% include 'components/page_header.html' %}
     <p>
@@ -103,7 +103,7 @@
           {{ cfg.created_at.strftime('%d %b %Y') }}
         </td>
         <td>
-          <div class="flex items-center justify-center">
+          <div class="d-flex align-items-center justify-content-center">
             <a href="{{ url_for('split.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat Detail">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>

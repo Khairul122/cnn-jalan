@@ -8,14 +8,14 @@
 
 {% block content %}
 
-<div class="flex items-center justify-between">
+<div class="d-flex align-items-center justify-content-between">
   <div>
     {% set ph_title = 'Arsitektur CNN' %}{% include 'components/page_header.html' %}
     <p>
       Transfer learning MobileNetV2 & EfficientNetB0 untuk klasifikasi tingkat kerusakan
     </p>
   </div>
-  <div class="flex">
+  <div class="d-flex">
     <a href="{{ url_for('arsitektur.ringkasan_ulangan') }}" class="btn btn--ghost btn--sm">
       <i class="bi bi-collection"></i> Ringkasan Repeated CV
     </a>
@@ -67,7 +67,7 @@
       <tr {% if is_best %}class="row-best"{% endif %}>
         <td>{{ loop.index }}</td>
         <td>
-          <div class="flex items-center">
+          <div class="d-flex align-items-center">
             <span>{{ cfg.nama }}</span>
             {% if is_best %}
             <span class="badge-best"><i class="bi bi-trophy-fill"></i> Terbaik</span>
@@ -99,9 +99,7 @@
         </td>
         <td>
           {% if disp %}
-          <span style="--fc:{% if is_best %};">
-            {{ disp.akurasi }}%
-          </span>
+          <span style="--fc:{{ 'var(--sev-3)' if is_best else 'var(--ink-3)' }};">{{ disp.akurasi }}%</span>
           <div>
             {% if disp.sumber == 'cv' %}
             <span>CV K-Fold</span>
@@ -114,7 +112,7 @@
           {% endif %}
         </td>
         <td>
-          <div class="flex items-center justify-center">
+          <div class="d-flex align-items-center justify-content-center">
             <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat">
               <i class="bi bi-eye-fill"></i> Lihat
             </a>

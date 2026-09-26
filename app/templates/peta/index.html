@@ -71,7 +71,7 @@
 {% include 'components/page_header.html' %}
 
 <!-- Layer switcher -->
-<div class="flex items-center">
+<div class="d-flex align-items-center">
   <span>Layer:</span>
   <button id="tabStatus" class="layer-tab active-status" onclick="switchLayer('status')">
     <i class="bi bi-layers-fill"></i> Status Pemetaan
@@ -120,7 +120,7 @@
   {% if prediksi_configs %}
 
   <!-- Model selector + stats -->
-  <div class="flex items-center">
+  <div class="d-flex align-items-center">
     <i class="bi bi-cpu"></i>
     <select id="modelSelect"
             onchange="loadCnnMarkers()">
@@ -150,7 +150,7 @@
   </div>
 
   <!-- Filter pills -->
-  <div class="flex items-center">
+  <div class="d-flex align-items-center">
     <span>Filter:</span>
     <button class="peta-filter active" data-cnn-filter="all" onclick="applyCnnFilter(this)">Semua</button>
   {% for k in KELAS %}
@@ -198,17 +198,17 @@
   <div id="cnnLegend" class="peta-legend">
     <div>Legenda Prediksi CNN</div>
     {% for k in KELAS %}{% set lbl = k.nama %}{% set clr = k.warna %}
-    <div class="flex items-center">
+    <div class="d-flex align-items-center">
       <span style="--fc:{{ clr }};"></span>
       <span>{{ lbl }}</span>
     </div>
     {% endfor %}
     <div>
-      <div class="flex items-center">
+      <div class="d-flex align-items-center">
         <span></span>
         <span>Benar</span>
       </div>
-      <div class="flex items-center">
+      <div class="d-flex align-items-center">
         <span></span>
         <span>Salah</span>
       </div>

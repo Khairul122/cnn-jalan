@@ -2,7 +2,7 @@
 {% block title %}Data Lokasi{% endblock %}
 {% block breadcrumb %}<span class="sep">›</span><span class="current">Lokasi</span>{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between">
+<div class="d-flex align-items-center justify-content-between">
   {% set ph_title = 'Data Lokasi Kerusakan' %}{% include 'components/page_header.html' %}
   <a href="{{ url_for('lokasi.create') }}" class="btn btn--primary"><i class="bi bi-plus-lg"></i>Tambah Lokasi</a>
 </div>

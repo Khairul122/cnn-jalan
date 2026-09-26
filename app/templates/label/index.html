@@ -3,7 +3,7 @@
 {% block breadcrumb %}<span class="sep">›</span><span class="current">Labeling Visual</span>{% endblock %}
 {% block content %}
 {% set total = lokasi_list|length %}{% set labeled = lokasi_list|selectattr('label')|list|length %}
-<div class="flex items-start justify-between">
+<div class="d-flex align-items-start justify-content-between">
   <div>{% set ph_title = 'Labeling visual jalan' %}{% set ph_subtitle = 'Konfigurasikan klasterisasi, review hasil, lalu
     terapkan label secara eksplisit.' %}{% include 'components/page_header.html' %}</div>
   {% if current_user.role == 'admin' %}<a class="btn btn--primary" href="{{ url_for('label.config_new') }}"><i
@@ -44,7 +44,7 @@
             <td>{% if config.is_default %}<span class="status-chip status-chip--ok">Default</span>{% else %}<span
                 class="hint">Kustom</span>{% endif %}</td>
             <td class="align-right">
-              <div class="flex justify-end"><a class="btn btn--sm btn--ghost"
+              <div class="d-flex justify-content-end"><a class="btn btn--sm btn--ghost"
                   href="{{ url_for('label.config_edit', config_id=config.id) }}">Edit</a>{% if current_user.role ==
                 'admin' %}<form method="post" action="{{ url_for('label.run', config_id=config.id) }}"><input
                     type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--sm btn--primary"

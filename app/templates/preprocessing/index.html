@@ -9,7 +9,7 @@
 {% block content %}
 
 <!-- Header -->
-<div class="flex items-center justify-between">
+<div class="d-flex align-items-center justify-content-between">
   <div>{% set ph_title = 'Pipeline Preprocessing' %}{% include 'components/page_header.html' %}</div>
   <a href="{{ url_for('preprocessing.config_new') }}"
      onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
@@ -19,7 +19,7 @@
 
 <!-- Info banner -->
 <div>
-  <div class="flex items-start">
+  <div class="d-flex align-items-start">
     <i class="bi bi-info-circle-fill"></i>
     <div>
       <p>Pipeline Preprocessing Gambar</p>
@@ -36,7 +36,7 @@
 </div>
 
 <!-- Stats -->
-<div class="flex">
+<div class="d-flex">
   {% for lbl, val, color, icon in [
       ('Total Foto',    total_foto,   '#38BDF8', 'bi-images'),
       ('Sudah Diproses',total_hasil,  '#10B981', 'bi-check-circle-fill'),
@@ -53,7 +53,7 @@
 </div>
 
 <!-- Pipeline steps visual -->
-<div class="flex items-center">
+<div class="d-flex align-items-center">
   {% for step, icon, color in [
       ('Resize',       'bi-aspect-ratio',        '#38BDF8'),
       ('Center Crop',  'bi-crop',                '#6366F1'),
@@ -115,7 +115,7 @@
           {% endif %}
         </td>
         <td>
-          <div class="flex items-center justify-center">
+          <div class="d-flex align-items-center justify-content-center">
             <!-- Jalankan -->
             <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="button" title="Jalankan"
@@ -149,7 +149,7 @@
   </table>
 </div>
 
-<div class="flex justify-end">
+<div class="d-flex justify-content-end">
   <a href="{{ url_for('preprocessing.hasil') }}">
     Lihat semua hasil preprocessing <i class="bi bi-arrow-right"></i>
   </a>

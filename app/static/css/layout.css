@@ -129,14 +129,9 @@ a { color: var(--accent); }
   #main-content { padding: var(--s-3); }
 }
 
-/* Small structural utilities used by migrated internal templates. */
-.flex { display: flex; }
-.items-center { align-items: center; }
-.items-start { align-items: flex-start; }
-.justify-between { justify-content: space-between; }
-.justify-end { justify-content: flex-end; }
-.justify-center { justify-content: center; }
-.flex-wrap { flex-wrap: wrap; }
+/* Small structural utilities used by migrated internal templates.
+   Layout verbs (`d-flex`, `align-items-*`, `justify-content-*`, `flex-wrap`)
+   come from Bootstrap 5; only the non-Bootstrap helpers live here. */
 .align-center { text-align: center; }
 .align-right { text-align: right; }
 .text-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
