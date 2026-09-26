@@ -3,60 +3,99 @@
 
 {% block breadcrumb %}
 <span class="sep">›</span>
-<a href="{{ url_for('augmentasi.index') }}" style="color:var(--c-accent);text-decoration:none;">Augmentasi</a>
+<a href="{{ url_for('augmentasi.index') }}">Augmentasi</a>
 <span class="sep">›</span>
 <span class="current">{{ 'Edit' if config else 'Buat' }} Konfigurasi</span>
 {% endblock %}
 
 {% block content %}
-{% set ph_title = ('Edit' if config else 'Buat') ~ ' Konfigurasi Augmentasi' %}{% include 'components/page_header.html' %}
+{% set ph_title = ('Edit' if config else 'Buat') ~ ' Konfigurasi Augmentasi' %}
+{% set ph_subtitle = 'Nama, jumlah salinan, seed, lalu pilih transformasi yang dipakai.' %}
+{% set ph_back_url = url_for('augmentasi.index') %}
+{% include 'components/page_header.html' %}
 
-<form method="POST"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div class="row g-3 mb-3">
-    <div class="col-md-6">
-      <label class="form-label" for="nama_config">Nama</label>
-      <input class="form-control" id="nama_config" name="nama_config" value="{{ config.nama_config if config else '' }}" placeholder="mis. Augmentasi lengkap 3 salinan">
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label" for="n_salinan">Salinan per foto (1–10)</label>
-      <input class="form-control" type="number" min="1" max="10" id="n_salinan" name="n_salinan" value="{{ n_salinan }}">
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label" for="seed">Seed</label>
-      <input class="form-control" type="number" id="seed" name="seed" value="{{ seed }}">
-    </div>
+<form method="POST" class="panel">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="panel__head">
+    <h2><i class="bi bi-sliders" aria-hidden="true"></i> Dasar</h2>
   </div>
-
-  <div class="row g-2 mb-3">
-    {% for kunci, nilai in params.items() %}
-    <div class="col-md-6">
-      <div style="border:1px solid var(--c-border);border-radius:var(--r-card);padding:.6rem .8rem;background:var(--c-surface);">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="{{ kunci }}_aktif" name="{{ kunci }}_aktif" value="1" {{ 'checked' if nilai.aktif }}>
-          <label class="form-check-label fw-semibold" for="{{ kunci }}_aktif">{{ label[kunci] }}</label>
+  <div class="panel__body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="field">
+          <label class="field__label" for="nama_config">Nama</label>
+          <input class="control" id="nama_config" name="nama_config"
+                 value="{{ config.nama_config if config else '' }}"
+                 placeholder="mis. Augmentasi lengkap 3 salinan">
         </div>
-        <div class="d-flex gap-2 flex-wrap mt-1">
-          {% for k, v in nilai.items() if k != 'aktif' %}
-          <label style="font-size:.72rem;color:var(--c-muted);">{{ k }}
-            <input class="form-control form-control-sm" type="number" step="any" name="{{ kunci }}_{{ k }}" value="{{ v }}" style="width:110px;">
-          </label>
-          {% endfor %}
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="field">
+          <label class="field__label" for="n_salinan">Salinan per foto (1&ndash;10)</label>
+          <input class="control" type="number" min="1" max="10" id="n_salinan" name="n_salinan" value="{{ n_salinan }}">
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="field">
+          <label class="field__label" for="seed">Seed</label>
+          <input class="control" type="number" id="seed" name="seed" value="{{ seed }}">
         </div>
       </div>
     </div>
-    {% endfor %}
   </div>
 
-  <div class="form-check mb-3">
-    <input class="form-check-input" type="checkbox" id="is_default" name="is_default" value="1" {{ 'checked' if config and config.is_default }}>
-    <label class="form-check-label" for="is_default">Jadikan config default</label>
+  <div class="panel__head">
+    <h2><i class="bi bi-shuffle" aria-hidden="true"></i> Transformasi</h2>
+    <span class="panel__head-note">Centang untuk mengaktifkan, isi besarannya</span>
   </div>
-  <p style="font-size:.72rem;color:var(--c-muted);">
-    Besaran mengikuti layer augmentasi Keras di model: zoom/translasi/brightness/contrast/hue/saturasi = fraksi maksimum (±), rotasi = derajat maksimum (±),
-    noise = simpangan baku piksel, erasing = peluang dan rentang luas patch.
-    Zoom, translasi, dan erasing mengubah luas kerusakan yang tampak padahal label SDI berbasis luas; pertimbangkan mematikannya untuk ablation.
-  </p>
-  <button type="submit" class="btn-cnn-primary"><i class="bi bi-check-lg"></i> Simpan</button>
-  <a href="{{ url_for('augmentasi.index') }}" class="btn btn-outline-secondary">Batal</a>
+  <div class="panel__body">
+    <div class="row g-2">
+      {% for kunci, nilai in params.items() %}
+      <div class="col-md-6">
+        <fieldset class="aug-param">
+          <legend class="aug-param__legend">
+            <input class="form-check-input" type="checkbox" id="{{ kunci }}_aktif"
+                   name="{{ kunci }}_aktif" value="1" {{ 'checked' if nilai.aktif }}>
+            <label for="{{ kunci }}_aktif">{{ label[kunci] }}</label>
+          </legend>
+          <div class="aug-param__fields">
+            {% for k, v in nilai.items() if k != 'aktif' %}
+            <div class="field">
+              <label class="field__label" for="{{ kunci }}_{{ k }}">{{ k }}</label>
+              <input class="control" type="number" step="any"
+                     id="{{ kunci }}_{{ k }}" name="{{ kunci }}_{{ k }}" value="{{ v }}">
+            </div>
+            {% endfor %}
+          </div>
+        </fieldset>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="panel__head">
+    <h2><i class="bi bi-gear" aria-hidden="true"></i> Pilihan lain</h2>
+  </div>
+  <div class="panel__body">
+    <div class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" id="is_default" name="is_default" value="1"
+             {{ 'checked' if config and config.is_default }}>
+      <label class="form-check-label" for="is_default">Jadikan konfigurasi default</label>
+    </div>
+    <p class="hint hint--flush">
+      Besaran mengikuti layer augmentasi Keras di model: zoom/translasi/brightness/contrast/hue/saturasi = fraksi
+      maksimum (&plusmn;), rotasi = derajat maksimum (&plusmn;), noise = simpangan baku piksel, erasing = peluang dan
+      rentang luas patch. <strong>Zoom, translasi, dan erasing mengubah luas kerusakan yang tampak</strong> padahal
+      label SDI berbasis luas; pertimbangkan mematikannya untuk ablation.
+    </p>
+  </div>
+
+  <div class="panel__foot">
+    <a href="{{ url_for('augmentasi.index') }}" class="btn btn--ghost">Batal</a>
+    <button type="submit" class="btn btn--primary">
+      <i class="bi bi-check-lg" aria-hidden="true"></i> Simpan
+    </button>
+  </div>
 </form>
 {% endblock %}

@@ -581,6 +581,35 @@
   line-height: inherit;
 }
 .panel__body { padding: var(--s-3); }
+/* Parameter block on the augmentation config form: a fieldset so the checkbox
+   and its inputs are grouped for screen readers, styled as a plain card. */
+.aug-param {
+  height: 100%;
+  margin: 0;
+  padding: var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  background: var(--surface-1);
+}
+.aug-param__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  float: none;
+  width: auto;
+  margin: 0 0 var(--s-2);
+  padding: 0;
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--ink-1);
+}
+.aug-param__legend label { cursor: pointer; }
+.aug-param__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: var(--s-2);
+}
+.aug-param input[type="number"] { width: 100%; }
 .panel__foot {
   display: flex;
   align-items: center;
@@ -669,6 +698,7 @@ select.control { padding-right: var(--s-2); }
 .control[aria-invalid="true"] { border-color: var(--danger); }
 .field__req { color: var(--danger); }
 .hint { font-size: var(--t-sm); color: var(--ink-3); }
+.hint--flush { margin: 0; }
 .error-text { font-size: var(--t-sm); color: var(--danger); }
 
 .btn {
@@ -749,6 +779,37 @@ select.control { padding-right: var(--s-2); }
 }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Augmentation sample gallery. Auto-fit keeps the tiles square-ish without a
+   column-count breakpoint per screen size. */
+.aug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--s-2);
+}
+.aug-tile {
+  margin: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.aug-tile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+.aug-tile figcaption {
+  padding: var(--s-1) var(--s-2);
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+  background: var(--surface-1);
+  border-top: 1px solid var(--rule);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .table__num {
   text-align: right;
   font-family: var(--font-mono);

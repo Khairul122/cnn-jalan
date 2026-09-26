@@ -2,7 +2,7 @@
 
 Bootstrap 5 dipulihkan sebagai sistem layout/komponen. Uji ini memastikan tidak
 ada sisa kelas Tailwind di template internal, Bootstrap 5 dimuat di shell, dan
-landing page tetap tak tersentuh.
+landing page memakai token yang sama tanpa Tailwind.
 """
 
 import re
@@ -61,10 +61,12 @@ class TestNoTailwindClasses(unittest.TestCase):
         self.assertNotIn("cdn.tailwindcss.com", html, "Tailwind Play CDN masih dimuat")
         self.assertNotIn("tailwind.config", html, "tailwind.config masih ada")
 
-    def test_landing_still_owns_its_own_tailwind(self):
-        """Landing page di luar scope: tetap pakai Tailwind miliknya sendiri."""
+    def test_landing_uses_bootstrap_and_tokens_not_tailwind(self):
+        """Landing publik berdiri sendiri (tanpa base.html) tetapi memakai token dan Bootstrap yang sama."""
         html = (TEMPLATES / "landing" / "index.html").read_text(encoding="utf-8")
-        self.assertIn("cdn.tailwindcss.com", html)
+        self.assertNotIn("tailwind", html.lower())
+        self.assertIn("bootstrap@5.3.3/dist/css/bootstrap.min.css", html)
+        self.assertIn("css/tokens.css", html)
         self.assertNotIn("{% extends", html)
 
     def test_page_templates_carry_no_inline_style_block(self):
@@ -94,6 +96,33 @@ class TestNoTailwindClasses(unittest.TestCase):
         html = (TEMPLATES / "lokasi" / "detail.html").read_text(encoding="utf-8")
         self.assertIn("grid--detail", html)
         self.assertNotIn("detail-grid", html, "grid kolom ad-hoc masih dipakai")
+
+    def test_augmentasi_pages_use_the_design_system(self):
+        """Halaman index dan form konfigurasi augmentasi dulu memakai markup
+        telanjang: div tanpa kelas, tabel tanpa panel, input tanpa .control.
+        Kontrak ini menjaga keduanya tetap di dalam design system."""
+        index = (TEMPLATES / "augmentasi" / "index.html").read_text(encoding="utf-8")
+        form = (TEMPLATES / "augmentasi" / "config_form.html").read_text(encoding="utf-8")
+
+        for rel, html in (("index.html", index), ("config_form.html", form)):
+            self.assertNotIn("<style>", html, f"{rel} punya blok <style>")
+            self.assertNotIn("btn-cnn-primary", html, f"{rel} memakai tombol legacy")
+            self.assertNotIn("cnn-table", html, f"{rel} memakai tabel legacy")
+
+        self.assertIn('include \'components/page_header.html\'', index)
+        self.assertIn("kpi_card.html", index, "KPI tidak memakai komponen bersama")
+        self.assertIn("config_list", index)
+
+        self.assertIn("aug-param", form, "blok parameter tidak memakai komponen .aug-param")
+        self.assertIn('class="panel__foot"', form, "tombol simpan tidak memakai footer panel")
+        self.assertIn('class="control"', form, "input tidak memakai .control")
+
+        # Setiap kunci transformasi harus tetap mengirim pasangan field yang sama,
+        # karena _params_dari_form membacanya berdasarkan nama.
+        for kunci in ("flip", "rotasi", "zoom", "translasi", "brightness", "contrast",
+                      "hue", "saturasi", "noise", "erasing"):
+            self.assertIn(f'name="{{{{ kunci }}}}_aktif"', form)
+            self.assertIn(f'name="{{{{ kunci }}}}_{{{{ k }}}}"', form)
 
 
 if __name__ == "__main__":
