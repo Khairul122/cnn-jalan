@@ -699,6 +699,64 @@ select.control { padding-right: var(--s-2); }
 .field__req { color: var(--danger); }
 .hint { font-size: var(--t-sm); color: var(--ink-3); }
 .hint--flush { margin: 0; }
+.hint--warn { color: var(--warn); }
+
+/* Inline banner. Tone comes from the modifier; the ::before-free markup keeps
+   the icon in HTML so it can be aria-hidden without a pseudo-element. */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+.note > .bi { flex-shrink: 0; margin-top: 1px; }
+.note--ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.note--warn { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+.note--info { background: var(--info-bg); border-color: var(--info); color: var(--info); }
+.note--danger { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+
+/* K-fold choice. The checked state is driven by a pre-rendered :has() rule so
+   it never needs JS; the rule is honoured only where :has() is supported. */
+.kfold-radio-card {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-1);
+  background: var(--surface-1);
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease),
+              color var(--dur-1) var(--ease);
+}
+.kfold-radio-card input { accent-color: var(--ok); margin: 0; }
+.kfold-radio-card__k { font-size: var(--t-base); font-weight: 600; color: var(--ink-1); }
+.kfold-radio-card__note { font-size: var(--t-sm); color: var(--ink-3); }
+.kfold-radio-card:hover { border-color: var(--ink-2); }
+.kfold-radio-card:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+@supports selector(:has(*)) {
+  .kfold-radio-card:has(input:checked) {
+    border-color: var(--ok);
+    background: var(--ok-bg);
+  }
+  .kfold-radio-card:has(input:checked) .kfold-radio-card__k,
+  .kfold-radio-card:has(input:checked) .kfold-radio-card__note { color: var(--ok); }
+}
+
+/* Small colour dot for a class swatch in a legend or dataset summary. */
+.dl__swatch {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--fc, var(--ink-3));
+}
 .error-text { font-size: var(--t-sm); color: var(--danger); }
 
 .btn {

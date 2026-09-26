@@ -7,200 +7,135 @@
 {% endblock %}
 
 {% block content %}
+{% set ph_title = 'Split Data' %}
+{% set ph_subtitle = 'Stratified K-Fold Cross-Validation — pembagian dataset berlabel ke K fold dengan distribusi kelas seimbang.' %}
+{% include 'components/page_header.html' %}
 
-<div class="d-flex align-items-center justify-content-between">
-  <div>
-    {% set ph_title = 'Split Data' %}{% include 'components/page_header.html' %}
-    <p>
-      Stratified K-Fold Cross-Validation — pembagian dataset berlabel ke K fold dengan distribusi kelas seimbang
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a href="{{ url_for('split.new') }}" class="btn btn--primary btn--sm">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Split Baru
+  </a>
+</div>
+
+{% set prep_pct = (total_prep / total_berlabel * 100) | round | int if total_berlabel > 0 else 0 %}
+<div class="grid grid--4 mb-4">
+  {% set kpi_title = 'Konfigurasi' %}{% set kpi_value = configs | length %}
+  {% set kpi_accent = 'var(--accent)' %}{% set kpi_icon_bg = 'var(--accent-wash)' %}
+  {% set kpi_icon_color = 'var(--accent)' %}
+  {% set kpi_icon_path = '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>' %}
+  {% include 'components/kpi_card.html' %}
+
+  {% set kpi_title = 'Data Berlabel (Foto)' %}{% set kpi_value = total_berlabel %}
+  {% set kpi_accent = 'var(--info)' %}{% set kpi_icon_bg = 'var(--info-bg)' %}
+  {% set kpi_icon_color = 'var(--info)' %}
+  {% set kpi_icon_path = '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>' %}
+  {% include 'components/kpi_card.html' %}
+
+  {% set kpi_title = 'Kelas' %}{% set kpi_value = tingkat_list | length %}
+  {% set kpi_accent = 'var(--ok)' %}{% set kpi_icon_bg = 'var(--ok-bg)' %}
+  {% set kpi_icon_color = 'var(--ok)' %}
+  {% set kpi_icon_path = '<path d="M12 2l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/>' %}
+  {% include 'components/kpi_card.html' %}
+
+  {% set kpi_title = 'Sampel Training Efektif' %}{% set kpi_value = total_sampel %}
+  {% set kpi_accent = 'var(--warn)' %}{% set kpi_icon_bg = 'var(--warn-bg)' %}
+  {% set kpi_icon_color = 'var(--warn)' %}
+  {% set kpi_icon_path = '<path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8"/><path d="M8 13h8"/><path d="M8 17h5"/>' %}
+  {% include 'components/kpi_card.html' %}
+</div>
+
+<section class="panel">
+  <div class="panel__head">
+    <h2><i class="bi bi-filter-circle" aria-hidden="true"></i> Cakupan Preprocessing</h2>
+    <span class="panel__head-note">{{ total_prep }} / {{ total_berlabel }} foto</span>
+  </div>
+  <div class="panel__body">
+    <div class="meter" role="img" aria-label="Preprocessing {{ prep_pct }} persen dari {{ total_berlabel }} foto">
+      <span style="width: {{ prep_pct }}%;"></span>
+    </div>
+    <p class="hint hint--flush mt-2">
+      Fold K-Fold ditentukan per <strong>foto</strong> ({{ total_berlabel }}) supaya tidak ada kebocoran data antar fold.
+      &ldquo;Sampel Training Efektif&rdquo; ({{ total_sampel }}) adalah jumlah gambar training yang benar-benar dimuat,
+      setelah tiap foto diperluas ke hingga 4 tahap preprocessing non-acak (resize, crop, normalisasi, denoise).
+      Validasi/fold uji <strong>tetap 1 gambar/foto</strong> (tahap denoise), tidak ikut diperluas &mdash; supaya
+      sebanding dengan evaluasi CV.
     </p>
   </div>
-  <a href="{{ url_for('split.new') }}" class="btn-split-primary">
-    <i class="bi bi-plus-lg"></i> Buat Split Baru
-  </a>
-</div>
+</section>
 
-<!-- Stats -->
-<div class="grid">
-  {% for lbl, val, color, icon in [
-      ('Konfigurasi',   configs|length,     '#A78BFA', 'bi-diagram-3-fill'),
-      ('Data Berlabel (Foto)', total_berlabel, '#38BDF8', 'bi-images'),
-      ('Kelas',         tingkat_list|length, '#10B981', 'bi-layers-fill'),
-      ('Sampel Training Efektif', total_sampel, '#F59E0B', 'bi-collection-fill'),
-  ] %}
-  <div>
-    <div class="split-stat-card">
-      <i class="bi {{ icon }}" style="--fc:{{ color }};"></i>
-      <div>
-        <div class="split-stat-val">{{ val }}</div>
-        <div class="split-stat-lbl">{{ lbl }}</div>
-      </div>
-    </div>
+<section class="panel">
+  <div class="panel__head">
+    <h2><i class="bi bi-diagram-3" aria-hidden="true"></i> Konfigurasi Split</h2>
+    <span class="panel__head-note">{{ configs | length }} konfigurasi</span>
   </div>
-  {% endfor %}
-  <!-- Preprocessing coverage -->
-  <div>
-    <div class="split-stat-card">
-      <div>
-        <i class="bi bi-filter-circle-fill"></i>
-        <div>
-          <div class="split-stat-val">{{ total_prep }}<span> / {{ total_berlabel }}</span></div>
-          <div class="split-stat-lbl">Terpreproses (Semua Tahap)</div>
-        </div>
-      </div>
-      {% if total_berlabel > 0 %}
-      {% set pct = (total_prep / total_berlabel * 100) | round | int %}
-      <div>
-        <div style="width:{{ pct }}%;"></div>
-      </div>
+  <div class="panel__body">
+    {% if configs %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Nama</th>
+            <th scope="col">Tipe</th>
+            <th scope="col">Seed</th>
+            <th scope="col" class="align-right">Data</th>
+            <th scope="col">Dibuat</th>
+            <th scope="col" class="align-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cfg in configs %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ cfg.nama }}</td>
+            <td><span class="chip chip--muted">K={{ cfg.n_splits }}</span></td>
+            <td>
+              <span class="table__num">{{ cfg.random_state }}</span>
+              {% if cfg.radius_grup_m %}
+              <div class="hint">grup {{ cfg.radius_grup_m }} m</div>
+              {% endif %}
+            </td>
+            <td class="table__num">{{ cfg.total_data }}</td>
+            <td class="text-mono">{{ cfg.created_at.strftime('%d %b %Y') }}</td>
+            <td>
+              <div class="table-actions justify-content-end">
+                <a href="{{ url_for('split.detail', config_id=cfg.id) }}" class="btn btn--ghost btn--sm"
+                   title="Lihat detail split {{ cfg.nama }}" aria-label="Lihat detail split {{ cfg.nama }}">
+                  <i class="bi bi-eye-fill" aria-hidden="true"></i> Lihat
+                </a>
+                <form method="POST" action="{{ url_for('split.delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="button" class="btn btn--ghost btn--danger-ghost btn--sm"
+                          title="Hapus" aria-label="Hapus split {{ cfg.nama }}"
+                          onclick="showConfirmForm(this,
+                            'Hapus Split',
+                            'Split <strong>{{ cfg.nama }}</strong> beserta semua <strong>{{ cfg.total_data }} item</strong> akan dihapus permanen.',
+                            'danger','Ya, Hapus Split')">
+                    <i class="bi bi-trash-fill" aria-hidden="true"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="cnn-empty-state">
+      <i class="bi bi-diagram-3" aria-hidden="true"></i>
+      <p>Belum ada split</p>
+      <p class="hint">Buat split K-Fold untuk membagi dataset ke K fold secara stratified.</p>
+      {% if total_berlabel == 0 %}
+      <p class="hint hint--warn">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        Belum ada data berlabel &mdash; tambah label SDI terlebih dahulu.
+      </p>
       {% endif %}
+      <a href="{{ url_for('split.new') }}" class="btn btn--primary btn--sm mt-2">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Split Pertama
+      </a>
     </div>
+    {% endif %}
   </div>
-</div>
-
-<p>
-  <i class="bi bi-info-circle"></i>
-  Fold K-Fold ditentukan per <strong>foto</strong> ({{ total_berlabel }}) supaya tidak ada kebocoran data antar fold.
-  "Sampel Training Efektif" ({{ total_sampel }}) adalah jumlah gambar training yang benar-benar dimuat,
-  setelah tiap foto diperluas ke hingga 4 tahap preprocessing non-acak (resize, crop, normalisasi, denoise).
-  Validasi/fold uji TETAP 1 gambar/foto (tahap denoise), tidak ikut diperluas —
-  supaya sebanding dengan evaluasi CV.
-</p>
-
-{% if configs %}
-<div class="split-table-wrap">
-  <table class="table align-middle cnn-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nama</th>
-        <th>Tipe</th>
-        <th>Seed</th>
-        <th>Data</th>
-        <th>Dibuat</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for cfg in configs %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>
-          <span>{{ cfg.nama }}</span>
-        </td>
-        <td>
-          <span>
-            K={{ cfg.n_splits }}
-          </span>
-        </td>
-        <td>
-          {{ cfg.random_state }}{% if cfg.radius_grup_m %}<div>grup {{ cfg.radius_grup_m }} m</div>{% endif %}
-        </td>
-        <td>
-          {{ cfg.total_data }}
-        </td>
-        <td>
-          {{ cfg.created_at.strftime('%d %b %Y') }}
-        </td>
-        <td>
-          <div class="d-flex align-items-center justify-content-center">
-            <a href="{{ url_for('split.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat Detail">
-              <i class="bi bi-eye-fill"></i> Lihat
-            </a>
-            <form method="POST" action="{{ url_for('split.delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" class="btn-action-del" title="Hapus"
-                      onclick="showConfirmForm(this,
-                        'Hapus Split',
-                        'Split <strong>{{ cfg.nama }}</strong> beserta semua <strong>{{ cfg.total_data }} item</strong> akan dihapus permanen.',
-                        'danger','Ya, Hapus Split')">
-                <i class="bi bi-trash-fill"></i>
-              </button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{% else %}
-<div class="split-empty">
-  <i class="bi bi-diagram-3"></i>
-  <p>Belum ada split</p>
-  <p>
-    Buat split K-Fold untuk membagi dataset ke K fold secara stratified
-  </p>
-  {% if total_berlabel == 0 %}
-  <p>
-    <i class="bi bi-exclamation-triangle-fill"></i>
-    Belum ada data berlabel — tambah label SDI terlebih dahulu
-  </p>
-  {% endif %}
-  <a href="{{ url_for('split.new') }}" class="btn-split-primary">
-    <i class="bi bi-plus-lg"></i> Buat Split Pertama
-  </a>
-</div>
-{% endif %}
-
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.btn-split-primary {
-  display: inline-flex; align-items: center; gap: .375rem;
-  padding: .45rem .9rem; border-radius: var(--r-input);
-  font-size: .8rem; font-weight: 700; text-decoration: none;
-  background: linear-gradient(135deg, #7C3AED, #A78BFA); color: #fff;
-  box-shadow: 0 2px 8px rgba(124,58,237,.25);
-  transition: opacity .15s, transform .15s;
-  cursor: pointer;
-}
-.btn-split-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
-
-.split-stat-card {
-  display: flex; align-items: center; gap: .5rem;
-  padding: .625rem .875rem;
-  background: var(--c-surface); border: 1px solid var(--c-border);
-  border-radius: var(--r-card);
-}
-.split-stat-val { font-size: 1.1rem; font-weight: 700; color: var(--c-text); margin: 0; font-variant-numeric: tabular-nums; }
-.split-stat-lbl { font-size: .68rem; color: var(--c-muted); margin: 0; }
-
-.split-table-wrap {
-  border-radius: var(--r-card); overflow: hidden;
-  box-shadow: var(--shadow-card); border: 1px solid var(--c-border);
-}
-
-.fold-badge {
-  display: inline-block; padding: .15rem .55rem; border-radius: 999px;
-  background: rgba(124,58,237,.15); border: 1px solid rgba(167,139,250,.3);
-  font-size: .76rem; font-weight: 700; color: #A78BFA;
-}
-
-.btn-action-view {
-  display: inline-flex; align-items: center; gap: .25rem;
-  padding: .28rem .6rem; border-radius: var(--r-input);
-  font-size: .73rem; font-weight: 600; text-decoration: none;
-  background: rgba(124,58,237,.2); color: #A78BFA;
-  border: 1px solid rgba(167,139,250,.25);
-  transition: background .15s;
-}
-.btn-action-view:hover { background: rgba(124,58,237,.35); color: #A78BFA; }
-
-.btn-action-del {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: var(--r-input);
-  background: transparent; color: #DC2626;
-  border: 1px solid rgba(220,38,38,.3); cursor: pointer;
-  font-size: .78rem; transition: background .15s;
-}
-.btn-action-del:hover { background: rgba(220,38,38,.12); }
-
-.split-empty {
-  text-align: center; padding: 2.5rem 1rem;
-  background: var(--c-surface); border-radius: var(--r-card);
-  border: 1px solid var(--c-border);
-}
-</style>
+</section>
 {% endblock %}

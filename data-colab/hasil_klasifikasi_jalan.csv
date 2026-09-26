@@ -1,0 +1,281 @@
+Citra,x,y,Kelas,Kelas_Prediksi,Keyakinan,Cocok
+Gambar 1,5.203507,97.108763,Rusak Berat,Rusak Berat,0.67572606,True
+Gambar 2,5.203184,97.109209,Rusak Berat,Rusak Berat,0.51059484,True
+Gambar 3,5.202934,97.109566,Rusak Berat,Rusak Berat,0.6823781,True
+Gambar 4,5.202933,97.10961,Sedang,Sedang,0.97900164,True
+Gambar 5,5.202742,97.109913,Sedang,Sedang,0.8316921,True
+Gambar 6,5.202614,97.110156,Sedang,Sedang,0.3833725,True
+Gambar 7,5.202007,97.110687,Baik,Baik,0.79290926,True
+Gambar 8,5.20275,97.112101,Rusak Berat,Rusak Berat,0.57473,True
+Gambar 9,5.202726,97.112111,Rusak Ringan,Rusak Ringan,0.8371801,True
+Gambar 10,5.203653,97.112901,Rusak Ringan,Sedang,0.5434242,False
+Gambar 11,5.205149,97.114125,Rusak Ringan,Rusak Ringan,0.4382444,True
+Gambar 12,5.205303,97.114125,Rusak Berat,Rusak Berat,0.96868414,True
+Gambar 13,5.206987,97.113701,Rusak Ringan,Rusak Ringan,0.57437205,True
+Gambar 14,5.207553,97.113669,Sedang,Rusak Ringan,0.5358241,False
+Gambar 15,5.210376,97.112844,Sedang,Sedang,0.9496113,True
+Gambar 16,5.211339,97.113156,Rusak Ringan,Rusak Ringan,0.58123326,True
+Gambar 17,5.212708,97.114984,Sedang,Sedang,0.8439284,True
+Gambar 18,5.212997,97.116398,Sedang,Sedang,0.9697558,True
+Gambar 19,5.212094,97.117785,Rusak Ringan,Rusak Ringan,0.5901937,True
+Gambar 20,5.208711,97.124134,Rusak Berat,Rusak Berat,0.8995141,True
+Gambar 21,5.208057,97.125524,Sedang,Sedang,0.8866989,True
+Gambar 22,5.206373,97.12878,Sedang,Sedang,0.58167183,True
+Gambar 23,5.205058,97.130829,Sedang,Sedang,0.6986547,True
+Gambar 24,5.203992,97.133226,Sedang,Sedang,0.54656506,True
+Gambar 25,5.201901,97.12783,Rusak Ringan,Rusak Ringan,0.76791126,True
+Gambar 26,5.200744,97.14022,Baik,Baik,0.71106666,True
+Gambar 27,5.198167,97.143207,Sedang,Sedang,0.94934285,True
+Gambar 28,5.175114,97.14682,Rusak Berat,Rusak Berat,0.9080025,True
+Gambar 29,5.17793,97.143971,Sedang,Sedang,0.85223466,True
+Gambar 30,5.174092,97.12931,Sedang,Sedang,0.9697341,True
+Gambar 31,5.174093,97.128804,Rusak Ringan,Rusak Ringan,0.5105895,True
+Gambar 32,5.175929,97.12722,Rusak Berat,Rusak Berat,0.95987964,True
+Gambar 33,5.193525,97.116067,Sedang,Rusak Berat,0.7385205,False
+Gambar 34,5.195717,97.114728,Rusak Ringan,Rusak Ringan,0.87182057,True
+Gambar 35,5.196258,97.114511,Rusak Berat,Rusak Berat,0.96684587,True
+Gambar 36,5.197226,97.113733,Rusak Berat,Rusak Berat,0.5735176,True
+Gambar 37,5.199138,97.112572,Sedang,Rusak Ringan,0.51728195,False
+Gambar 38,5.200166,97.111884,Rusak Ringan,Rusak Ringan,0.5491664,True
+Gambar 39,5.20131,97.111155,Sedang,Rusak Ringan,0.50144506,False
+Gambar 40,5.213349,97.097792,Rusak Berat,Rusak Berat,0.70474064,True
+Gambar 41,5.214098,97.096926,Sedang,Sedang,0.44477,True
+Gambar 42,5.214884,97.094953,Rusak Ringan,Rusak Ringan,0.80737925,True
+Gambar 43,5.215106,97.093748,Baik,Baik,0.6409732,True
+Gambar 44,5.214961,97.09192,Rusak Ringan,Rusak Ringan,0.8641042,True
+Gambar 45,5.214654,97.090656,Sedang,Sedang,0.76584345,True
+Gambar 46,5.21377,97.088998,Rusak Ringan,Rusak Ringan,0.54251564,True
+Gambar 47,5.210935,97.084608,Rusak Ringan,Sedang,0.51019096,False
+Gambar 48,5.210323,97.081761,Rusak Ringan,Rusak Ringan,0.6239242,True
+Gambar 49,5.209174,97.076569,Rusak Berat,Rusak Berat,0.72210795,True
+Gambar 50,5.209371,97.075629,Sedang,Sedang,0.7136219,True
+Gambar 51,5.209922,97.073829,Baik,Baik,0.853279,True
+Gambar 52,5.210757,97.070674,Rusak Ringan,Rusak Ringan,0.85286117,True
+Gambar 53,5.215717,97.077601,Rusak Ringan,Rusak Ringan,0.7520316,True
+Gambar 54,5.213399,97.07772,Rusak Ringan,Rusak Ringan,0.8877626,True
+Gambar 55,5.220091,97.068529,Rusak Ringan,Rusak Ringan,0.90955365,True
+Gambar 56,5.229867,97.064292,Rusak Ringan,Rusak Ringan,0.808072,True
+Gambar 57,5.230071,97.063807,Rusak Ringan,Rusak Ringan,0.88415647,True
+Gambar 58,5.230528,97.062677,Rusak Berat,Rusak Berat,0.7419561,True
+Gambar 59,5.230834,97.062124,Rusak Ringan,Rusak Ringan,0.84943867,True
+Gambar 60,5.230988,97.06193,Rusak Ringan,Rusak Ringan,0.7517231,True
+Gambar 61,5.231213,97.060969,Rusak Ringan,Rusak Ringan,0.9258504,True
+Gambar 62,5.231179,97.060648,Rusak Ringan,Rusak Ringan,0.8789559,True
+Gambar 63,5.23197,97.059142,Sedang,Sedang,0.6757154,True
+Gambar 64,5.227429,97.037626,Rusak Ringan,Rusak Ringan,0.9282099,True
+Gambar 65,5.225558,97.037354,Rusak Berat,Rusak Berat,0.8236769,True
+Gambar 66,5.213645,97.039135,Sedang,Sedang,0.93591976,True
+Gambar 67,5.229064,97.039478,Rusak Ringan,Sedang,0.57875645,False
+Gambar 68,5.232027,97.040156,Rusak Ringan,Rusak Ringan,0.791971,True
+Gambar 69,5.234259,97.041683,Rusak Ringan,Rusak Ringan,0.7529973,True
+Gambar 70,5.237123,97.043352,Sedang,Sedang,0.91984266,True
+Gambar 71,5.239207,97.045044,Baik,Baik,0.46807203,True
+Gambar 72,5.204129,97.077877,Rusak Ringan,Rusak Ringan,0.52000713,True
+Gambar 73,5.20116,97.076317,Rusak Ringan,Rusak Ringan,0.70807666,True
+Gambar 74,5.200678,97.076128,Rusak Berat,Rusak Berat,0.9301984,True
+Gambar 75,5.198422,97.075429,Rusak Ringan,Rusak Ringan,0.7830138,True
+Gambar 76,5.197933,97.075422,Rusak Ringan,Rusak Ringan,0.75549877,True
+Gambar 77,5.197064,97.07607,Rusak Berat,Rusak Berat,0.93324345,True
+Gambar 78,5.196616,97.075935,Rusak Ringan,Rusak Ringan,0.77629685,True
+Gambar 79,5.195543,97.074977,Baik,Baik,0.5654507,True
+Gambar 80,5.194833,97.074462,Rusak Ringan,Rusak Ringan,0.9028588,True
+Gambar 81,5.194254,97.074155,Rusak Ringan,Rusak Ringan,0.9272065,True
+Gambar 82,5.194122,97.073937,Rusak Ringan,Rusak Ringan,0.84683424,True
+Gambar 83,5.193571,97.072332,Rusak Ringan,Rusak Ringan,0.6134848,True
+Gambar 84,5.19281,97.070197,Rusak Ringan,Rusak Ringan,0.895632,True
+Gambar 85,5.192558,97.068592,Rusak Ringan,Rusak Ringan,0.80148476,True
+Gambar 86,5.192147,97.068162,Rusak Ringan,Rusak Ringan,0.8919818,True
+Gambar 87,5.191942,97.067604,Rusak Ringan,Rusak Ringan,0.80997866,True
+Gambar 88,5.191671,97.06657,Rusak Ringan,Rusak Ringan,0.7578418,True
+Gambar 89,5.19057,97.064664,Sedang,Sedang,0.68556213,True
+Gambar 90,5.190434,97.064242,Rusak Ringan,Rusak Ringan,0.908316,True
+Gambar 91,5.187286,97.062959,Rusak Ringan,Rusak Ringan,0.8649262,True
+Gambar 92,5.187498,97.061614,Rusak Ringan,Rusak Ringan,0.9069617,True
+Gambar 93,5.188121,97.060864,Rusak Ringan,Rusak Ringan,0.6603728,True
+Gambar 94,5.18915,97.060142,Rusak Berat,Rusak Berat,0.9339819,True
+Gambar 95,5.190104,97.058894,Baik,Rusak Ringan,0.8919538,False
+Gambar 96,5.1908,97.058628,Rusak Ringan,Rusak Ringan,0.8753643,True
+Gambar 97,5.191491,97.058265,Rusak Ringan,Rusak Ringan,0.94351816,True
+Gambar 98,5.192883,97.056675,Rusak Ringan,Rusak Ringan,0.8216487,True
+Gambar 99,5.194833,97.055689,Rusak Ringan,Rusak Ringan,0.7383962,True
+Gambar 100,5.194835,97.055488,Rusak Ringan,Rusak Ringan,0.79426587,True
+Gambar 101,5.194835,97.054475,Rusak Ringan,Rusak Ringan,0.9178826,True
+Gambar 102,5.196721,97.051149,Rusak Berat,Rusak Berat,0.6229829,True
+Gambar 103,5.197458,97.050063,Baik,Baik,0.9711273,True
+Gambar 104,5.198198,97.049841,Rusak Ringan,Rusak Ringan,0.5375786,True
+Gambar 105,5.199329,97.048994,Rusak Ringan,Rusak Ringan,0.60150844,True
+Gambar 106,5.199626,97.047687,Rusak Ringan,Rusak Ringan,0.875004,True
+Gambar 107,5.199097,97.046488,Baik,Baik,0.39543805,True
+Gambar 108,5.198558,97.044678,Sedang,Sedang,0.78873277,True
+Gambar 109,5.198994,97.042136,Rusak Ringan,Rusak Ringan,0.5706947,True
+Gambar 110,5.19944,97.041343,Rusak Ringan,Rusak Berat,0.8256182,False
+Gambar 111,5.201265,97.039522,Rusak Ringan,Rusak Ringan,0.56297326,True
+Gambar 112,5.201386,97.039123,Sedang,Sedang,0.8729959,True
+Gambar 113,5.206172,97.035891,Rusak Ringan,Rusak Ringan,0.867428,True
+Gambar 114,5.207358,97.036048,Rusak Ringan,Rusak Ringan,0.51605994,True
+Gambar 115,5.208141,97.035967,Baik,Rusak Ringan,0.56797904,False
+Gambar 116,5.20894,97.03581,Rusak Ringan,Rusak Ringan,0.5418881,True
+Gambar 117,5.209202,97.035789,Baik,Baik,0.90384567,True
+Gambar 118,5.209427,97.036422,Baik,Baik,0.6835301,True
+Gambar 119,5.20951,97.03667,Rusak Ringan,Rusak Ringan,0.859232,True
+Gambar 120,5.209827,97.037136,Rusak Ringan,Rusak Ringan,0.5285645,True
+Gambar 121,5.210987,97.037542,Rusak Berat,Rusak Berat,0.8999855,True
+Gambar 122,5.211541,97.037703,Rusak Ringan,Rusak Ringan,0.8325269,True
+Gambar 123,5.205695,97.077877,Sedang,Sedang,0.70529336,True
+Gambar 124,5.201197,97.080305,Sedang,Rusak Ringan,0.66990733,False
+Gambar 125,5.198992,97.081736,Rusak Berat,Rusak Berat,0.8061997,True
+Gambar 126,5.192997,97.083627,Rusak Ringan,Rusak Ringan,0.846179,True
+Gambar 127,5.187816,97.084064,Rusak Ringan,Rusak Ringan,0.87060755,True
+Gambar 128,5.18532,97.084227,Rusak Ringan,Rusak Ringan,0.66432846,True
+Gambar 129,5.183075,97.084817,Rusak Ringan,Rusak Ringan,0.73568743,True
+Gambar 130,5.173893,97.091025,Baik,Rusak Ringan,0.742066,False
+Gambar 131,5.171355,97.090546,Rusak Berat,Rusak Ringan,0.61146,False
+Gambar 132,5.165429,97.089026,Rusak Ringan,Rusak Ringan,0.8368188,True
+Gambar 133,5.161744,97.088641,Rusak Ringan,Rusak Ringan,0.85821396,True
+Gambar 134,5.151526,97.087274,Sedang,Rusak Ringan,0.60365117,False
+Gambar 135,5.152632,97.097641,Rusak Ringan,Rusak Berat,0.6394993,False
+Gambar 136,5.153889,97.098556,Baik,Baik,0.77231115,True
+Gambar 137,5.155161,97.099027,Sedang,Sedang,0.7840126,True
+Gambar 138,5.15756,97.099466,Baik,Baik,0.8960657,True
+Gambar 139,5.160268,97.099467,Sedang,Sedang,0.8214597,True
+Gambar 140,5.161916,97.100089,Baik,Baik,0.9888432,True
+Gambar 141,5.163369,97.101129,Rusak Ringan,Rusak Ringan,0.8162629,True
+Gambar 142,5.164181,97.101547,Baik,Rusak Ringan,0.346207,False
+Gambar 143,5.166285,97.106722,Baik,Baik,0.9968638,True
+Gambar 144,5.167062,97.108855,Baik,Baik,0.9904005,True
+Gambar 145,5.1721,97.12808,Baik,Baik,0.89043224,True
+Gambar 146,5.157777,97.135652,Sedang,Sedang,0.5288324,True
+Gambar 147,5.156639,97.136297,Sedang,Baik,0.6109141,False
+Gambar 148,5.146187,97.141831,Sedang,Sedang,0.47231993,True
+Gambar 149,5.142794,97.144401,Baik,Baik,0.95051956,True
+Gambar 150,5.207325,97.116338,Sedang,Sedang,0.6097621,True
+Gambar 151,5.208171,97.116331,Sedang,Rusak Ringan,0.7122728,False
+Gambar 152,5.210364,97.120466,Sedang,Sedang,0.9115902,True
+Gambar 153,5.192448,97.147076,Sedang,Rusak Ringan,0.6207862,False
+Gambar 154,5.192512,97.147443,Baik,Baik,0.99503905,True
+Gambar 155,5.183536,97.150591,Baik,Baik,0.99494517,True
+Gambar 156,5.183718,97.151286,Baik,Baik,0.9939129,True
+Gambar 157,5.182628,97.151602,Baik,Baik,0.8487085,True
+Gambar 158,5.174814,97.152799,Baik,Baik,0.9808872,True
+Gambar 159,5.174834,97.150352,Baik,Rusak Berat,0.7170024,False
+Gambar 160,5.174933,97.150066,Rusak Berat,Rusak Berat,0.9270264,True
+Gambar 161,5.174527,97.149053,Rusak Berat,Rusak Berat,0.95161015,True
+Gambar 162,5.174644,97.148727,Rusak Berat,Rusak Berat,0.92667615,True
+Gambar 163,5.16908,97.145882,Rusak Ringan,Rusak Ringan,0.8368199,True
+Gambar 164,5.164557,97.143808,Rusak Ringan,Rusak Ringan,0.8947817,True
+Gambar 165,5.165354,97.14251,Baik,Baik,0.9522599,True
+Gambar 166,5.167553,97.140832,Rusak Ringan,Rusak Ringan,0.7211192,True
+Gambar 167,5.172156,97.137651,Sedang,Sedang,0.94731224,True
+Gambar 168,5.17331,97.13761,Sedang,Sedang,0.9474078,True
+Gambar 169,5.175427,97.138614,Sedang,Sedang,0.86966646,True
+Gambar 170,5.175901,97.142981,Sedang,Sedang,0.9553454,True
+Gambar 171,5.177433,97.142246,Rusak Ringan,Rusak Ringan,0.5764461,True
+Gambar 172,5.177722,97.142308,Baik,Baik,0.8184238,True
+Gambar 173,5.178348,97.142725,Rusak Berat,Rusak Berat,0.9566894,True
+Gambar 174,5.182837,97.144804,Rusak Berat,Rusak Berat,0.8954135,True
+Gambar 175,5.183651,97.143997,Baik,Baik,0.9942811,True
+Gambar 176,5.183568,97.14426,Rusak Berat,Rusak Berat,0.95716375,True
+Gambar 177,5.187441,97.146456,Rusak Ringan,Rusak Ringan,0.5836121,True
+Gambar 178,5.184113,97.14222,Baik,Sedang,0.6527379,False
+Gambar 179,5.184565,97.142309,Rusak Berat,Rusak Berat,0.9568939,True
+Gambar 180,5.187237,97.141549,Sedang,Sedang,0.82077235,True
+Gambar 181,5.197227,97.142142,Baik,Baik,0.809821,True
+Gambar 182,5.197794,97.141429,Rusak Berat,Rusak Berat,0.87158096,True
+Gambar 183,5.197771,97.137173,Rusak Berat,Rusak Berat,0.88479614,True
+Gambar 184,5.210469,97.120294,Rusak Berat,Rusak Berat,0.9812852,True
+Gambar 185,5.211112,97.118765,Rusak Berat,Rusak Berat,0.925585,True
+Gambar 186,5.211763,97.117302,Rusak Ringan,Rusak Berat,0.56955945,False
+Gambar 187,5.212443,97.116791,Baik,Baik,0.93499804,True
+Gambar 188,5.21296,97.115821,Baik,Baik,0.48635787,True
+Gambar 189,5.212264,97.11443,Sedang,Sedang,0.96821254,True
+Gambar 190,5.208487,97.113778,Rusak Berat,Rusak Berat,0.94237536,True
+Gambar 191,5.204341,97.113784,Rusak Ringan,Rusak Ringan,0.6191435,True
+Gambar 192,5.202319,97.112014,Rusak Berat,Rusak Berat,0.8368764,True
+Gambar 193,5.203419,97.107411,Baik,Baik,0.47610822,True
+Gambar 194,5.208166,97.104475,Baik,Baik,0.9528066,True
+Gambar 195,5.21015,97.101334,Rusak Berat,Rusak Berat,0.8528278,True
+Gambar 196,5.210171,97.072767,Baik,Baik,0.87308574,True
+Gambar 197,5.209583,97.072404,Rusak Berat,Rusak Berat,0.75768554,True
+Gambar 198,5.208788,97.072008,Baik,Baik,0.8182337,True
+Gambar 199,5.2081,97.071574,Rusak Ringan,Rusak Berat,0.58010554,False
+Gambar 200,5.207712,97.070965,Rusak Berat,Rusak Berat,0.9180412,True
+Gambar 201,5.208238,97.069827,Rusak Berat,Rusak Berat,0.9668318,True
+Gambar 202,5.207368,97.068565,Baik,Baik,0.64174557,True
+Gambar 203,5.20722,97.067123,Rusak Berat,Rusak Berat,0.4025651,True
+Gambar 204,5.208858,97.065739,Rusak Berat,Rusak Berat,0.8905915,True
+Gambar 205,5.208558,97.06579,Baik,Baik,0.9966383,True
+Gambar 206,5.208334,97.065876,Rusak Ringan,Baik,0.41274866,False
+Gambar 207,5.207392,97.066272,Rusak Ringan,Rusak Ringan,0.93624717,True
+Gambar 208,5.207236,97.066167,Rusak Berat,Rusak Berat,0.5047427,True
+Gambar 209,5.207457,97.068802,Rusak Ringan,Rusak Ringan,0.37942064,True
+Gambar 210,5.207546,97.06865,Rusak Berat,Rusak Berat,0.648266,True
+Gambar 211,5.207736,97.068067,Baik,Baik,0.684389,True
+Gambar 212,5.208565,97.066882,Rusak Berat,Baik,0.6028717,False
+Gambar 213,5.209054,97.066625,Sedang,Rusak Ringan,0.46893424,False
+Gambar 214,5.209986,97.067669,Rusak Berat,Rusak Berat,0.6947389,True
+Gambar 215,5.210289,97.067979,Rusak Ringan,Baik,0.5241541,False
+Gambar 216,5.210558,97.068258,Rusak Ringan,Rusak Ringan,0.6486068,True
+Gambar 217,5.210425,97.068603,Rusak Berat,Rusak Berat,0.9818177,True
+Gambar 218,5.209383,97.068801,Baik,Baik,0.99490047,True
+Gambar 219,5.20959,97.069724,Baik,Baik,0.63341916,True
+Gambar 220,5.210043,97.06969,Baik,Baik,0.5812426,True
+Gambar 221,5.210166,97.069417,Baik,Baik,0.9256064,True
+Gambar 222,5.210374,97.069576,Baik,Baik,0.9535619,True
+Gambar 223,5.209813,97.070328,Rusak Ringan,Rusak Ringan,0.7017592,True
+Gambar 224,5.209853,97.070534,Sedang,Sedang,0.63960356,True
+Gambar 225,5.20981,97.070956,Baik,Baik,0.8418143,True
+Gambar 226,5.209513,97.07156,Rusak Berat,Rusak Berat,0.87933815,True
+Gambar 227,5.209439,97.072063,Rusak Berat,Baik,0.51044345,False
+Gambar 228,5.20833,97.072032,Rusak Berat,Rusak Berat,0.43350255,True
+Gambar 229,5.208163,97.072082,Rusak Ringan,Baik,0.49548602,False
+Gambar 230,5.207947,97.072168,Baik,Baik,0.9204089,True
+Gambar 231,5.208615,97.071485,Sedang,Sedang,0.64644843,True
+Gambar 232,5.208774,97.07125,Rusak Ringan,Rusak Ringan,0.7711253,True
+Gambar 233,5.209108,97.07062,Baik,Baik,0.9842694,True
+Gambar 234,5.209029,97.070655,Rusak Berat,Rusak Berat,0.7563615,True
+Gambar 235,5.208731,97.071937,Rusak Berat,Baik,0.5798482,False
+Gambar 236,5.209661,97.073171,Rusak Ringan,Rusak Ringan,0.4297811,True
+Gambar 237,5.209303,97.073562,Baik,Baik,0.9530179,True
+Gambar 238,5.208907,97.07378,Baik,Baik,0.9534941,True
+Gambar 239,5.208813,97.074249,Sedang,Rusak Ringan,0.6468456,False
+Gambar 240,5.208148,97.074395,Rusak Ringan,Rusak Ringan,0.49912417,True
+Gambar 241,5.208951,97.074373,Rusak Ringan,Rusak Berat,0.5145298,False
+Gambar 242,5.208982,97.075042,Rusak Ringan,Rusak Ringan,0.6783365,True
+Gambar 243,5.209523,97.074513,Baik,Baik,0.91918063,True
+Gambar 244,5.210985,97.081792,Rusak Berat,Rusak Berat,0.41686565,True
+Gambar 245,5.211079,97.08171,Rusak Ringan,Rusak Ringan,0.5353325,True
+Gambar 246,5.210849,97.081214,Rusak Ringan,Rusak Ringan,0.51490337,True
+Gambar 247,5.210719,97.080452,Rusak Berat,Rusak Berat,0.8292878,True
+Gambar 248,5.210594,97.080044,Rusak Ringan,Sedang,0.5239978,False
+Gambar 249,5.210446,97.079929,Rusak Berat,Rusak Berat,0.88110137,True
+Gambar 250,5.209286,97.078985,Baik,Baik,0.9200612,True
+Gambar 251,5.2085,97.078983,Rusak Berat,Rusak Berat,0.8785985,True
+Gambar 252,5.208739,97.07841,Baik,Baik,0.98232186,True
+Gambar 253,5.210605,97.066627,Rusak Ringan,Rusak Ringan,0.47690332,True
+Gambar 254,5.210034,97.066238,Rusak Ringan,Rusak Ringan,0.8195299,True
+Gambar 255,5.219253,97.051014,Rusak Berat,Rusak Berat,0.9552237,True
+Gambar 256,5.218878,97.051655,Baik,Rusak Berat,0.59278935,False
+Gambar 257,5.218569,97.052383,Rusak Berat,Rusak Berat,0.9015027,True
+Gambar 258,5.218282,97.053772,Rusak Ringan,Rusak Ringan,0.70560545,True
+Gambar 259,5.218163,97.054592,Baik,Baik,0.99391466,True
+Gambar 260,5.217768,97.055702,Sedang,Rusak Ringan,0.5190235,False
+Gambar 261,5.217432,97.056822,Rusak Berat,Rusak Berat,0.9146369,True
+Gambar 262,5.217501,97.057791,Rusak Ringan,Rusak Ringan,0.69271016,True
+Gambar 263,5.217194,97.058757,Rusak Ringan,Rusak Ringan,0.6008163,True
+Gambar 264,5.216918,97.059292,Rusak Ringan,Rusak Ringan,0.71413374,True
+Gambar 265,5.216626,97.060598,Rusak Berat,Rusak Berat,0.86200714,True
+Gambar 266,5.216391,97.06115,Rusak Ringan,Rusak Ringan,0.49284682,True
+Gambar 267,5.215643,97.062469,Rusak Berat,Rusak Berat,0.657962,True
+Gambar 268,5.214713,97.063357,Baik,Baik,0.917298,True
+Gambar 269,5.212492,97.065659,Baik,Baik,0.78036,True
+Gambar 270,5.212256,97.066248,Rusak Ringan,Rusak Ringan,0.4673703,True
+Gambar 271,5.21161,97.067269,Rusak Berat,Rusak Berat,0.8930849,True
+Gambar 272,5.211478,97.067811,Baik,Baik,0.9484018,True
+Gambar 273,5.211201,97.068336,Rusak Ringan,Rusak Ringan,0.6797545,True
+Gambar 274,5.211214,97.069352,Rusak Berat,Rusak Berat,0.96425515,True
+Gambar 275,5.210874,97.07003,Baik,Baik,0.9827313,True
+Gambar 276,5.210526,97.071161,Rusak Berat,Rusak Berat,0.91537875,True
+Gambar 277,5.210684,97.071665,Rusak Berat,Rusak Berat,0.9199734,True
+Gambar 278,5.210214,97.073098,Baik,Rusak Berat,0.46647716,False
+Gambar 279,5.209769,97.074827,Baik,Sedang,0.5782958,False
+Gambar 280,5.20961,97.075234,Rusak Berat,Rusak Berat,0.755214,True

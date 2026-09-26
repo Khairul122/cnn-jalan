@@ -47,25 +47,75 @@ def _headline_accuracy():
     }
 
 
+# Notebook Colab melatih Fase 1 (backbone beku) 27 epoch, lalu Fase 2 (fine-tuning).
+# Batas fase tidak tersimpan di DB, jadi dicatat di sini untuk grafik landing.
+FASE_1_EPOCH = 27
+
+
+def _landing_data():
+    """Semua angka landing page dibaca dari DB, tidak ada yang diketik di template."""
+    from flask import url_for
+    from app.kelas import KELAS
+    from app.models.hasil_training import HasilTraining
+    from app.services import cnn_service
+
+    cfg = cnn_service.best_model()
+    ev = HasilEvaluasi.query.filter_by(arsitektur_id=cfg.id).first() if cfg else None
+    total = PrediksiModel.query.count()
+    if not (cfg and ev and total):
+        return None
+
+    per_class = ev.get_per_class()
+    benar = PrediksiModel.query.filter(PrediksiModel.prediksi == PrediksiModel.aktual).count()
+    kelas = []
+    for i, k in enumerate(KELAS):
+        pc = per_class.get(k['key'], {})
+        kelas.append({
+            'key': k['key'], 'nama': k['nama'], 'warna': k['warna'], 'sdi': k['sdi'],
+            'prediksi': PrediksiModel.query.filter_by(prediksi=i).count(),
+            'label': LabelKerusakan.query.filter_by(tingkat_kerusakan_id=i + 1).count(),
+            'precision': pc.get('precision'), 'recall': pc.get('recall'), 'f1': pc.get('f1-score'),
+        })
+
+    # Tiap kelas: contoh foto yang diprediksi benar, dari confidence terendah, tengah, tertinggi.
+    contoh = {}
+    for i, k in enumerate(KELAS):
+        rows = (db.session.query(PrediksiModel.confidence, LokasiKerusakan.nama_citra, DokumentasiFoto.path_file)
+                .join(DokumentasiFoto, PrediksiModel.dokumentasi_id == DokumentasiFoto.id)
+                .join(LokasiKerusakan, DokumentasiFoto.lokasi_id == LokasiKerusakan.id)
+                .filter(PrediksiModel.prediksi == i, PrediksiModel.aktual == i)
+                .order_by(PrediksiModel.confidence).all())
+        pilih = [rows[0], rows[len(rows) // 2], rows[-1]] if len(rows) >= 3 else rows
+        contoh[k['key']] = [{'citra': r.nama_citra, 'confidence': round(float(r.confidence) * 100, 1),
+                             'src': url_for('static', filename=r.path_file)} for r in pilih]
+
+    riwayat = [{'e': h.epoch, 'acc': h.accuracy, 'val': h.val_accuracy, 'loss': h.loss, 'vloss': h.val_loss}
+               for h in HasilTraining.query.filter_by(arsitektur_id=cfg.id).order_by(HasilTraining.epoch)]
+
+    return {
+        'total': total,
+        'benar_semua': benar,
+        'akurasi_semua': round(benar / total * 100, 1),
+        'akurasi_val': round(ev.akurasi, 2),
+        'n_val': ev.total_data_val,
+        'benar_val': sum(ev.get_cm()[i][i] for i in range(len(KELAS))),
+        'macro_f1': round(ev.macro_f1, 1),
+        'cm': ev.get_cm(),
+        'kelas': kelas,
+        'contoh': contoh,
+        'riwayat': riwayat,
+        'fase1': FASE_1_EPOCH,
+        'model': {'nama': cfg.nama, 'lr': cfg.learning_rate, 'batch': cfg.batch_size,
+                  'patience': cfg.patience, 'input': cfg.input_size},
+    }
+
+
 @dashboard_bp.route('/')
 def root():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.index'))
-
-    headline = _headline_accuracy()
-
-    total_pred = PrediksiModel.query.count()
-    pred_ct    = {k: PrediksiModel.query.filter_by(prediksi=i).count() for i, k in enumerate(KEYS)}
-
-    ctx = {
-        'total_pred'    : total_pred,
-        'pred_ct'       : pred_ct,
-        'akurasi'       : headline['akurasi'] if headline else None,
-        'recall'        : headline['recall'] if headline else {},
-        'model_nama'    : headline['model_nama'] if headline else None,
-        'akurasi_sumber': headline['sumber'] if headline else None,
-    }
-    return render_template('landing/index.html', **ctx)
+    from datetime import date
+    return render_template('landing/index.html', data=_landing_data(), tahun=date.today().year)
 
 
 @dashboard_bp.route('/api/landing/gis')

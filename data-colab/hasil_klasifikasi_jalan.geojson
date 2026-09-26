@@ -1,0 +1,4485 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.108763,
+          5.203507
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 1",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.6757,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.109209,
+          5.203184
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 2",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5106,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.109566,
+          5.202934
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 3",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.6824,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.10961,
+          5.202933
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 4",
+        "kelas": "Sedang",
+        "keyakinan": 0.979,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.109913,
+          5.202742
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 5",
+        "kelas": "Sedang",
+        "keyakinan": 0.8317,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.110156,
+          5.202614
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 6",
+        "kelas": "Sedang",
+        "keyakinan": 0.3834,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.110687,
+          5.202007
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 7",
+        "kelas": "Baik",
+        "keyakinan": 0.7929,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.112101,
+          5.20275
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 8",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5747,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.112111,
+          5.202726
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 9",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8372,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.112901,
+          5.203653
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 10",
+        "kelas": "Sedang",
+        "keyakinan": 0.5434,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.114125,
+          5.205149
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 11",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.4382,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.114125,
+          5.205303
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 12",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9687,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.113701,
+          5.206987
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 13",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5744,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.113669,
+          5.207553
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 14",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5358,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.112844,
+          5.210376
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 15",
+        "kelas": "Sedang",
+        "keyakinan": 0.9496,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.113156,
+          5.211339
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 16",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5812,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.114984,
+          5.212708
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 17",
+        "kelas": "Sedang",
+        "keyakinan": 0.8439,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.116398,
+          5.212997
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 18",
+        "kelas": "Sedang",
+        "keyakinan": 0.9698,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.117785,
+          5.212094
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 19",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5902,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.124134,
+          5.208711
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 20",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8995,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.125524,
+          5.208057
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 21",
+        "kelas": "Sedang",
+        "keyakinan": 0.8867,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.12878,
+          5.206373
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 22",
+        "kelas": "Sedang",
+        "keyakinan": 0.5817,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.130829,
+          5.205058
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 23",
+        "kelas": "Sedang",
+        "keyakinan": 0.6987,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.133226,
+          5.203992
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 24",
+        "kelas": "Sedang",
+        "keyakinan": 0.5466,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.12783,
+          5.201901
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 25",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7679,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.14022,
+          5.200744
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 26",
+        "kelas": "Baik",
+        "keyakinan": 0.7111,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.143207,
+          5.198167
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 27",
+        "kelas": "Sedang",
+        "keyakinan": 0.9493,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.14682,
+          5.175114
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 28",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.908,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.143971,
+          5.17793
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 29",
+        "kelas": "Sedang",
+        "keyakinan": 0.8522,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.12931,
+          5.174092
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 30",
+        "kelas": "Sedang",
+        "keyakinan": 0.9697,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.128804,
+          5.174093
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 31",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5106,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.12722,
+          5.175929
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 32",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9599,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.116067,
+          5.193525
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 33",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.7385,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.114728,
+          5.195717
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 34",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8718,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.114511,
+          5.196258
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 35",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9668,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.113733,
+          5.197226
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 36",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5735,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.112572,
+          5.199138
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 37",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5173,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.111884,
+          5.200166
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 38",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5492,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.111155,
+          5.20131
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 39",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5014,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.097792,
+          5.213349
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 40",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.7047,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.096926,
+          5.214098
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 41",
+        "kelas": "Sedang",
+        "keyakinan": 0.4448,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.094953,
+          5.214884
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 42",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8074,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.093748,
+          5.215106
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 43",
+        "kelas": "Baik",
+        "keyakinan": 0.641,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.09192,
+          5.214961
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 44",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8641,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.090656,
+          5.214654
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 45",
+        "kelas": "Sedang",
+        "keyakinan": 0.7658,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.088998,
+          5.21377
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 46",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5425,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.084608,
+          5.210935
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 47",
+        "kelas": "Sedang",
+        "keyakinan": 0.5102,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.081761,
+          5.210323
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 48",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6239,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.076569,
+          5.209174
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 49",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.7221,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.075629,
+          5.209371
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 50",
+        "kelas": "Sedang",
+        "keyakinan": 0.7136,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.073829,
+          5.209922
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 51",
+        "kelas": "Baik",
+        "keyakinan": 0.8533,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.070674,
+          5.210757
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 52",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8529,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.077601,
+          5.215717
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 53",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.752,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07772,
+          5.213399
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 54",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8878,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068529,
+          5.220091
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 55",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9096,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.064292,
+          5.229867
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 56",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8081,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.063807,
+          5.230071
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 57",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8842,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.062677,
+          5.230528
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 58",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.742,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.062124,
+          5.230834
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 59",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8494,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.06193,
+          5.230988
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 60",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7517,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.060969,
+          5.231213
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 61",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9259,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.060648,
+          5.231179
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 62",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.879,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.059142,
+          5.23197
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 63",
+        "kelas": "Sedang",
+        "keyakinan": 0.6757,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.037626,
+          5.227429
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 64",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9282,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.037354,
+          5.225558
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 65",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8237,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.039135,
+          5.213645
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 66",
+        "kelas": "Sedang",
+        "keyakinan": 0.9359,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.039478,
+          5.229064
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 67",
+        "kelas": "Sedang",
+        "keyakinan": 0.5788,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.040156,
+          5.232027
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 68",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.792,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.041683,
+          5.234259
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 69",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.753,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.043352,
+          5.237123
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 70",
+        "kelas": "Sedang",
+        "keyakinan": 0.9198,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.045044,
+          5.239207
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 71",
+        "kelas": "Baik",
+        "keyakinan": 0.4681,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.077877,
+          5.204129
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 72",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.52,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.076317,
+          5.20116
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 73",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7081,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.076128,
+          5.200678
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 74",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9302,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.075429,
+          5.198422
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 75",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.783,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.075422,
+          5.197933
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 76",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7555,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07607,
+          5.197064
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 77",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9332,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.075935,
+          5.196616
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 78",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7763,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074977,
+          5.195543
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 79",
+        "kelas": "Baik",
+        "keyakinan": 0.5655,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074462,
+          5.194833
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 80",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9029,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074155,
+          5.194254
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 81",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9272,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.073937,
+          5.194122
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 82",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8468,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072332,
+          5.193571
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 83",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6135,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.070197,
+          5.19281
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 84",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8956,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068592,
+          5.192558
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 85",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8015,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068162,
+          5.192147
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 86",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.892,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.067604,
+          5.191942
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 87",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.81,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.06657,
+          5.191671
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 88",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7578,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.064664,
+          5.19057
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 89",
+        "kelas": "Sedang",
+        "keyakinan": 0.6856,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.064242,
+          5.190434
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 90",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9083,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.062959,
+          5.187286
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 91",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8649,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.061614,
+          5.187498
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 92",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.907,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.060864,
+          5.188121
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 93",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6604,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.060142,
+          5.18915
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 94",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.934,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.058894,
+          5.190104
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 95",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.892,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.058628,
+          5.1908
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 96",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8754,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.058265,
+          5.191491
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 97",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9435,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.056675,
+          5.192883
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 98",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8216,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.055689,
+          5.194833
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 99",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7384,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.055488,
+          5.194835
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 100",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7943,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.054475,
+          5.194835
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 101",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9179,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.051149,
+          5.196721
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 102",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.623,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.050063,
+          5.197458
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 103",
+        "kelas": "Baik",
+        "keyakinan": 0.9711,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.049841,
+          5.198198
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 104",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5376,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.048994,
+          5.199329
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 105",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6015,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.047687,
+          5.199626
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 106",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.875,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.046488,
+          5.199097
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 107",
+        "kelas": "Baik",
+        "keyakinan": 0.3954,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.044678,
+          5.198558
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 108",
+        "kelas": "Sedang",
+        "keyakinan": 0.7887,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.042136,
+          5.198994
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 109",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5707,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.041343,
+          5.19944
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 110",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8256,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.039522,
+          5.201265
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 111",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.563,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.039123,
+          5.201386
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 112",
+        "kelas": "Sedang",
+        "keyakinan": 0.873,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.035891,
+          5.206172
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 113",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8674,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.036048,
+          5.207358
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 114",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5161,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.035967,
+          5.208141
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 115",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.568,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.03581,
+          5.20894
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 116",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5419,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.035789,
+          5.209202
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 117",
+        "kelas": "Baik",
+        "keyakinan": 0.9038,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.036422,
+          5.209427
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 118",
+        "kelas": "Baik",
+        "keyakinan": 0.6835,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.03667,
+          5.20951
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 119",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8592,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.037136,
+          5.209827
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 120",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5286,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.037542,
+          5.210987
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 121",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.037703,
+          5.211541
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 122",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8325,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.077877,
+          5.205695
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 123",
+        "kelas": "Sedang",
+        "keyakinan": 0.7053,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.080305,
+          5.201197
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 124",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6699,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.081736,
+          5.198992
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 125",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8062,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.083627,
+          5.192997
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 126",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8462,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.084064,
+          5.187816
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 127",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8706,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.084227,
+          5.18532
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 128",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6643,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.084817,
+          5.183075
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 129",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7357,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.091025,
+          5.173893
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 130",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7421,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.090546,
+          5.171355
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 131",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6115,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.089026,
+          5.165429
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 132",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8368,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.088641,
+          5.161744
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 133",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8582,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.087274,
+          5.151526
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 134",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6037,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.097641,
+          5.152632
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 135",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.6395,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.098556,
+          5.153889
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 136",
+        "kelas": "Baik",
+        "keyakinan": 0.7723,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.099027,
+          5.155161
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 137",
+        "kelas": "Sedang",
+        "keyakinan": 0.784,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.099466,
+          5.15756
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 138",
+        "kelas": "Baik",
+        "keyakinan": 0.8961,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.099467,
+          5.160268
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 139",
+        "kelas": "Sedang",
+        "keyakinan": 0.8215,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.100089,
+          5.161916
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 140",
+        "kelas": "Baik",
+        "keyakinan": 0.9888,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.101129,
+          5.163369
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 141",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8163,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.101547,
+          5.164181
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 142",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.3462,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.106722,
+          5.166285
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 143",
+        "kelas": "Baik",
+        "keyakinan": 0.9969,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.108855,
+          5.167062
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 144",
+        "kelas": "Baik",
+        "keyakinan": 0.9904,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.12808,
+          5.1721
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 145",
+        "kelas": "Baik",
+        "keyakinan": 0.8904,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.135652,
+          5.157777
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 146",
+        "kelas": "Sedang",
+        "keyakinan": 0.5288,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.136297,
+          5.156639
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 147",
+        "kelas": "Baik",
+        "keyakinan": 0.6109,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.141831,
+          5.146187
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 148",
+        "kelas": "Sedang",
+        "keyakinan": 0.4723,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.144401,
+          5.142794
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 149",
+        "kelas": "Baik",
+        "keyakinan": 0.9505,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.116338,
+          5.207325
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 150",
+        "kelas": "Sedang",
+        "keyakinan": 0.6098,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.116331,
+          5.208171
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 151",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7123,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.120466,
+          5.210364
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 152",
+        "kelas": "Sedang",
+        "keyakinan": 0.9116,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.147076,
+          5.192448
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 153",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6208,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.147443,
+          5.192512
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 154",
+        "kelas": "Baik",
+        "keyakinan": 0.995,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.150591,
+          5.183536
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 155",
+        "kelas": "Baik",
+        "keyakinan": 0.9949,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.151286,
+          5.183718
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 156",
+        "kelas": "Baik",
+        "keyakinan": 0.9939,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.151602,
+          5.182628
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 157",
+        "kelas": "Baik",
+        "keyakinan": 0.8487,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.152799,
+          5.174814
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 158",
+        "kelas": "Baik",
+        "keyakinan": 0.9809,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.150352,
+          5.174834
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 159",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.717,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.150066,
+          5.174933
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 160",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.927,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.149053,
+          5.174527
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 161",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9516,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.148727,
+          5.174644
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 162",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9267,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.145882,
+          5.16908
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 163",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8368,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.143808,
+          5.164557
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 164",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8948,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.14251,
+          5.165354
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 165",
+        "kelas": "Baik",
+        "keyakinan": 0.9523,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.140832,
+          5.167553
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 166",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7211,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.137651,
+          5.172156
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 167",
+        "kelas": "Sedang",
+        "keyakinan": 0.9473,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.13761,
+          5.17331
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 168",
+        "kelas": "Sedang",
+        "keyakinan": 0.9474,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.138614,
+          5.175427
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 169",
+        "kelas": "Sedang",
+        "keyakinan": 0.8697,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.142981,
+          5.175901
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 170",
+        "kelas": "Sedang",
+        "keyakinan": 0.9553,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.142246,
+          5.177433
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 171",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5764,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.142308,
+          5.177722
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 172",
+        "kelas": "Baik",
+        "keyakinan": 0.8184,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.142725,
+          5.178348
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 173",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9567,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.144804,
+          5.182837
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 174",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8954,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.143997,
+          5.183651
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 175",
+        "kelas": "Baik",
+        "keyakinan": 0.9943,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.14426,
+          5.183568
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 176",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9572,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.146456,
+          5.187441
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 177",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5836,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.14222,
+          5.184113
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 178",
+        "kelas": "Sedang",
+        "keyakinan": 0.6527,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.142309,
+          5.184565
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 179",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9569,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.141549,
+          5.187237
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 180",
+        "kelas": "Sedang",
+        "keyakinan": 0.8208,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.142142,
+          5.197227
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 181",
+        "kelas": "Baik",
+        "keyakinan": 0.8098,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.141429,
+          5.197794
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 182",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8716,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.137173,
+          5.197771
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 183",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8848,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.120294,
+          5.210469
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 184",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9813,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.118765,
+          5.211112
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 185",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9256,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.117302,
+          5.211763
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 186",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5696,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.116791,
+          5.212443
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 187",
+        "kelas": "Baik",
+        "keyakinan": 0.935,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.115821,
+          5.21296
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 188",
+        "kelas": "Baik",
+        "keyakinan": 0.4864,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.11443,
+          5.212264
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 189",
+        "kelas": "Sedang",
+        "keyakinan": 0.9682,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.113778,
+          5.208487
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 190",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9424,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.113784,
+          5.204341
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 191",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6191,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.112014,
+          5.202319
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 192",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8369,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.107411,
+          5.203419
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 193",
+        "kelas": "Baik",
+        "keyakinan": 0.4761,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.104475,
+          5.208166
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 194",
+        "kelas": "Baik",
+        "keyakinan": 0.9528,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.101334,
+          5.21015
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 195",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8528,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072767,
+          5.210171
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 196",
+        "kelas": "Baik",
+        "keyakinan": 0.8731,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072404,
+          5.209583
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 197",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.7577,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072008,
+          5.208788
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 198",
+        "kelas": "Baik",
+        "keyakinan": 0.8182,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.071574,
+          5.2081
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 199",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5801,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.070965,
+          5.207712
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 200",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.918,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.069827,
+          5.208238
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 201",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9668,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068565,
+          5.207368
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 202",
+        "kelas": "Baik",
+        "keyakinan": 0.6417,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.067123,
+          5.20722
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 203",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.4026,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.065739,
+          5.208858
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 204",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8906,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.06579,
+          5.208558
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 205",
+        "kelas": "Baik",
+        "keyakinan": 0.9966,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.065876,
+          5.208334
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 206",
+        "kelas": "Baik",
+        "keyakinan": 0.4127,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.066272,
+          5.207392
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 207",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.9362,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.066167,
+          5.207236
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 208",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5047,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068802,
+          5.207457
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 209",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.3794,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.06865,
+          5.207546
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 210",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.6483,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068067,
+          5.207736
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 211",
+        "kelas": "Baik",
+        "keyakinan": 0.6844,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.066882,
+          5.208565
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 212",
+        "kelas": "Baik",
+        "keyakinan": 0.6029,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.066625,
+          5.209054
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 213",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.4689,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.067669,
+          5.209986
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 214",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.6947,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.067979,
+          5.210289
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 215",
+        "kelas": "Baik",
+        "keyakinan": 0.5242,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068258,
+          5.210558
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 216",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6486,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068603,
+          5.210425
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 217",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9818,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068801,
+          5.209383
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 218",
+        "kelas": "Baik",
+        "keyakinan": 0.9949,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.069724,
+          5.20959
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 219",
+        "kelas": "Baik",
+        "keyakinan": 0.6334,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.06969,
+          5.210043
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 220",
+        "kelas": "Baik",
+        "keyakinan": 0.5812,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.069417,
+          5.210166
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 221",
+        "kelas": "Baik",
+        "keyakinan": 0.9256,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.069576,
+          5.210374
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 222",
+        "kelas": "Baik",
+        "keyakinan": 0.9536,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.070328,
+          5.209813
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 223",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7018,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.070534,
+          5.209853
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 224",
+        "kelas": "Sedang",
+        "keyakinan": 0.6396,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.070956,
+          5.20981
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 225",
+        "kelas": "Baik",
+        "keyakinan": 0.8418,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07156,
+          5.209513
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 226",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8793,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072063,
+          5.209439
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 227",
+        "kelas": "Baik",
+        "keyakinan": 0.5104,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072032,
+          5.20833
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 228",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.4335,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072082,
+          5.208163
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 229",
+        "kelas": "Baik",
+        "keyakinan": 0.4955,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.072168,
+          5.207947
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 230",
+        "kelas": "Baik",
+        "keyakinan": 0.9204,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.071485,
+          5.208615
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 231",
+        "kelas": "Sedang",
+        "keyakinan": 0.6464,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07125,
+          5.208774
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 232",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7711,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07062,
+          5.209108
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 233",
+        "kelas": "Baik",
+        "keyakinan": 0.9843,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.070655,
+          5.209029
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 234",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.7564,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.071937,
+          5.208731
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 235",
+        "kelas": "Baik",
+        "keyakinan": 0.5798,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.073171,
+          5.209661
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 236",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.4298,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.073562,
+          5.209303
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 237",
+        "kelas": "Baik",
+        "keyakinan": 0.953,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07378,
+          5.208907
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 238",
+        "kelas": "Baik",
+        "keyakinan": 0.9535,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074249,
+          5.208813
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 239",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6468,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074395,
+          5.208148
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 240",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.4991,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074373,
+          5.208951
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 241",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5145,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.075042,
+          5.208982
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 242",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6783,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074513,
+          5.209523
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 243",
+        "kelas": "Baik",
+        "keyakinan": 0.9192,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.081792,
+          5.210985
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 244",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.4169,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.08171,
+          5.211079
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 245",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5353,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.081214,
+          5.210849
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 246",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.5149,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.080452,
+          5.210719
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 247",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8293,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.080044,
+          5.210594
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 248",
+        "kelas": "Sedang",
+        "keyakinan": 0.524,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.079929,
+          5.210446
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 249",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8811,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.078985,
+          5.209286
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 250",
+        "kelas": "Baik",
+        "keyakinan": 0.9201,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.078983,
+          5.2085
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 251",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8786,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07841,
+          5.208739
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 252",
+        "kelas": "Baik",
+        "keyakinan": 0.9823,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.066627,
+          5.210605
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 253",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.4769,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.066238,
+          5.210034
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 254",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.8195,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.051014,
+          5.219253
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 255",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9552,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.051655,
+          5.218878
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 256",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.5928,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.052383,
+          5.218569
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 257",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9015,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.053772,
+          5.218282
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 258",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7056,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.054592,
+          5.218163
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 259",
+        "kelas": "Baik",
+        "keyakinan": 0.9939,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.055702,
+          5.217768
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 260",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.519,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.056822,
+          5.217432
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 261",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9146,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.057791,
+          5.217501
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 262",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6927,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.058757,
+          5.217194
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 263",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6008,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.059292,
+          5.216918
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 264",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.7141,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.060598,
+          5.216626
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 265",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.862,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.06115,
+          5.216391
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 266",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.4928,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.062469,
+          5.215643
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 267",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.658,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.063357,
+          5.214713
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 268",
+        "kelas": "Baik",
+        "keyakinan": 0.9173,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.065659,
+          5.212492
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 269",
+        "kelas": "Baik",
+        "keyakinan": 0.7804,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.066248,
+          5.212256
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 270",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.4674,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.067269,
+          5.21161
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 271",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.8931,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.067811,
+          5.211478
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 272",
+        "kelas": "Baik",
+        "keyakinan": 0.9484,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.068336,
+          5.211201
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 273",
+        "kelas": "Rusak Ringan",
+        "keyakinan": 0.6798,
+        "warna": "#F97316"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.069352,
+          5.211214
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 274",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9643,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.07003,
+          5.210874
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 275",
+        "kelas": "Baik",
+        "keyakinan": 0.9827,
+        "warna": "#10B981"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.071161,
+          5.210526
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 276",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.9154,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.071665,
+          5.210684
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 277",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.92,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.073098,
+          5.210214
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 278",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.4665,
+        "warna": "#E53E3E"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.074827,
+          5.209769
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 279",
+        "kelas": "Sedang",
+        "keyakinan": 0.5783,
+        "warna": "#F59E0B"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.075234,
+          5.20961
+        ]
+      },
+      "properties": {
+        "citra": "Gambar 280",
+        "kelas": "Rusak Berat",
+        "keyakinan": 0.7552,
+        "warna": "#E53E3E"
+      }
+    }
+  ]
+}

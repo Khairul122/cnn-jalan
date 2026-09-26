@@ -7,22 +7,25 @@
 {% endblock %}
 
 {% block content %}
-{% set ph_title = 'Augmentasi Data' %}
-{% set ph_subtitle = 'Perbanyak foto hasil denoise menjadi salinan bertransformasi acak ber-seed.' %}
-{% include 'components/page_header.html' %}
-
-<div class="d-flex flex-wrap gap-2 mb-3">
-  {% if total_hasil %}
-  <form method="POST" action="{{ url_for('augmentasi.hasil_reset') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="button" class="btn btn--ghost btn--danger-ghost btn--sm"
-            onclick="showConfirmForm(this,'Reset Hasil Augmentasi','Semua salinan augmentasi (file dan record) akan dihapus.','danger','Ya, Reset')">
-      <i class="bi bi-trash" aria-hidden="true"></i> Reset hasil
-    </button>
-  </form>
-  {% endif %}
-  <a href="{{ url_for('augmentasi.config_new') }}" class="btn btn--primary btn--sm">
-    <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Konfigurasi
-  </a>
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+  <div>
+    {% set ph_title = 'Augmentasi Data' %}
+    {% set ph_subtitle = 'Perbanyak foto hasil denoise menjadi salinan bertransformasi acak ber-seed.' %}
+    {% include 'components/page_header.html' %}
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    {% if total_hasil %}
+    <form method="POST" action="{{ url_for('augmentasi.hasil_reset') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="button" class="btn btn--ghost btn--danger-ghost btn--sm"
+              onclick="showConfirmForm(this,'Reset Hasil Augmentasi','Semua salinan augmentasi (file dan record) akan dihapus.','danger','Ya, Reset')">
+        <i class="bi bi-trash" aria-hidden="true"></i> Reset hasil
+      </button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('augmentasi.config_new') }}" class="btn btn--primary">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Konfigurasi
+    </a>
+  </div>
 </div>
 
 <div class="grid grid--3 mb-4">
