@@ -80,7 +80,7 @@
   --dur-2: 180ms;
   --ease: cubic-bezier(.2, 0, .2, 1);
 
-  --rail-w: 64px;
+  --rail-w: 240px;
 
   /* ══ Legacy alias layer ══════════════════════════════════════════════
      883 var() references to these names live across 28 templates. They are

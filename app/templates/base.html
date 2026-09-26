@@ -31,16 +31,12 @@
 
   {% if current_user.is_authenticated %}
 
-  {# Rail item. The 01-08 number is the position in the pipeline: dashboard,
-  lokasi, label, preprocessing, augmentasi, split, arsitektur, peta. Only the
-  icon shows at rest; the label appears as a tooltip on hover and on keyboard
-  focus, so the rail costs 64px instead of 240px. #}
-  {% macro nav_link(href, label, active, num, icon_class) %}
+  {# Item sidebar: ikon + nama menu, urut mengikuti pipeline (data, persiapan, model, hasil). #}
+  {% macro nav_link(href, label, active, icon_class) %}
   <a href="{{ href }}" class="sidebar-nav-link{{ ' is-active' if active else '' }}"
-     data-num="{{ num }}" aria-label="{{ label }}" title="{{ label }}"
      {% if active %}aria-current="page"{% endif %}>
     <span class="nav-ico" aria-hidden="true"><i class="{{ icon_class }}"></i></span>
-    <span class="rail__tip" aria-hidden="true">{{ label }}</span>
+    <span class="sidebar-nav-link__label">{{ label }}</span>
   </a>
   {% endmacro %}
 
@@ -57,27 +53,33 @@
       </div>
 
       <nav class="rail__nav" aria-label="Menu">
-        {{ nav_link(url_for('dashboard.index'), 'Dashboard', request.endpoint == 'dashboard.index', '01', 'bi
-        bi-house-door-fill') }}
-        {{ nav_link(url_for('lokasi.index'), 'Lokasi', request.blueprint == 'lokasi', '02', 'bi bi-geo-alt-fill') }}
-        {{ nav_link(url_for('label.index'), 'Labeling Visual', request.blueprint == 'label', '03', 'bi bi-tags-fill') }}
-        {{ nav_link(url_for('preprocessing.index'), 'Preprocessing', request.blueprint == 'preprocessing', '04', 'bi
-        bi-sliders') }}
-        {{ nav_link(url_for('augmentasi.index'), 'Augmentasi', request.blueprint == 'augmentasi', '05', 'bi bi-shuffle')
-        }}
-        {{ nav_link(url_for('split.index'), 'Split Data', request.blueprint == 'split', '06', 'bi bi-diagram-3-fill') }}
-        {{ nav_link(url_for('arsitektur.index'), 'Arsitektur CNN', request.blueprint == 'arsitektur', '07', 'bi
-        bi-cpu-fill') }}
-        {{ nav_link(url_for('peta.index'), 'Peta GIS', request.blueprint == 'peta', '08', 'bi bi-map-fill') }}
+        {{ nav_link(url_for('dashboard.index'), 'Dashboard', request.endpoint == 'dashboard.index', 'bi bi-house-door-fill') }}
+
+        <p class="sidebar-section-label">Data</p>
+        {{ nav_link(url_for('lokasi.index'), 'Lokasi', request.blueprint == 'lokasi', 'bi bi-geo-alt-fill') }}
+        {{ nav_link(url_for('label.index'), 'Labeling Visual', request.blueprint == 'label', 'bi bi-tags-fill') }}
+
+        <p class="sidebar-section-label">Persiapan</p>
+        {{ nav_link(url_for('preprocessing.index'), 'Preprocessing', request.blueprint == 'preprocessing', 'bi bi-sliders') }}
+        {{ nav_link(url_for('augmentasi.index'), 'Augmentasi', request.blueprint == 'augmentasi', 'bi bi-shuffle') }}
+        {{ nav_link(url_for('split.index'), 'Split Data', request.blueprint == 'split', 'bi bi-diagram-3-fill') }}
+
+        <p class="sidebar-section-label">Model dan hasil</p>
+        {{ nav_link(url_for('arsitektur.index'), 'Arsitektur CNN', request.blueprint == 'arsitektur', 'bi bi-cpu-fill') }}
+        {{ nav_link(url_for('peta.index'), 'Peta GIS', request.blueprint == 'peta', 'bi bi-map-fill') }}
       </nav>
 
       <div class="rail__user">
-        <div class="rail__avatar" title="{{ current_user.nama }} ({{ current_user.role }})" aria-hidden="true">
+        <div class="rail__avatar" aria-hidden="true">
           {{ current_user.nama[:2].upper() if current_user.nama|length >= 2 else current_user.nama[0].upper() }}
+        </div>
+        <div class="rail__user-text">
+          <p class="rail__user-name">{{ current_user.nama }}</p>
+          <p class="rail__user-role">{{ current_user.role }}</p>
         </div>
         <form method="POST" action="{{ url_for('auth.logout') }}" class="rail__logout-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="rail__logout" aria-label="Logout" title="Logout">
+          <button type="submit" class="rail__logout" aria-label="Keluar" title="Keluar">
             <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
           </button>
         </form>

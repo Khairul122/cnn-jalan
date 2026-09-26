@@ -40,7 +40,7 @@ a { color: var(--accent); }
   overflow: hidden;
 }
 
-/* Rail, permanent at >=1024px, drawer below */
+/* Sidebar 240px, permanen di >=1024px, drawer di bawahnya */
 #sidebar {
   width: var(--rail-w);
   min-width: var(--rail-w);
@@ -84,8 +84,7 @@ a { color: var(--accent); }
   flex-shrink: 0;
 }
 
-/* The icon rail no longer carries a wordmark, so the product name lives here.
-   Dropped below 768px where the breadcrumb needs the room. */
+/* Nama produk di topbar. Dihilangkan di bawah 768px karena breadcrumb butuh ruang. */
 .shell__brand {
   display: flex;
   align-items: center;
@@ -125,13 +124,6 @@ a { color: var(--accent); }
 @media (min-width: 1024px) {
   #hamburger-btn { display: none; }
   #sidebar-overlay { display: none !important; }
-}
-
-@media (min-width: 1024px) and (max-width: 1279px) {
-  #sidebar {
-    width: 64px;
-    min-width: 64px;
-  }
 }
 
 @media (max-width: 1023px) {
@@ -184,24 +176,32 @@ a { color: var(--accent); }
   outline-offset: 2px;
 }
 
-/* ── Sidebar nav link ────────────────────────────────────────────────── */
-/* Ikon saja, terpusat, label muncul sebagai tooltip. Nilai warna eksplisit
-   dari tokens.css, bukan alpha di atas latar.
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+/* Kolom 240px berlabel: ikon + nama menu, dikelompokkan per tahap pipeline.
+   Kontras terhadap --rail #12161C: --rail-ink-dim 5,90:1, --rail-ink 15,4:1,
+   putih di atas --rail-active #0F4C81 lebih dari 9:1. */
+.sidebar-section-label {
+  margin: var(--s-4) var(--s-4) var(--s-1);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--rail-ink-dim);
+}
+.sidebar-section-label:first-child { margin-top: var(--s-2); }
 
-   Kontras (WCAG 2.x), dihitung terhadap --rail #12161C:
-     --rail-ink-dim #8A94A0 -> 5,90:1   (item istirahat)
-     --rail-ink     #E7EBEF -> 15,4:1   (item hover/fokus/aktif)
-   Keduanya lolos AA untuk teks normal. */
 .sidebar-nav-link {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin: 0 auto;
+  gap: var(--s-3);
+  min-height: 44px;
+  margin: 0 var(--s-2);
+  padding: 0 var(--s-3);
   border-radius: var(--r-2);
   color: var(--rail-ink-dim);
+  font-size: 14px;
+  font-weight: 500;
   text-decoration: none;
   transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
   cursor: pointer;
@@ -210,9 +210,16 @@ a { color: var(--accent); }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  flex: none;
+  width: 20px;
   font-size: 1.05rem;
+}
+.sidebar-nav-link__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sidebar-nav-link:hover {
   background: var(--sidebar-hover-bg);
@@ -222,89 +229,9 @@ a { color: var(--accent); }
 .sidebar-nav-link.is-active {
   background: var(--rail-active);
   color: #fff;
+  font-weight: 600;
 }
-.sidebar-nav-link.is-active::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 20%;
-  bottom: 20%;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: #38BDF8;
-}
-.sidebar-nav-link:focus-visible {
-  outline: 2px solid rgba(56, 189, 248, .6);
-  outline-offset: 1px;
-}
-
-/* Tooltip. Purely visual: the name is already on aria-label and title, so a
-   hover reveals it without turning the rail back into a text column. */
-.rail__tip {
-  position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 40;
-  padding: var(--s-1) var(--s-2);
-  border-radius: var(--r-1);
-  background: var(--ink-1);
-  color: #fff;
-  font-size: var(--t-sm);
-  font-weight: 500;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity var(--dur-1) var(--ease), visibility var(--dur-1) var(--ease);
-}
-.sidebar-nav-link:hover .rail__tip,
-.sidebar-nav-link:focus-visible .rail__tip {
-  opacity: 1;
-  visibility: visible;
-}
-
-@media (max-width: 1023px) {
-  /* Inside the drawer the rail is full width again, so labels are simply shown
-     and the tooltip is suppressed. */
-  .sidebar-nav-link {
-    width: 100%;
-    margin: 0;
-    height: 44px;
-    justify-content: flex-start;
-    gap: var(--s-3);
-    padding: 0 var(--s-3);
-  }
-  .sidebar-nav-link .nav-ico { width: 24px; height: 24px; flex-shrink: 0; }
-  .rail__tip {
-    position: static;
-    transform: none;
-    opacity: 1;
-    visibility: visible;
-    background: none;
-    color: inherit;
-    padding: 0;
-  }
-}
-
-.sidebar-section-label {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  font-size: .6rem;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, .28);
-  padding: .75rem .75rem .25rem;
-  margin-top: .125rem;
-}
-.sidebar-section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, .08);
-}
+.sidebar-nav-link:focus-visible { outline: 2px solid var(--rail-ink); outline-offset: -2px; }
 
 /* ── Breadcrumb topbar ───────────────────────────────────────────────── */
 /* Dipindah dari style.css 648-674. */
@@ -383,11 +310,11 @@ button:focus-visible {
 .rail__brand {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: var(--s-2);
+  justify-content: space-between;
+  padding: var(--s-3) var(--s-4);
   border-bottom: 1px solid rgba(255, 255, 255, .06);
 }
-.rail__logo { height: 34px; width: auto; max-width: 100%; object-fit: contain; }
+.rail__logo { height: 36px; width: auto; max-width: 100%; object-fit: contain; }
 .rail__close {
   display: none;
   min-width: 32px; min-height: 32px;
@@ -407,10 +334,9 @@ button:focus-visible {
 }
 .rail__user {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--s-2);
-  padding: var(--s-3) var(--s-2);
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
   border-top: 1px solid rgba(255, 255, 255, .06);
 }
 .rail__avatar {
@@ -437,7 +363,7 @@ button:focus-visible {
 }
 .rail__user-role {
   margin: 0;
-  font-size: 10px;
+  font-size: var(--t-xs);
   color: var(--rail-ink-dim);
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -447,7 +373,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px; height: 30px;
+  width: 44px; height: 44px;
   flex-shrink: 0;
   background: none; border: 0;
   color: var(--rail-ink-dim);
@@ -456,16 +382,6 @@ button:focus-visible {
 }
 .rail__logout:hover { color: var(--danger); }
 .rail__logout:focus-visible { outline: 2px solid var(--rail-ink); outline-offset: 2px; }
-
-.sidebar-nav-link { color: var(--rail-ink-dim); }
-.sidebar-nav-link:focus-visible { outline: 2px solid var(--rail-ink); outline-offset: -2px; }
-
-/* .sidebar-section-label sekarang memakai --rail-ink-dim juga, bukan
-   rgba(255,255,255,.28) yang mengukur 2,51:1 di atas rail — gagal AA.
-   Kelas ini belum dipakai template mana pun, jadi tidak ada yang berubah
-   hari ini; sekarang quando task berikutnya menyambungkannya, label yang
-   muncul bukan 2,5:1. */
-.sidebar-section-label { color: var(--rail-ink-dim); }
 
 .shell__header-right {
   display: flex;

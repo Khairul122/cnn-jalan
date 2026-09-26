@@ -8,210 +8,151 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-#map          { height: clamp(340px, 62vh, 620px); border-radius: var(--r-card);
-                border:1px solid var(--c-border); box-shadow:var(--shadow-card); }
-#map-skeleton { height: clamp(340px, 62vh, 620px); border-radius: var(--r-card); }
-
-/* Layer switcher tabs */
-.layer-tab {
-  display:inline-flex;align-items:center;gap:.35rem;
-  padding:.4rem .9rem;border-radius:var(--r-input);font-size:.8rem;font-weight:700;
-  cursor:pointer;border:1px solid var(--c-border);background:var(--c-surface);
-  color:var(--c-muted);transition:all .15s;
-}
-.layer-tab.active-status  { border-color:#38BDF8;color:#38BDF8;background:rgba(56,189,248,.1); }
-.layer-tab.active-cnn     { border-color:#10B981;color:#10B981;background:rgba(16,185,129,.1); }
-.layer-tab:not(.active-status):not(.active-cnn):hover { border-color:var(--c-accent);color:var(--c-text); }
-
-/* Filter pills */
-.peta-filter {
-  display:inline-flex;align-items:center;gap:.3rem;
-  padding:.25rem .65rem;border-radius:999px;font-size:.72rem;font-weight:600;cursor:pointer;
-  background:var(--c-surface);border:1px solid var(--c-border);color:var(--c-muted);
-  transition:all .15s;
-}
-.peta-filter:hover, .peta-filter.active {
-  border-color:var(--fc, var(--c-accent));color:var(--c-text);background:rgba(255,255,255,.06);
-}
-.peta-dot { width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0; }
-
-/* CNN legend overlay */
-.peta-legend {
-  position:absolute;bottom:2.5rem;right:1rem;z-index:1000;
-  background:var(--c-surface);border:1px solid var(--c-border);
-  border-radius:var(--r-card);padding:.75rem;min-width:168px;
-  box-shadow:var(--shadow-card);
-}
-
-/* Popup */
-.leaflet-popup-content-wrapper {
-  background:var(--c-surface) !important;border:1px solid var(--c-border) !important;
-  border-radius:10px !important;box-shadow:0 4px 20px rgba(0,0,0,.4) !important;color:var(--c-text) !important;
-}
-.leaflet-popup-tip { background:var(--c-surface) !important; }
-.leaflet-popup-content { margin:10px 14px !important;font-size:.8rem; }
-.popup-img  { width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:.5rem; }
-.popup-row  { display:flex;justify-content:space-between;align-items:center;
-              padding:.2rem 0;border-bottom:1px solid var(--c-border);font-size:.75rem; }
-.popup-row:last-child { border-bottom:none; }
-.popup-label { color:var(--c-muted); }
-.popup-chip  { padding:.1rem .4rem;border-radius:999px;font-size:.68rem;font-weight:700; }
-
-/* Stats bar */
-.peta-stat { background:var(--c-surface);border:1px solid var(--c-border);
-             border-radius:var(--r-card);padding:.5rem .75rem;text-align:center; }
-.peta-stat-val { display:block;font-size:1rem;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums; }
-.peta-stat-lbl { display:block;font-size:.65rem;color:var(--c-muted);margin-top:.1rem; }
-</style>
 {% endblock %}
 
 {% block content %}
 {% set ph_title = 'Peta GIS Kerusakan Jalan — Kota Lhokseumawe' %}
 {% include 'components/page_header.html' %}
 
-<!-- Layer switcher -->
-<div class="d-flex align-items-center">
-  <span>Layer:</span>
-  <button id="tabStatus" class="layer-tab active-status" onclick="switchLayer('status')">
-    <i class="bi bi-layers-fill"></i> Status Pemetaan
+<div class="segment mb-3" role="tablist" aria-label="Pilih layer peta">
+  <button id="tabStatus" type="button" class="segment__item is-active" role="tab" aria-selected="true"
+          onclick="switchLayer('status')">
+    <i class="bi bi-layers-fill" aria-hidden="true"></i> Status Pemetaan
   </button>
-  <button id="tabCnn" class="layer-tab" onclick="switchLayer('cnn')">
-    <i class="bi bi-cpu-fill"></i> Prediksi CNN
+  <button id="tabCnn" type="button" class="segment__item" role="tab" aria-selected="false"
+          onclick="switchLayer('cnn')">
+    <i class="bi bi-cpu-fill" aria-hidden="true"></i> Prediksi CNN
   </button>
 </div>
 
 <!-- === PANEL STATUS === -->
-<div id="panelStatus">
-  <div>
-    <div>
-      <i class="bi bi-funnel"></i>
-      <select id="filterStatus"
-              onfocus="this.style.borderColor='var(--c-accent)'"
-              onblur="this.style.borderColor='var(--c-border)'">
-        <option value="">Semua Status</option>
-        <option value="draft">Draft</option>
-        <option value="terverifikasi">Terverifikasi</option>
-        <option value="diperbaiki">Diperbaiki</option>
-      </select>
-    </div>
-    <button id="btnFilter" class="btn-cnn-primary">
-      <i class="bi bi-search"></i> Tampilkan
-    </button>
+<section id="panelStatus" class="panel mb-3">
+  <div class="panel__head">
+    <h2><i class="bi bi-funnel" aria-hidden="true"></i> Layer Status Pemetaan</h2>
+    <span class="panel__head-note">Titik peta per lokasi</span>
   </div>
+  <div class="panel__body">
+    <div class="row g-3 align-items-end">
+      <div class="col-12 col-md-4">
+        <div class="field">
+          <label class="field__label" for="filterStatus">Status</label>
+          <select id="filterStatus" class="control">
+            <option value="">Semua Status</option>
+            <option value="draft">Draft</option>
+            <option value="terverifikasi">Terverifikasi</option>
+            <option value="diperbaiki">Diperbaiki</option>
+          </select>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <button id="btnFilter" type="button" class="btn btn--primary btn--sm">
+          <i class="bi bi-search" aria-hidden="true"></i> Tampilkan
+        </button>
+      </div>
+    </div>
 
-  <!-- Legenda status -->
-  <div>
-    {% for k in KELAS %}{% set label = k.nama %}{% set color = k.warna %}
-    <div style="--fc:{{ color }};">
-      <span style="--fc:{{ color }};"></span>
-      {{ label }}
-    </div>
-    {% endfor %}
-    <div>
-      <span></span>
-      Belum Diklasifikasi
+    <div class="legend-grid mt-3">
+      {% for k in KELAS %}
+      <span class="legend-grid__item" style="--fc:{{ k.warna }};">
+        <span class="dl__swatch" aria-hidden="true"></span> {{ k.nama }}
+      </span>
+      {% endfor %}
+      <span class="legend-grid__item">
+        <span class="legend-grid__dot legend-grid__dot--muted" aria-hidden="true"></span> Belum Diklasifikasi
+      </span>
     </div>
   </div>
-</div>
+</section>
 
 <!-- === PANEL CNN === -->
-<div id="panelCnn">
-  {% if prediksi_configs %}
+<section id="panelCnn" class="panel mb-3" hidden>
+  <div class="panel__head">
+    <h2><i class="bi bi-cpu" aria-hidden="true"></i> Layer Prediksi CNN</h2>
+    {% if prediksi_configs %}
+    <label class="panel__head-note" for="modelSelect">Pilih konfigurasi model</label>
+    {% endif %}
+  </div>
+  <div class="panel__body">
 
-  <!-- Model selector + stats -->
-  <div class="d-flex align-items-center">
-    <i class="bi bi-cpu"></i>
-    <select id="modelSelect"
-            onchange="loadCnnMarkers()">
+  {% if prediksi_configs %}
+  <div class="field mb-3">
+    <label class="field__label visually-hidden" for="modelSelect">Model</label>
+    <select id="modelSelect" class="control" onchange="loadCnnMarkers()">
       {% for c in prediksi_configs %}
       {% set disp = display_map.get(c.id) %}
-      <option value="{{ c.id }}"
-              {% if c.id == best_id %}selected{% endif %}>
-        {{ c.nama }}
-        {% if c.id == best_id %}★ Terbaik{% endif %}
-        {% if disp %}— {{ disp.akurasi }}% ({{ 'CV' if disp.sumber == 'cv' else '1 fold' }}){% endif %}
+      <option value="{{ c.id }}" {% if c.id == best_id %}selected{% endif %}>
+        {{ c.nama }}{% if c.id == best_id %} ★ Terbaik{% endif %}{% if disp %} — {{ disp.akurasi }}% ({{ 'CV' if disp.sumber == 'cv' else '1 fold' }}){% endif %}
       </option>
       {% endfor %}
     </select>
   </div>
 
-  <!-- Stats bar -->
-  <div class="grid" id="cnnStatsBar">
-    <div>
-      <div class="peta-stat"><span id="cnnTotal" class="peta-stat-val">—</span><span class="peta-stat-lbl">Total Foto</span></div>
+  <div class="grid grid--3 mb-3" id="cnnStatsBar">
+    <div class="stat-tile">
+      <span id="cnnTotal" class="stat-tile__value">—</span>
+      <span class="stat-tile__label">Total Foto</span>
     </div>
-    <div>
-      <div class="peta-stat"><span id="cnnBenar" class="peta-stat-val">—</span><span class="peta-stat-lbl">Prediksi Benar</span></div>
+    <div class="stat-tile">
+      <span id="cnnBenar" class="stat-tile__value">—</span>
+      <span class="stat-tile__label">Prediksi Benar</span>
     </div>
-    <div>
-      <div class="peta-stat"><span id="cnnSalah" class="peta-stat-val">—</span><span class="peta-stat-lbl">Prediksi Salah</span></div>
+    <div class="stat-tile">
+      <span id="cnnSalah" class="stat-tile__value">—</span>
+      <span class="stat-tile__label">Prediksi Salah</span>
     </div>
   </div>
 
-  <!-- Filter pills -->
-  <div class="d-flex align-items-center">
-    <span>Filter:</span>
-    <button class="peta-filter active" data-cnn-filter="all" onclick="applyCnnFilter(this)">Semua</button>
-  {% for k in KELAS %}
-  <button class="peta-filter" data-cnn-filter="{{ loop.index0 }}" style="--fc:{{ k.warna }};" onclick="applyCnnFilter(this)">
-    <span class="peta-dot" style="--fc:{{ k.warna }};"></span>{{ k.nama }}
-  </button>
-  {% endfor %}
-    <button class="peta-filter" data-cnn-filter="salah" onclick="applyCnnFilter(this)">
-      <span class="peta-dot"></span>Salah Prediksi
+  <div class="legend-grid mb-2">
+    <span class="legend-grid__label">Filter</span>
+    <button type="button" class="chip chip--info is-active" data-cnn-filter="all" onclick="applyCnnFilter(this)">Semua</button>
+    {% for k in KELAS %}
+    <button type="button" class="chip" data-cnn-filter="{{ loop.index0 }}" style="--fc:{{ k.warna }};" onclick="applyCnnFilter(this)">
+      <span class="dl__swatch" aria-hidden="true"></span> {{ k.nama }}
     </button>
-    <span id="cnnFilterCount"></span>
+    {% endfor %}
+    <button type="button" class="chip chip--muted" data-cnn-filter="salah" onclick="applyCnnFilter(this)">Salah Prediksi</button>
+    <span id="cnnFilterCount" class="hint ms-auto"></span>
   </div>
 
   {% else %}
-  <div>
-    <i class="bi bi-cpu"></i>
+  <div class="cnn-empty-state">
+    <i class="bi bi-cpu" aria-hidden="true"></i>
     <p>Belum ada prediksi CNN</p>
-    <p>
-      Latih model di halaman Arsitektur CNN, lalu jalankan prediksi dari halaman GIS model tersebut.
-    </p>
-    <a href="{{ url_for('arsitektur.index') }}" class="btn-cnn-primary">
-      <i class="bi bi-arrow-right"></i> Ke Arsitektur CNN
+    <p class="hint">Latih model di halaman Arsitektur CNN, lalu jalankan prediksi dari halaman GIS model tersebut.</p>
+    <a href="{{ url_for('arsitektur.index') }}" class="btn btn--primary btn--sm mt-2">
+      <i class="bi bi-arrow-right" aria-hidden="true"></i> Ke Arsitektur CNN
     </a>
   </div>
   {% endif %}
-</div>
+
+  </div>
+</section>
 
 <!-- Error state -->
-<div id="map-error">
-  <i class="bi bi-exclamation-triangle"></i>
+<div id="map-error" class="note note--danger" hidden>
+  <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
   <span id="map-error-msg">Gagal memuat data peta.</span>
-  <button onclick="reloadActive()">
-    Coba lagi
-  </button>
+  <button type="button" class="btn btn--ghost btn--sm ms-auto" onclick="reloadActive()">Coba lagi</button>
 </div>
 
 <!-- Skeleton -->
-<div id="map-skeleton" class="cnn-skeleton"></div>
+<div id="map-skeleton" class="cnn-skeleton" aria-busy="true"></div>
 
 <!-- Map container (relative for legend overlay) -->
-<div>
+<div class="map-shell">
   <div id="map"></div>
 
   <!-- CNN Legend (only shown in CNN mode) -->
-  <div id="cnnLegend" class="peta-legend">
-    <div>Legenda Prediksi CNN</div>
-    {% for k in KELAS %}{% set lbl = k.nama %}{% set clr = k.warna %}
-    <div class="d-flex align-items-center">
-      <span style="--fc:{{ clr }};"></span>
-      <span>{{ lbl }}</span>
+  <div id="cnnLegend" class="peta-legend" hidden>
+    <p class="peta-legend__title">Legenda Prediksi CNN</p>
+    {% for k in KELAS %}
+    <div class="legend-grid__item" style="--fc:{{ k.warna }};">
+      <span class="dl__swatch" aria-hidden="true"></span> {{ k.nama }}
     </div>
     {% endfor %}
-    <div>
-      <div class="d-flex align-items-center">
-        <span></span>
-        <span>Benar</span>
-      </div>
-      <div class="d-flex align-items-center">
-        <span></span>
-        <span>Salah</span>
-      </div>
+    <div class="peta-legend__foot">
+      <div class="legend-grid__item"><span class="peta-legend__ring" aria-hidden="true"></span> Benar</div>
+      <div class="legend-grid__item"><span class="peta-legend__ring peta-legend__ring--dashed" aria-hidden="true"></span> Salah</div>
     </div>
   </div>
 </div>
@@ -233,17 +174,17 @@
 
   /* ── DOM helpers ──────────────────────────────────── */
   function showMap()  {
-    document.getElementById('map-skeleton').style.display = 'none';
+    document.getElementById('map-skeleton').hidden = true;
     var m = document.getElementById('map');
-    m.style.display = 'block';
+    m.hidden = false;
     map.invalidateSize();
   }
   function showErr(msg) {
     var el = document.getElementById('map-error');
-    el.style.display = 'block';
+    el.hidden = false;
     document.getElementById('map-error-msg').textContent = msg || 'Gagal memuat data peta.';
   }
-  function hideErr() { document.getElementById('map-error').style.display = 'none'; }
+  function hideErr() { document.getElementById('map-error').hidden = true; }
 
   /* ── Active layer tracker ─────────────────────────── */
   var activeLayer = 'status';
@@ -263,20 +204,20 @@
     var leg  = document.getElementById('cnnLegend');
 
     if (layer === 'status') {
-      tabS.className = 'layer-tab active-status';
-      tabC.className = 'layer-tab';
-      panS.style.display = '';
-      panC.style.display = 'none';
-      leg.style.display  = 'none';
+      tabS.classList.add('is-active');   tabS.setAttribute('aria-selected', 'true');
+      tabC.classList.remove('is-active'); tabC.setAttribute('aria-selected', 'false');
+      panS.hidden = false;
+      panC.hidden = true;
+      leg.hidden  = true;
       cnnLayer.removeFrom(map);
       statusLayer.addTo(map);
       loadStatusMarkers();
     } else {
-      tabS.className = 'layer-tab';
-      tabC.className = 'layer-tab active-cnn';
-      panS.style.display = 'none';
-      panC.style.display = '';
-      leg.style.display  = 'block';
+      tabS.classList.remove('is-active'); tabS.setAttribute('aria-selected', 'false');
+      tabC.classList.add('is-active');    tabC.setAttribute('aria-selected', 'true');
+      panS.hidden = true;
+      panC.hidden = false;
+      leg.hidden  = false;
       statusLayer.removeFrom(map);
       cnnLayer.addTo(map);
       loadCnnMarkers();
@@ -339,7 +280,7 @@
 
         /* reset filter to "all" */
         document.querySelectorAll('[data-cnn-filter]').forEach(function (b) {
-          b.classList.toggle('active', b.dataset.cnnFilter === 'all');
+          b.classList.toggle('is-active', b.dataset.cnnFilter === 'all');
         });
         renderCnnMarkers('all');
       })
@@ -348,9 +289,9 @@
 
   window.applyCnnFilter = function (btn) {
     document.querySelectorAll('[data-cnn-filter]').forEach(function (b) {
-      b.classList.remove('active');
+      b.classList.remove('is-active');
     });
-    btn.classList.add('active');
+    btn.classList.add('is-active');
     renderCnnMarkers(btn.dataset.cnnFilter);
   };
 
@@ -389,8 +330,7 @@
         '<div class="popup-row"><span class="popup-label">Confidence</span>' +
           '<strong>' + p.confidence + '%</strong></div>' +
         '<div class="popup-row"><span class="popup-label">Hasil</span>' +
-          '<strong>' +
-          (p.benar ? '✓ Benar' : '✗ Salah') + '</strong></div>',
+          '<strong>' + (p.benar ? '✓ Benar' : '✗ Salah') + '</strong></div>',
         { maxWidth: 220 }
       );
       cnnLayer.addLayer(m);

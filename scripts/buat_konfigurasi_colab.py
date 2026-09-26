@@ -2,12 +2,14 @@
 
 - preprocessing_config : resize 256 (cv2 Lanczos4), crop tengah 224, denoise fastNlMeans (h=7)
 - labeling_config      : MobileNetV2 + PCA 50 + K-Means 4 klaster, seed 42, Canny 50/150
+- augmentasi_config    : parameter augmentasi notebook (flip, rotasi 20, zoom .15, geser .1, brightness/contrast .25)
 - arsitektur_config    : semua config yang ada namanya "Colab..." diberi profil 'colab'
 - --jalankan-preprocessing : proses seluruh foto dengan config Colab (menggantikan hasil_preprocessing lama)
 
 Pakai: python scripts/buat_konfigurasi_colab.py [--jalankan-preprocessing]
 """
 import argparse
+import json
 import os
 import sys
 
@@ -16,6 +18,7 @@ sys.path.insert(0, BASE_DIR)
 
 NAMA_PREP = 'Colab: resize 256, crop 224, denoise NL-Means'
 NAMA_LABEL = 'Colab: MobileNetV2 + PCA 50 + K-Means 4'
+NAMA_AUG = 'Colab: parameter augmentasi notebook (tidak perlu dijalankan)'
 
 
 def main():
@@ -25,6 +28,8 @@ def main():
 
     from app import create_app, db
     from app.models.arsitektur_config import ArsitekturConfig
+    from app.models.augmentasi_config import AugmentasiConfig
+    from app.services import augmentation_service as aug
     from app.models.labeling_config import LabelingConfig
     from app.models.pengguna import Pengguna
     from app.models.preprocessing_config import PreprocessingConfig
@@ -52,10 +57,27 @@ def main():
         lab.is_default = True
         db.session.add(lab)
 
+        # Notebook mengaugmentasi di dalam training (profil Colab sudah melakukannya). Config ini hanya mencatat
+        # parameternya; menjalankannya menambah salinan offline yang tidak ada di notebook.
+        params = aug.default_params()
+        params['rotasi']['derajat'] = 20.0
+        params['zoom']['faktor'] = 0.15
+        params['brightness']['faktor'] = 0.25
+        params['contrast']['faktor'] = 0.25
+        for kunci in ('hue', 'saturasi', 'noise', 'erasing'):
+            params[kunci]['aktif'] = False
+        ag = AugmentasiConfig.query.filter_by(nama_config=NAMA_AUG).first() or AugmentasiConfig()
+        ag.nama_config, ag.n_salinan, ag.seed = NAMA_AUG, 1, 42
+        ag.parameter = json.dumps(aug.normalisasi_params(params))
+        ag.pengguna_id = ag.pengguna_id or pengguna_id
+        AugmentasiConfig.query.update({'is_default': False})
+        ag.is_default = True
+        db.session.add(ag)
+
         n_arsitektur = ArsitekturConfig.query.filter(ArsitekturConfig.nama.like('Colab%')).update(
             {'profil': 'colab', 'aug_off': 'hue,saturasi,noise,erasing'}, synchronize_session=False)
         db.session.commit()
-        print(f'preprocessing_config #{prep.id}, labeling_config #{lab.id}, arsitektur diberi profil colab: {n_arsitektur}')
+        print(f'preprocessing_config #{prep.id}, labeling_config #{lab.id}, augmentasi_config #{ag.id}, arsitektur diberi profil colab: {n_arsitektur}')
         prep_id = prep.id
 
     if args.jalankan_preprocessing:

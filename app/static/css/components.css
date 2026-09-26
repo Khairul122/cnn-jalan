@@ -759,6 +759,165 @@ select.control { padding-right: var(--s-2); }
 }
 .error-text { font-size: var(--t-sm); color: var(--danger); }
 
+/* Radio/choice card. Reused by the arsitektur model picker and the optimizer
+   row; the checked tint is a pre-rendered :has() rule, so an unsupporting
+   browser loses only the tint. The JS `is-selected` class is kept in sync for
+   the model picker and drives the same border. */
+.pick-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-1);
+  background: var(--surface-1);
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.pick-card__title { font-size: var(--t-sm); font-weight: 600; color: var(--ink-1); }
+.pick-card__note  { font-size: var(--t-xs); color: var(--ink-3); }
+.pick-card input[type="radio"] { accent-color: var(--accent); margin: 0; }
+.pick-card:hover { border-color: var(--ink-2); }
+.pick-card:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pick-card.is-selected { border-color: var(--accent); background: var(--accent-wash); }
+.pick-card.is-selected .pick-card__title { color: var(--accent); }
+.pick-card--compact { flex-direction: row; align-items: center; gap: var(--s-2); flex: 1; }
+@supports selector(:has(*)) {
+  .pick-card:has(input:checked) { border-color: var(--accent); background: var(--accent-wash); }
+  .pick-card:has(input:checked) .pick-card__title { color: var(--accent); }
+}
+
+/* Segmented tab control (peta layer switcher). */
+.segment {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+}
+.segment__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 var(--s-3);
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-1);
+  cursor: pointer;
+}
+.segment__item:hover { color: var(--ink-1); }
+.segment__item.is-active { color: var(--accent); background: var(--surface-1); box-shadow: var(--shadow-1); }
+.segment__item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Small centred stat tile (peta CNN stats). */
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+}
+.stat-tile__value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--ink-1);
+}
+.stat-tile__label { font-size: var(--t-xs); color: var(--ink-3); }
+
+/* Inline legend/filter row of swatches or chips. */
+.legend-grid { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.legend-grid__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+.legend-grid__label { font-size: var(--t-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.legend-grid__dot {
+  width: 10px; height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--fc, var(--ink-3));
+}
+.legend-grid__dot--muted { background: var(--surface-3); border: 1px solid var(--rule-strong); }
+
+/* Chip usable as a filter button. */
+.chip.is-active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip[data-cnn-filter] { cursor: pointer; }
+
+/* Leaflet map shells. */
+.map-shell { position: relative; }
+[hidden] { display: none !important; }
+#map, #detailMap, .map-shell #map { height: clamp(340px, 62vh, 620px); border-radius: var(--r-1); border: 1px solid var(--rule); z-index: 0; }
+#map-skeleton { height: clamp(340px, 62vh, 620px); border-radius: var(--r-1); margin-bottom: var(--s-4); }
+
+/* Map legend overlay, pinned to the map's bottom-right corner. */
+.peta-legend {
+  position: absolute;
+  right: var(--s-3);
+  bottom: var(--s-6);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 168px;
+  padding: var(--s-3);
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  box-shadow: var(--shadow-1);
+}
+.peta-legend__title {
+  margin: 0 0 var(--s-1);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.peta-legend__foot { border-top: 1px solid var(--rule); padding-top: var(--s-1); margin-top: var(--s-1); }
+.peta-legend__ring { width: 12px; height: 12px; flex-shrink: 0; border-radius: 50%; border: 2px solid var(--ink-2); }
+.peta-legend__ring--dashed { border-style: dashed; border-color: var(--ink-3); }
+
+/* Leaflet popup theme. */
+.leaflet-popup-content-wrapper {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--rule) !important;
+  border-radius: var(--r-2) !important;
+  box-shadow: var(--shadow-2) !important;
+  color: var(--ink-1) !important;
+}
+.leaflet-popup-tip { background: var(--surface-1) !important; }
+.leaflet-popup-content { margin: 10px 14px !important; font-size: var(--t-sm); }
+.popup-img { width: 100%; height: 110px; object-fit: cover; border-radius: var(--r-1); margin-bottom: var(--s-1); }
+.popup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--t-sm);
+}
+.popup-row:last-child { border-bottom: none; }
+.popup-label { color: var(--ink-3); }
+.popup-chip { padding: 0 6px; border-radius: 999px; font-size: var(--t-xs); font-weight: 700; color: var(--fc, var(--ink-1)); background: var(--surface-2); }
+
+/* Best-row marker in the arsitektur table: a left rule, no colour literal. */
+.table tbody tr.is-best td:first-child { box-shadow: inset 2px 0 0 var(--warn); }
+.table__key-inline { font-weight: 600; margin-right: var(--s-1); }
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -984,6 +1143,148 @@ select.control { padding-right: var(--s-2); }
 }
 .matrix__cell--hi { background: var(--accent-wash); font-weight: 700; }
 .matrix__cell--low { color: var(--ink-3); }
+
+/* ── Training progress, per-class metrics, GIS map ─────────────────────────
+   Shared by arsitektur/detail, arsitektur/evaluasi and arsitektur/gis. */
+
+.train-progress { padding: var(--s-4); }
+.train-progress__head { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-3); }
+.train-progress__phase { font-size: var(--t-sm); font-weight: 600; color: var(--ink-1); }
+.train-progress__note {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--s-3);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+
+.spinner-pulse {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ok);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .4; transform: scale(.7); }
+}
+
+.track { height: 10px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.track__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--info), var(--ok));
+  transition: width .6s ease;
+}
+.track--slim { height: 6px; }
+
+/* Four-phase stepper. `setPhase()` swaps className wholesale, so the plain
+   `phase-step` rule must carry the resting colour. */
+.phase-steps { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3); font-size: var(--t-xs); }
+.phase-step { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-3); transition: color .2s; }
+.phase-step.active { color: var(--ink-1); font-weight: 600; }
+.phase-step.done   { color: var(--ok); }
+.phase-steps__sep  { color: var(--rule-strong); }
+
+/* Collapsible metric strip below the progress bar. */
+.train-metrics { opacity: 0; transition: opacity .3s; }
+
+/* Section rule with a leading label, e.g. "Hasil Evaluasi Model". */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-3) 0;
+  margin-bottom: var(--s-2);
+  border-top: 1px solid var(--rule);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--ink-1);
+}
+.section-header--spaced { margin-top: var(--s-5); }
+.section-header__note { font-size: var(--t-xs); font-weight: 400; color: var(--ink-3); margin-left: var(--s-2); }
+.section-header__note--warn { font-weight: 600; color: var(--danger); }
+.section-header__link { margin-left: auto; font-size: var(--t-xs); font-weight: 600; color: var(--accent); }
+
+/* Confusion matrix grid (contrast to the `.matrix` table above). */
+.cm-grid { display: grid; grid-template-columns: 52px repeat(4, 1fr); gap: 4px; }
+.cm-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-2) 4px;
+  border-radius: var(--r-1);
+  font-size: var(--t-sm);
+}
+.cm-corner { background: transparent; }
+.cm-header,
+.cm-row-label {
+  background: var(--surface-2);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.cm-data { background: color-mix(in srgb, var(--info) calc(var(--cm-opacity, .04) * 100%), var(--surface-1)); min-height: 56px; }
+.cm-diagonal { background: color-mix(in srgb, var(--info) calc(var(--cm-opacity, .3) * 100%), var(--surface-1)); border: 1px solid var(--info); }
+.cm-num { font-size: var(--t-md); font-weight: 700; line-height: 1; color: var(--ink-1); }
+.cm-pct { font-size: 10px; color: var(--ink-3); margin-top: 2px; }
+.cm-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: var(--s-1); }
+.cm-swatch--hi { background: color-mix(in srgb, var(--info) 70%, var(--surface-1)); }
+.cm-swatch--lo { background: color-mix(in srgb, var(--info) 12%, var(--surface-1)); }
+
+/* Per-class F1 bars under the metrics table. */
+.class-bars { margin-top: var(--s-3); }
+.class-bar { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2); }
+.class-bar__label { width: 42px; font-size: var(--t-xs); color: var(--ink-3); }
+.class-bar__track { flex: 1; height: 7px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.class-bar__fill { height: 100%; border-radius: 999px; background: var(--fc, var(--accent)); }
+.class-bar__value { width: 38px; text-align: right; font-size: var(--t-xs); color: var(--ink-1); }
+
+/* Inline map stat tiles (detail + gis). */
+.gis-stat {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  background: var(--surface-1);
+  text-align: center;
+}
+.gis-stat__value {
+  display: block;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--fc, var(--ink-1));
+}
+.gis-stat__label { display: block; font-size: var(--t-xs); color: var(--ink-3); margin-top: 2px; }
+
+/* Round map legend chip with the ring styles the popups use. */
+.gis-legend__ring {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--fc, var(--ink-3));
+}
+.gis-legend__ring--solid { background: transparent; border: 2px solid var(--ink-1); }
+.gis-legend__ring--dashed { background: transparent; border: 2px dashed var(--ink-3); }
+
+.spinner-ring {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--rule-strong);
+  border-top-color: var(--ok);
+  animation: spin-ring .7s linear infinite;
+}
+@keyframes spin-ring { to { transform: rotate(360deg); } }
 
 .toast {
   position: relative;

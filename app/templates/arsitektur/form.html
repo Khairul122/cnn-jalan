@@ -35,7 +35,7 @@
           <div class="field">
             <label class="field__label" for="nama">Nama Konfigurasi <span class="field__req">*</span></label>
             <input type="text" id="nama" name="nama" required class="control"
-                   placeholder="Contoh: MobileNetV2 80:20 Adam lr1e-4">
+                   value="Colab MobileNetV2 (Fold 3 dari 5)" placeholder="Contoh: MobileNetV2 80:20 Adam lr1e-4">
           </div>
 
           <div class="field">
@@ -292,7 +292,8 @@ function updateFoldOptions() {
     const o       = document.createElement('option');
     o.value       = i;
     o.textContent = `Fold ${i + 1} sebagai validasi (~${Math.round(100 / K)}% data)`;
-    if (i === 0) o.selected = true;
+    // Notebook Colab memakai fold 3 dari 5 sebagai validasi (indeks 2).
+    if (i === (K === 5 ? 2 : 0)) o.selected = true;
     foldSel.appendChild(o);
   }
   if (infoLbl) infoLbl.textContent = `K=${K} Stratified K-Fold CV`;

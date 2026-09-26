@@ -77,7 +77,7 @@ class TestNoTailwindClasses(unittest.TestCase):
             # Menyusut: pindahkan aturannya ke components.css lalu hapus entri.
             "arsitektur/detail.html", "arsitektur/evaluasi.html",
             "arsitektur/form.html", "arsitektur/gis.html", "arsitektur/index.html",
-            "dashboard/index.html", "peta/index.html",
+            "dashboard/index.html",
             "preprocessing/config_form.html", "preprocessing/hasil.html",
             "split/detail.html",
             # Tetap: satu-satunya inline style yang sah, mengunci layout auth.
