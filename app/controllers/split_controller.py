@@ -1,7 +1,7 @@
 import io
 import os
 import csv
-from flask import Blueprint, render_template, redirect, url_for, request, flash, Response
+from flask import Blueprint, render_template, redirect, url_for, request, flash, Response, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from werkzeug.utils import secure_filename
@@ -20,8 +20,16 @@ from app.services.cnn_service import TRAIN_EXPAND_STEPS
 from app.services.split_service import SplitService, jumlah_label_basi
 from collections import Counter
 from app.services.dedup_service import find_duplicate_groups, find_spatial_groups, merge_group_maps
+from app.progress_store import ProgressStore
 
 split_bp = Blueprint('split', __name__, url_prefix='/split')
+
+# Progres pembuatan split, dikunci per user (hanya admin yang menjalankan, satu run sekaligus).
+_progress = ProgressStore()
+
+
+def _lapor(user_id, pct, step):
+    _progress.set(user_id, {'status': 'running', 'pct': pct, 'step': step})
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MAKS_ULANGAN = 5   # jumlah split berseed berurutan yang boleh dibuat sekaligus (repeated K-Fold)
@@ -113,6 +121,16 @@ def index():
     )
 
 
+@split_bp.route('/progress')
+@login_required
+def progress():
+    """Progres pembuatan split untuk user yang sedang login (dipoll saat POST berjalan)."""
+    prog = _progress.get(current_user.id)
+    if prog is None:
+        return jsonify({'status': 'selesai', 'pct': 100})
+    return jsonify(prog)
+
+
 @split_bp.route('/new', methods=['GET', 'POST'])
 @admin_required
 def new():
@@ -152,17 +170,20 @@ def new():
             return redirect(url_for('split.new'))
 
         ids = [i['dokumentasi_id'] for i in items]
+        _lapor(current_user.id, 15, 'Mendeteksi foto near-duplicate')
         # Tanpa centang: tiap foto grupnya sendiri, sama dengan StratifiedKFold biasa di notebook Colab.
         if request.form.get('grup_duplikat'):
             dup_groups = find_duplicate_groups(ids, [i['path_file'] for i in items], BASE_DIR)
         else:
             dup_groups = {d: d for d in ids}
+        _lapor(current_user.id, 50, 'Mengelompokkan foto radius GPS')
         spatial_groups = find_spatial_groups(ids, [(i['latitude'], i['longitude']) for i in items], radius_m)
         group_map = merge_group_maps(ids, dup_groups, spatial_groups)
         groups = [group_map[d] for d in ids]
         ukuran = Counter(groups)
         terbesar = max(ukuran.values())
         if terbesar > len(items) // n_splits:
+            _progress.pop(current_user.id)
             flash(f'Radius {radius_m} m menggabungkan {terbesar} foto ke satu grup, lebih besar dari satu fold '
                   f'(±{len(items) // n_splits} foto), sehingga fold tidak bisa seimbang. Kecilkan radius atau kurangi K.',
                   'danger')
@@ -175,6 +196,8 @@ def new():
         dibuat = []
         for r in range(ulangan):
             seed = random_state + r
+            _lapor(current_user.id, 50 + round((r + 0.5) / ulangan * 40),
+                   f'Membagi fold secara stratified ({r + 1}/{ulangan})')
             result = SplitService.run(n_splits, seed, items, groups=groups)
             config = SplitConfig(
                 nama=nama if ulangan == 1 else f'{nama} (ulangan {r + 1}/{ulangan}, seed {seed})',
@@ -198,6 +221,7 @@ def new():
             ])
             dibuat.append(config)
         db.session.commit()
+        _progress.pop(current_user.id)
 
         if ulangan == 1:
             flash(f'Split "{nama}" berhasil dibuat dengan {len(items)} data.', 'success')

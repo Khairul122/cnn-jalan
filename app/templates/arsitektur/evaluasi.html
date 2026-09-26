@@ -33,7 +33,8 @@
     {% if cfg.status == 'selesai' %}
     <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}"
           data-progress="{{ 'Menjalankan Ulang Evaluasi' if hasil else 'Menjalankan Evaluasi' }}"
-          data-progress-interval="2500"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          data-progress-url="{{ url_for('arsitektur.evaluasi_progress', config_id=cfg.id) }}"
+          data-progress-interval="2500" data-progress-poll="2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="ev-btn ev-btn-primary">
         <i class="bi bi-play-circle-fill"></i>
         {{ 'Jalankan Ulang' if hasil else 'Jalankan Evaluasi' }}
@@ -65,7 +66,9 @@
   </p>
   {% if cfg.status == 'selesai' %}
   <form method="POST" action="{{ url_for('arsitektur.evaluate', config_id=cfg.id) }}" style="display:inline;"
-        data-progress="Menjalankan Evaluasi" data-progress-interval="2500"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        data-progress="Menjalankan Evaluasi"
+        data-progress-url="{{ url_for('arsitektur.evaluasi_progress', config_id=cfg.id) }}"
+        data-progress-interval="2500" data-progress-poll="2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="ev-btn ev-btn-primary">
       <i class="bi bi-play-circle-fill"></i> Jalankan Evaluasi
     </button>

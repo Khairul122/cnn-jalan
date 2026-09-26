@@ -186,7 +186,7 @@ def _persen_ekstraksi(persen_ekstraksi, selesai, total):
 
 
 def jalankan_klasterisasi(config, upload_folder, pengguna_id,
-                          on_progress=None, on_run=None, progress=None):
+                          on_progress=None, on_run=None, progress=None, run=None):
     """
     Jalankan klasterisasi menjadi baris review tanpa mengubah label yang sudah ada.
 
@@ -200,6 +200,8 @@ def jalankan_klasterisasi(config, upload_folder, pengguna_id,
             progress(pct, step)
 
     try:
+        if run is not None:
+            run = db.session.merge(run)
         lokasi_list = LokasiKerusakan.query.order_by(LokasiKerusakan.id).all()
         lapor(2, f'Memuat {len(lokasi_list)} lokasi…')
         fitur_dict, dilewati = ekstrak_fitur_lokasi(
@@ -210,14 +212,11 @@ def jalankan_klasterisasi(config, upload_folder, pengguna_id,
             on_progress=on_progress,
         )
         if not fitur_dict:
-            run = HasilLabeling(
-                config_id=config.id,
-                jumlah_lokasi=0,
-                jumlah_dilewati=len(dilewati),
-                status='gagal',
-                catatan='Tidak ada lokasi dengan foto valid untuk dilabeli.',
-                pengguna_id=pengguna_id,
-            )
+            run = run or HasilLabeling(config_id=config.id, pengguna_id=pengguna_id)
+            run.jumlah_lokasi = 0
+            run.jumlah_dilewati = len(dilewati)
+            run.status = 'gagal'
+            run.catatan = 'Tidak ada lokasi dengan foto valid untuk dilabeli.'
             db.session.add(run)
             db.session.commit()
             return run
@@ -238,15 +237,12 @@ def jalankan_klasterisasi(config, upload_folder, pengguna_id,
                     result['klaster'] == cluster_id for result in hasil_klaster.values()
                 )
 
-        run = HasilLabeling(
-            config_id=config.id,
-            jumlah_lokasi=len(fitur_dict),
-            jumlah_dilewati=len(dilewati),
-            variansi_pca=variansi_pca,
-            distribusi_kelas=json.dumps(distribution, ensure_ascii=False),
-            status='selesai',
-            pengguna_id=pengguna_id,
-        )
+        run = run or HasilLabeling(config_id=config.id, pengguna_id=pengguna_id)
+        run.jumlah_lokasi = len(fitur_dict)
+        run.jumlah_dilewati = len(dilewati)
+        run.variansi_pca = variansi_pca
+        run.distribusi_kelas = json.dumps(distribution, ensure_ascii=False)
+        run.status = 'selesai'
         db.session.add(run)
         db.session.flush()
         for lokasi_id, result in hasil_klaster.items():
@@ -265,12 +261,9 @@ def jalankan_klasterisasi(config, upload_folder, pengguna_id,
         return run
     except Exception as exc:
         db.session.rollback()
-        run = HasilLabeling(
-            config_id=config.id,
-            status='gagal',
-            catatan=str(exc),
-            pengguna_id=pengguna_id,
-        )
+        run = run or HasilLabeling(config_id=config.id, pengguna_id=pengguna_id)
+        run.status = 'gagal'
+        run.catatan = str(exc)
         db.session.add(run)
         db.session.commit()
         return run

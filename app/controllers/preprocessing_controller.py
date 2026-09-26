@@ -10,6 +10,7 @@ from app import db
 from app.models.preprocessing_config import PreprocessingConfig
 from app.models.hasil_preprocessing import HasilPreprocessing
 from app.models.dokumentasi_foto import DokumentasiFoto
+from app.progress_store import ProgressStore
 from app.services.preprocessing_service import PreprocessingService
 
 preprocessing_bp = Blueprint('preprocessing', __name__, url_prefix='/preprocessing')
@@ -17,9 +18,9 @@ preprocessing_bp = Blueprint('preprocessing', __name__, url_prefix='/preprocessi
 PREPROCESSED_SUBDIR = os.path.join('uploads', 'preprocessed')
 
 # Progres run pipeline di background, per config_id.
-_progress = {}
+_progress = ProgressStore()
+# (berhasil, gagal) terakhir per config_id, untuk flash setelah redirect.
 _progress_err = {}
-_progress_lock = threading.Lock()
 
 
 def _hapus_hasil(query):
@@ -123,20 +124,17 @@ def config_delete(config_id):
 # â”€â”€ Jalankan pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _simpan_progress(config_id, data):
-    with _progress_lock:
-        _progress[config_id] = data
+    _progress.set(config_id, data)
 
 
 def _progress_aktif(config_id):
-    with _progress_lock:
-        return _progress.get(config_id)
+    return _progress.get(config_id)
 
 
 def _selesaikan(config_id):
-    """Tandai run selesai supaya UI polling ikut pindah. Hasil (flash) ditampilkan
-    oleh index() lewat data sekali-pakai, bukan flash di thread (tidak punya request)."""
-    with _progress_lock:
-        _progress[config_id] = {'status': 'selesai', 'pct': 100, 'reload': url_for('preprocessing.index', proses='selesai')}
+    """Tandai run selesai supaya UI polling ikut pindah. Flash ditampilkan oleh
+    index() lewat data sekali-pakai, bukan dari thread (thread tidak punya request)."""
+    _progress.set(config_id, {'status': 'selesai', 'pct': 100, 'reload': '/preprocessing/?proses=selesai'})
 
 
 def _jalankan_pipeline(app, config_id, cfg_snapshot):
@@ -261,6 +259,18 @@ def hasil_reset():
     db.session.commit()
     flash(f'Reset selesai â€” {jumlah} record dan {hapus_file} file dihapus.', 'info')
     return redirect(url_for('preprocessing.hasil'))
+
+
+@preprocessing_bp.route('/config/<int:config_id>/reset-hasil', methods=['POST'])
+@admin_required
+def config_reset_hasil(config_id):
+    """Hapus hasil preprocessing milik satu konfigurasi saja."""
+    cfg = PreprocessingConfig.query.get_or_404(config_id)
+    jumlah, hapus_file = _hapus_hasil(HasilPreprocessing.query.filter_by(config_id=config_id))
+    _hapus_hasil_turunan()
+    db.session.commit()
+    flash(f'Hasil preprocessing "{cfg.nama_config}" direset â€” {jumlah} record dan {hapus_file} file dihapus.', 'info')
+    return redirect(url_for('preprocessing.index'))
 
 
 # â”€â”€ Hasil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

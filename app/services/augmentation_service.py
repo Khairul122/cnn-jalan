@@ -164,7 +164,7 @@ def jalankan(config, root_static, doc_ids=None, on_progress=None):
             db.session.add(HasilAugmentasi(dokumentasi_id=doc_id, config_id=config.id, salinan_ke=k,
                                            path_output=f'uploads/augmented/{nama}'))
             n_salinan += 1
-        if on_progress and (i + 1) % 20 == 0:
+        if on_progress:
             on_progress(i + 1, len(sumber))
     db.session.flush()
     return {'foto': len(sumber), 'salinan': n_salinan, 'gagal': n_gagal}

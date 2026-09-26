@@ -93,6 +93,16 @@
        style="flex:1;font-size:.82rem;text-decoration:none;justify-content:center;">
       <i class="bi bi-cpu" aria-hidden="true"></i>Klasifikasi Lagi
     </a>
+    {% if current_user.role == 'admin' %}
+    <form method="POST" action="{{ url_for('klasifikasi.hasil_delete', hasil_id=hasil.id) }}" style="flex:1;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="button" class="btn btn--danger"
+              style="width:100%;font-size:.82rem;justify-content:center;"
+              onclick="showConfirmForm(this,'Hapus Hasil Klasifikasi','Hasil prediksi ini beserta foto dan peta turunannya akan dihapus permanen.','danger','Ya, Hapus')">
+        <i class="bi bi-trash" aria-hidden="true"></i> Hapus Hasil
+      </button>
+    </form>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

@@ -11,6 +11,7 @@ from app.models.augmentasi_config import AugmentasiConfig
 from app.models.dokumentasi_foto import DokumentasiFoto
 from app.models.hasil_augmentasi import HasilAugmentasi
 from app.models.hasil_preprocessing import HasilPreprocessing
+from app.progress_store import ProgressStore
 from app.services import augmentation_service as aug
 
 import json
@@ -18,9 +19,9 @@ import json
 augmentasi_bp = Blueprint('augmentasi', __name__, url_prefix='/augmentasi')
 
 # Progres run augmentasi di background, per config_id.
-_progress = {}
+_progress = ProgressStore()
+# Statistik terakhir per config_id, untuk flash setelah redirect.
 _progress_hasil = {}
-_progress_lock = threading.Lock()
 
 LABEL = {
     'flip': 'Flip horizontal', 'rotasi': 'Rotasi', 'zoom': 'Zoom', 'translasi': 'Translasi',
@@ -127,35 +128,34 @@ def config_delete(config_id):
 
 
 def _simpan_progress(config_id, data):
-    with _progress_lock:
-        _progress[config_id] = data
+    _progress.set(config_id, data)
 
 
 def _sisa_progress(config_id):
-    with _progress_lock:
-        return _progress.get(config_id)
+    return _progress.get(config_id)
 
 
 def _run_augmentasi(app, config_id):
-    """Background thread: salinan augmentasi untuk semua foto + tulis progres tiap 20 foto."""
-    total_foto = _foto_berdenoise()
-    try:
-        stat = aug.jalankan(db.session.get(AugmentasiConfig, config_id), _static_root(),
-                            on_progress=lambda selesai, total: _simpan_progress(config_id, {
-                                'status': 'running',
-                                'pct': round(selesai / total * 100) if total else 100,
-                                'current': selesai, 'total': total,
-                                'step': f'Membuat salinan — foto {selesai} / {total}',
-                            }))
-        db.session.commit()
-        _progress_hasil[config_id] = stat
-        _simpan_progress(config_id, {'status': 'selesai', 'pct': 100,
-                                     'reload': url_for('augmentasi.index', proses='selesai')})
-    except Exception as exc:      # noqa: BLE001 — semua error jadi pesan UI
-        db.session.rollback()
-        _simpan_progress(config_id, {'status': 'error', 'error': f'Augmentasi gagal: {exc}'})
-    finally:
-        db.session.remove()
+    """Background thread: salinan augmentasi untuk semua foto + tulis progres tiap foto."""
+    with app.app_context():
+        try:
+            stat = aug.jalankan(db.session.get(AugmentasiConfig, config_id),
+                                os.path.join(app.root_path, 'static'),
+                                on_progress=lambda selesai, total: _simpan_progress(config_id, {
+                                    'status': 'running',
+                                    'pct': round(selesai / total * 100) if total else 100,
+                                    'current': selesai, 'total': total,
+                                    'step': f'Membuat salinan — foto {selesai} / {total}',
+                                }))
+            db.session.commit()
+            _progress_hasil[config_id] = stat
+            _simpan_progress(config_id, {'status': 'selesai', 'pct': 100,
+                                         'reload': '/augmentasi/?proses=selesai'})
+        except Exception as exc:      # noqa: BLE001 — semua error jadi pesan UI
+            db.session.rollback()
+            _simpan_progress(config_id, {'status': 'error', 'error': f'Augmentasi gagal: {exc}'})
+        finally:
+            db.session.remove()
 
 
 @augmentasi_bp.route('/run/<int:config_id>', methods=['POST'])

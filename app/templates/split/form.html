@@ -65,7 +65,9 @@
 
 <form method="POST" action="{{ url_for('split.new') }}" class="panel"
       data-progress="Membuat Split K-Fold"
-      data-progress-interval="3000">
+      data-progress-url="{{ url_for('split.progress') }}"
+      data-progress-interval="3000"
+      data-progress-poll="1">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <div class="panel__head">

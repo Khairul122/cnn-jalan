@@ -66,6 +66,7 @@
 
         <p class="sidebar-section-label">Model dan hasil</p>
         {{ nav_link(url_for('arsitektur.index'), 'Arsitektur CNN', request.blueprint == 'arsitektur', 'bi bi-cpu-fill') }}
+        {{ nav_link(url_for('klasifikasi.index'), 'Klasifikasi CNN', request.blueprint == 'klasifikasi', 'bi bi-search') }}
         {{ nav_link(url_for('peta.index'), 'Peta GIS', request.blueprint == 'peta', 'bi bi-map-fill') }}
       </nav>
 

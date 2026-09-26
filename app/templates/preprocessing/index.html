@@ -169,6 +169,19 @@
                    class="btn btn--sm btn--ghost" title="Edit">
                   <i class="bi bi-pencil-fill"></i>
                 </a>
+                {% if cfg.id == aktif_id %}
+                <!-- Reset hasil config ini -->
+                <form method="POST" action="{{ url_for('preprocessing.config_reset_hasil', config_id=cfg.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="button" class="btn btn--sm btn--ghost btn--danger-ghost" title="Reset hasil config ini"
+                          onclick="showConfirmForm(this,
+                            'Reset Hasil Preprocessing',
+                            'Semua hasil preprocessing konfigurasi <strong>{{ cfg.nama_config }}</strong> akan dihapus (record dan file). Konfigurasi tetap ada dan bisa dijalankan ulang. Hasil augmentasi turunan ikut dihapus.',
+                            'danger','Ya, Reset Hasil')">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                  </button>
+                </form>
+                {% endif %}
                 <!-- Hapus -->
                 <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

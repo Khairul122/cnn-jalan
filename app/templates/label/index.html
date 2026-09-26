@@ -4,8 +4,8 @@
 {% block content %}
 {% set total = lokasi_list|length %}{% set labeled = lokasi_list|selectattr('label')|list|length %}
 <div class="d-flex align-items-start justify-content-between mb-4">
-  <div>{% set ph_title = 'Labeling visual jalan' %}{% set ph_subtitle = 'Konfigurasikan klasterisasi, review hasil, lalu terapkan label secara eksplisit.' %}{% include 'components/page_header.html' %}</div>
-  {% if current_user.role == 'admin' %}<a class="btn btn--primary" href="{{ url_for('label.config_new') }}"><i class="bi bi-sliders2"></i> Konfigurasi baru</a>{% endif %}
+  <div>{% set ph_title = 'Labeling visual jalan' %}{% set ph_subtitle = 'Satu konfigurasi klasterisasi, satu run aktif, lalu review hasil sebelum diterapkan.' %}{% include 'components/page_header.html' %}</div>
+  {% if current_user.role == 'admin' %}<a class="btn btn--ghost" href="{{ url_for('label.config') }}"><i class="bi bi-sliders2"></i> Atur konfigurasi</a>{% endif %}
 </div>
 <div class="grid grid--3 mb-4">
   <div class="kpi">
@@ -20,46 +20,26 @@
 </div>
 <section class="panel">
   <div class="panel__head">
-    <h2 id="config-title">Konfigurasi klasterisasi</h2><span class="panel__head-note">Default: 4 klaster · PCA 50 ·
-      Canny 50/150</span>
+    <h2 id="config-title">Konfigurasi klasterisasi</h2>
+    <span class="panel__head-note">Satu konfigurasi aplikasi</span>
   </div>
   <div class="panel__body">
-    {% if config_list %}<div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Nama</th>
-            <th>Parameter</th>
-            <th>Status</th>
-            <th class="align-right">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for config in config_list %}<tr>
-            <td><strong>{{ config.nama_config }}</strong></td>
-            <td class="hint">k={{ config.n_cluster }} · PCA={{ config.pca_komponen }} · seed={{ config.random_state }} ·
-              Canny={{ config.canny_low }}/{{ config.canny_high }}</td>
-            <td>{% if config.is_default %}<span class="status-chip status-chip--ok">Default</span>{% else %}<span
-                class="hint">Kustom</span>{% endif %}</td>
-            <td class="align-right">
-              <div class="d-flex justify-content-end"><a class="btn btn--sm btn--ghost"
-                  href="{{ url_for('label.config_edit', config_id=config.id) }}">Edit</a>{% if current_user.role ==
-                'admin' %}<form method="post" action="{{ url_for('label.run', config_id=config.id) }}"
-                  data-progress="Menjalankan Klasterisasi"
-                  data-progress-url="{{ url_for('label.progress_config', config_id=config.id) }}"
-                  data-progress-poll="2"><input
-                    type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--sm btn--primary"
-                    type="submit">Jalankan</button></form>{% endif %}</div>
-            </td>
-          </tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>{% else %}<p class="hint">Belum ada konfigurasi. Buat konfigurasi pertama untuk memulai run.</p>{% endif %}
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+      <div>
+        <strong>{{ config.nama_config }}</strong>
+        <div class="hint">k={{ config.n_cluster }} · PCA={{ config.pca_komponen }} · seed={{ config.random_state }} · Canny={{ config.canny_low }}/{{ config.canny_high }}</div>
+      </div>
+      {% if current_user.role == 'admin' %}<a class="btn btn--sm btn--ghost" href="{{ url_for('label.config') }}">Edit parameter</a>{% endif %}
+    </div>
   </div>
 </section>
 <section class="panel">
   <div class="panel__head">
     <h2 id="run-title">Run terbaru</h2>
+    {% if current_user.role == 'admin' %}<form method="post" action="{{ url_for('label.run', config_id=config.id) }}"
+      data-progress="Menjalankan Klasterisasi"
+      data-progress-url="{{ url_for('label.progress_config', config_id=config.id) }}"
+      data-progress-poll="2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn--sm btn--primary" type="submit">Jalankan labeling</button></form>{% endif %}
   </div>
   <div class="panel__body">
     {% if run_list %}<div class="table-wrap">
@@ -82,8 +62,13 @@
                 class="status-chip status-chip--info">Diterapkan</span>{% endif %}</td>
             <td>{{ run.jumlah_lokasi }} diproses · {{ run.jumlah_dilewati }} dilewati</td>
             <td class="hint">{{ run.created_at }}</td>
-            <td class="align-right">{% if run.status == 'selesai' %}<a class="btn btn--sm btn--ghost"
-                href="{{ url_for('label.review', run_id=run.id) }}">Review</a>{% endif %}</td>
+            <td class="align-right"><div class="d-flex justify-content-end gap-1">{% if run.status == 'selesai' %}<a class="btn btn--sm btn--ghost"
+                href="{{ url_for('label.review', run_id=run.id) }}">Review</a>{% endif %}{% if current_user.role == 'admin' %}<form
+                method="POST" action="{{ url_for('label.run_delete', run_id=run.id) }}"><input type="hidden" name="csrf_token"
+                  value="{{ csrf_token() }}"><button type="button" class="btn btn--sm btn--danger-ghost" title="Hapus run"
+                  aria-label="Hapus run {{ run.id }}"
+                  onclick="showConfirmForm(this,'Hapus Run Klasterisasi','Run #{{ run.id }} beserta semua item hasil klasterisasi akan dihapus permanen. Label yang sudah diterapkan tetap tersimpan.','danger','Ya, Hapus Run')"><i
+                    class="bi bi-trash" aria-hidden="true"></i></button></form>{% endif %}</div></td>
           </tr>{% endfor %}</tbody>
       </table>
     </div>{% else %}<p class="hint">Belum ada run. Hasil otomatis akan muncul di sini setelah dijalankan.</p>{% endif %}
@@ -92,6 +77,14 @@
 <section class="panel">
   <div class="panel__head">
     <h2 id="location-title">Label per lokasi</h2>
+    {% if labeled and current_user.role == 'admin' %}
+    <form method="POST" action="{{ url_for('label.hapus_semua') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="button" class="btn btn--sm btn--danger-ghost"
+              onclick="showConfirmForm(this,'Hapus Semua Label','<strong>{{ labeled }}</strong> label pada semua lokasi akan dihapus. Foto, lokasi, dan run klasterisasi tetap ada.','danger','Ya, Hapus Semua')">
+        <i class="bi bi-trash" aria-hidden="true"></i> Hapus semua label
+      </button>
+    </form>
+    {% endif %}
   </div>
   <div class="panel__body">
     <div class="table-wrap">
@@ -111,9 +104,14 @@
             <td>{% if lokasi.label %}{{ lokasi.label.metode }}{% else %}—{% endif %}</td>
             <td class="text-mono">{% if lokasi.label and lokasi.label.kepadatan_tepi is not none %}{{
               '%.4f'|format(lokasi.label.kepadatan_tepi) }}{% else %}—{% endif %}</td>
-            <td class="align-right"><a class="btn btn--sm btn--ghost"
+            <td class="align-right"><div class="d-flex justify-content-end gap-1"><a class="btn btn--sm btn--ghost"
                 href="{{ url_for('label.edit', lokasi_id=lokasi.id) }}">{{ 'Edit' if lokasi.label else 'Beri label'
-                }}</a></td>
+                }}</a>{% if lokasi.label and current_user.role == 'admin' %}<form
+                method="POST" action="{{ url_for('label.delete', lokasi_id=lokasi.id) }}"><input type="hidden" name="csrf_token"
+                  value="{{ csrf_token() }}"><button type="button" class="btn btn--sm btn--danger-ghost" title="Hapus label"
+                  aria-label="Hapus label {{ lokasi.nama_citra }}"
+                  onclick="showConfirmForm(this,'Hapus Label','Label untuk <strong>{{ lokasi.nama_citra }}</strong> akan dihapus. Foto &amp; lokasi tetap ada.','danger','Ya, Hapus Label')"><i
+                    class="bi bi-trash" aria-hidden="true"></i></button></form>{% endif %}</div></td>
           </tr>{% else %}<tr>
             <td colspan="5" class="align-center hint">Belum ada lokasi jalan.</td>
           </tr>{% endfor %}</tbody>
