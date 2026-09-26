@@ -517,7 +517,7 @@
 
 /* ── Bootstrap table util ────────────────────────────────────────────── */
 /* Dipindah dari style.css 719-728. */
-.table th, .table td { vertical-align: middle; }
+.table > :not(caption) > * > * { vertical-align: middle; }
 
 .form-control:focus,
 .form-select:focus {
@@ -547,13 +547,14 @@
   background: var(--surface-1);
   border: 1px solid var(--rule);
   border-radius: var(--r-1);
+  margin-bottom: var(--s-4);
 }
 .panel__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--s-2);
-  height: 32px;
+  height: 34px;
   padding: 0 var(--s-3);
   background: var(--surface-2);
   border-bottom: 1px solid var(--rule);
@@ -562,6 +563,18 @@
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--ink-2);
+}
+.panel__head h1,
+.panel__head h2,
+.panel__head h3,
+.panel__head h4 {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  margin: 0;
+  line-height: inherit;
 }
 .panel__body { padding: var(--s-3); }
 
@@ -584,6 +597,7 @@
 .kpi--lead .kpi__label,
 .kpi--lead .kpi__unit { color: rgba(255, 255, 255, .82); }
 .kpi__label {
+  display: block;
   font-size: var(--t-xs);
   font-weight: 500;
   letter-spacing: .09em;
@@ -591,6 +605,7 @@
   color: var(--ink-2);
 }
 .kpi__value {
+  display: block;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: var(--t-metric);
@@ -664,7 +679,29 @@ select.control { padding-right: var(--s-2); }
 .btn--sm { height: 26px; padding: 0 var(--s-2); font-size: var(--t-xs); }
 
 .table-wrap { overflow-x: auto; max-width: 100%; }
-.table { width: 100%; border-collapse: collapse; font-size: var(--t-base); }
+/* Bootstrap 5 ships its own `.table` whose cell rule
+   `.table > :not(caption) > * > *` has specificity (0,2,3), higher than our
+   `.table td` (0,1,1). It therefore wins the cascade and forces
+   `padding: .5rem .5rem`, a white `--bs-table-bg` and `--bs-emphasis-color`
+   text onto every cell, which is what broke table spacing and type weight.
+   The neutraliser below matches Bootstrap's own selector so ours wins, and it
+   resets the four `--bs-table-*` variables the box-shadow trick reads. */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--ink-1);
+  --bs-table-bg-state: transparent;
+  --bs-table-accent-bg: transparent;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-base);
+}
+.table > :not(caption) > * > * {
+  padding: 8px 12px;
+  color: var(--ink-1);
+  background-color: transparent;
+  border-bottom: 1px solid var(--rule);
+  box-shadow: none;
+}
 .table thead th {
   position: sticky;
   top: 0;
@@ -680,12 +717,7 @@ select.control { padding-right: var(--s-2); }
   border-bottom: 1px solid var(--ink-1);
   white-space: nowrap;
 }
-.table td {
-  padding: 0 var(--s-2);
-  height: 30px;
-  border-bottom: 1px solid var(--rule);
-  vertical-align: middle;
-}
+.table tbody td { height: 30px; vertical-align: middle; }
 .table__num {
   text-align: right;
   font-family: var(--font-mono);
@@ -699,26 +731,32 @@ select.control { padding-right: var(--s-2); }
   font-weight: 600;
 }
 
+.status-chip,
 .chip {
-  display: inline-block;
-  padding: 1px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
   font-size: var(--t-xs);
   font-weight: 600;
   line-height: 1.4;
-  color: #fff;
-  background: var(--chip-color, var(--ink-2));
+  color: var(--fc, #fff);
+  background: var(--fc-bg, var(--fc, var(--chip-color, var(--ink-2))));
+  border: 1px solid var(--fc, transparent);
   border-radius: var(--r-1);
   white-space: nowrap;
 }
-.chip--sev1 { background: var(--sev-1); } .chip--sev1-bg { background: var(--sev-1-bg); }
-.chip--sev2 { background: var(--sev-2); } .chip--sev2-bg { background: var(--sev-2-bg); }
-.chip--sev3 { background: var(--sev-3); } .chip--sev3-bg { background: var(--sev-3-bg); }
-.chip--sev4 { background: var(--sev-4); } .chip--sev4-bg { background: var(--sev-4-bg); }
-.chip--ok { background: var(--ok); }         .chip--ok-bg { background: var(--ok-bg); }
-.chip--warn { background: var(--warn); }     .chip--warn-bg { background: var(--warn-bg); }
-.chip--danger { background: var(--danger); } .chip--danger-bg { background: var(--danger-bg); }
-.chip--info { background: var(--info); }     .chip--info-bg { background: var(--info-bg); }
-.chip--muted { background: var(--surface-2); color: var(--ink-2); }
+.status-chip[style*="--fc:"],
+.chip[style*="--fc:"] {
+  background: color-mix(in srgb, var(--fc) 15%, transparent);
+  border-color: color-mix(in srgb, var(--fc) 35%, transparent);
+  color: var(--fc);
+}
+.status-chip--ok, .chip--ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.status-chip--warn, .chip--warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn); }
+.status-chip--danger, .chip--danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+.status-chip--info, .chip--info { background: var(--info-bg); color: var(--info); border-color: var(--info); }
+.status-chip--muted, .chip--muted { background: var(--surface-2); color: var(--ink-2); border-color: var(--rule); }
 
 .meter {
   display: flex;
@@ -973,7 +1011,7 @@ select.control { padding-right: var(--s-2); }
 .btn--danger-ghost { color: var(--danger); border-color: var(--rule); }
 .btn--danger-ghost:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
 
-.table--dense td { height: 26px; }
+.table--dense > :not(caption) > * > * { height: 26px; }
 .table--dense thead th { font-size: 10px; }
 
 .empty-cell { padding: var(--s-6) 0; text-align: center; color: var(--ink-3); }
@@ -994,3 +1032,97 @@ select.control { padding-right: var(--s-2); }
 .auth-card__title { margin: 0; font-size: 18px; font-weight: 600; color: #fff; }
 .auth-card__subtitle { margin: 4px 0 0; font-size: var(--t-sm); color: rgba(255, 255, 255, .72); }
 .auth-card__foot { margin-top: var(--s-5); text-align: center; font-size: var(--t-xs); color: rgba(255, 255, 255, .72); }
+
+.items-start { align-items: flex-start; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+
+/* Photo Card Component */
+.photo-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--s-3);
+}
+.photo-card {
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  overflow: hidden;
+  transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.photo-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--rule-strong);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+.photo-card__preview {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #0d1117;
+  overflow: hidden;
+}
+.photo-card__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s var(--ease);
+}
+.photo-card:hover .photo-card__preview img {
+  transform: scale(1.03);
+}
+.photo-card__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(18, 22, 28, 0.82);
+  color: var(--fc, #fff);
+  border: 1px solid color-mix(in srgb, var(--fc, #fff) 40%, transparent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+}
+.photo-card__badge--muted {
+  color: var(--ink-3);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.photo-card__score {
+  opacity: 0.85;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+}
+.photo-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: 10px var(--s-3);
+  background: var(--surface-1);
+  border-top: 1px solid var(--rule);
+}
+.photo-card__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.photo-card__filename {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.photo-card__size {
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+}

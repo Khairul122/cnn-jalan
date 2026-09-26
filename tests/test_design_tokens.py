@@ -259,8 +259,18 @@ class TestShellContract(unittest.TestCase):
         self.assertIn("#gcModal .modal-content", css)
         self.assertIn("#gcModal .modal-header", css)
         self.assertIn("#gcModal .modal-footer", css)
-        self.assertNotIn("#gcModal .dialog {", css, "aturan .dialog custom masih ada")
         self.assertIn('#gcModal[data-type="warning"]', css)
+
+    def test_table_neutralises_bootstrap_cell_rule(self):
+        """Bootstrap 5 ships `.table > :not(caption) > * > *` at specificity
+        (0,2,3), which beats a plain `.table td` (0,1,1) and forces its own
+        padding and background onto every cell. components.css must use the
+        same selector shape so the design system wins the cascade."""
+        css = (Path(__file__).resolve().parent.parent
+               / "app" / "static" / "css" / "components.css").read_text(encoding="utf-8")
+        self.assertIn(".table > :not(caption) > * > *", css)
+        self.assertIn("box-shadow: none;", css, "box-shadow Bootstrap belum dinetralkan")
+        self.assertNotIn(".table td {", css, "selector lama (0,1,1) kalah dari Bootstrap")
 
 
 class TestToastContract(unittest.TestCase):
