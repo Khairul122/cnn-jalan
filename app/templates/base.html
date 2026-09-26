@@ -116,19 +116,14 @@
         </div>
       </header>
 
-      <main id="main-content" role="main" tabindex="-1">
+  {% endif %}
 
-        {% else %}
-        <div class="auth-page">
-          {% endif %}
+  <main id="main-content" role="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
 
-          {% block content %}{% endblock %}
-
-          {% if current_user.is_authenticated %}
-      </main>
+  {% if current_user.is_authenticated %}
     </div>
-  </div>
-  {% else %}
   </div>
   {% endif %}
 

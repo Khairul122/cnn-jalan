@@ -219,6 +219,22 @@ class TestShellContract(unittest.TestCase):
         self.assertIn("is-open", html,
                       "toggleSidebar harus memutar kelas .is-open, bukan utility Tailwind")
 
+    def test_content_block_defined_once(self):
+        """Jinja hanya izinkan satu {% block content %}. Dua definisi (mis. satu
+        di tiap cabang if/else) membuat SETIAP halaman 500 dan tampil tanpa CSS."""
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertEqual(
+            html.count("{% block content %}"), 1,
+            "base.html mendefinisikan block content lebih dari sekali",
+        )
+
+    def test_main_landmark_present_in_both_states(self):
+        """Skip-link menunjuk #main-content; landmark harus ada di halaman
+        auth maupun halaman authed."""
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        self.assertEqual(html.count('id="main-content"'), 1)
+        self.assertIn('href="#main-content"', html)
+
     def test_confirm_dialog_uses_bootstrap_modal(self):
         """Dialog konfirmasi memakai modal Bootstrap 5, bukan markup custom."""
         html = self.TEMPLATE.read_text(encoding="utf-8")
