@@ -152,7 +152,11 @@ def new():
             return redirect(url_for('split.new'))
 
         ids = [i['dokumentasi_id'] for i in items]
-        dup_groups = find_duplicate_groups(ids, [i['path_file'] for i in items], BASE_DIR)
+        # Tanpa centang: tiap foto grupnya sendiri, sama dengan StratifiedKFold biasa di notebook Colab.
+        if request.form.get('grup_duplikat'):
+            dup_groups = find_duplicate_groups(ids, [i['path_file'] for i in items], BASE_DIR)
+        else:
+            dup_groups = {d: d for d in ids}
         spatial_groups = find_spatial_groups(ids, [(i['latitude'], i['longitude']) for i in items], radius_m)
         group_map = merge_group_maps(ids, dup_groups, spatial_groups)
         groups = [group_map[d] for d in ids]

@@ -166,7 +166,7 @@ def _group_aware_split(groups, labels, test_size, seed):
     return idx_a, idx_b
 
 
-def load_dataset(split_config_id, fold_val, input_size, base_dir):
+def load_dataset(split_config_id, fold_val, input_size, base_dir, hanya_denoise=False):
     """
     Muat dataset untuk satu fold.
 
@@ -191,6 +191,9 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
     groups_train (dokumentasi_id per sampel training) dikembalikan agar pemanggil bisa
     beroperasi di level foto — dipakai _group_aware_split di train() supaya varian tahap
     dari foto yang sama tidak saling bocor antara data fit dan inner-val.
+
+    hanya_denoise=True (profil Colab): training memakai 1 gambar per foto (tahap denoise, seperti
+    validasi), tanpa ekspansi tahap resize/crop/normalisasi.
     """
     prep_sq = _preprocessed_subquery()   # 1 path 'denoise' per foto → dipakai untuk val
 
@@ -250,6 +253,8 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir):
             continue
 
         paths = distinct_stage_paths(row.dokumentasi_id, stage_map, base_dir)
+        if hanya_denoise:
+            paths = [row.prep_path] if row.prep_path else []
         added = 0
         for path_rel in paths:
             arr = _load(path_rel)

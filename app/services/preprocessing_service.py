@@ -2,7 +2,7 @@ import os
 import time
 import numpy as np
 import cv2
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 class PreprocessingService:
@@ -31,10 +31,14 @@ class PreprocessingService:
 
         # ── Step 1: Resize (+ koreksi iluminasi opsional sebelum resize) ────
         t0 = time.time()
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path)
+        if str(config.resize_method) == 'LANCZOS_CV':
+            img = ImageOps.exif_transpose(img)   # cv2.imread (notebook) menerapkan orientasi EXIF, Pillow tidak
+        img = img.convert('RGB')
         if getattr(config, 'illum_correction', False):
             img = PreprocessingService._gray_world_white_balance(img)
-        resample = getattr(Image.Resampling, str(config.resize_method), Image.Resampling.LANCZOS)
+        metode = str(config.resize_method)
+        resample = getattr(Image.Resampling, metode, Image.Resampling.LANCZOS)
         target_w, target_h = int(config.target_width), int(config.target_height)
         if str(getattr(config, 'resize_mode', 'stretch')) == 'letterbox':
             # Jaga aspect ratio: resize supaya pas di dalam target box, lalu pad hitam di sisa ruang
@@ -44,6 +48,9 @@ class PreprocessingService:
             resized = img.resize((new_w, new_h), resample)
             img = Image.new('RGB', (target_w, target_h), (0, 0, 0))
             img.paste(resized, ((target_w - new_w) // 2, (target_h - new_h) // 2))
+        elif metode == 'LANCZOS_CV':
+            # Sama dengan notebook: cv2.INTER_LANCZOS4 (tanpa antialias, beda dari LANCZOS Pillow).
+            img = Image.fromarray(cv2.resize(np.array(img), (target_w, target_h), interpolation=cv2.INTER_LANCZOS4))
         else:
             img = img.resize((target_w, target_h), resample)
         results.append(('resize', img.copy(), int((time.time() - t0) * 1000)))
@@ -101,7 +108,12 @@ class PreprocessingService:
                 cv_img = cv2.medianBlur(cv_img, k)
             elif method == 'bilateral':
                 cv_img = cv2.bilateralFilter(cv_img, k, 75, 75)
-            img = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
+            if method == 'nlmeans':
+                # Persis notebook Colab: array RGB langsung ke fastNlMeansDenoisingColored (OpenCV
+                # menganggapnya BGR), h=7, hColor=7, template 7, search 21. Tanpa konversi warna.
+                img = Image.fromarray(cv2.fastNlMeansDenoisingColored(np.array(img), None, 7, 7, 7, 21))
+            else:
+                img = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
         results.append(('denoise', img.copy(), int((time.time() - t0) * 1000)))
 
         return results

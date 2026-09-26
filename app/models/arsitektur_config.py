@@ -21,6 +21,7 @@ class ArsitekturConfig(db.Model):
     dense_l2        = db.Column(db.Float, nullable=False, default=1e-4)   # L2 regularizer head — TODO.md P4
     skip_fine_tuning = db.Column(db.Boolean, nullable=False, default=False)  # Jalur A: backbone beku penuh — TODO.md P4
     # Layer augmentasi training yang DIMATIKAN (kunci dipisah koma, lihat cnn_service.AUG_KEYS); '' = semua aktif
+    profil          = db.Column(db.Enum('standar', 'colab'), nullable=False, default='standar')  # colab = logika training notebook Colab
     aug_off         = db.Column(db.String(100), nullable=False, default='')
     split_config_id = db.Column(db.Integer, db.ForeignKey('split_config.id'), nullable=False)
     fold_val        = db.Column(db.SmallInteger, nullable=False, default=0)

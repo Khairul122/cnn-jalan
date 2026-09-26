@@ -7,217 +7,120 @@
 {% endblock %}
 
 {% block content %}
+{% set ph_title = 'Arsitektur CNN' %}
+{% set ph_subtitle = 'Transfer learning MobileNetV2 & EfficientNetB0 untuk klasifikasi tingkat kerusakan.' %}
+{% include 'components/page_header.html' %}
 
-<div class="d-flex align-items-center justify-content-between">
-  <div>
-    {% set ph_title = 'Arsitektur CNN' %}{% include 'components/page_header.html' %}
-    <p>
-      Transfer learning MobileNetV2 & EfficientNetB0 untuk klasifikasi tingkat kerusakan
-    </p>
-  </div>
-  <div class="d-flex">
-    <a href="{{ url_for('arsitektur.ringkasan_ulangan') }}" class="btn btn--ghost btn--sm">
-      <i class="bi bi-collection"></i> Ringkasan Repeated CV
-    </a>
-    <a href="{{ url_for('arsitektur.new') }}" class="btn-cnn-primary">
-      <i class="bi bi-plus-lg"></i> Buat Konfigurasi
-    </a>
-  </div>
-</div>
-
-<!-- Stats -->
-<div class="grid">
-  {% for lbl, val, color, icon in [
-      ('Total Konfigurasi', configs|length,  '#A78BFA', 'bi-cpu-fill'),
-      ('Selesai Training',  total_selesai,   '#10B981', 'bi-check-circle-fill'),
-      ('Draft / Gagal',     total_draft,     '#64748B', 'bi-hourglass-split'),
-  ] %}
-  <div>
-    <div class="cnn-stat-card">
-      <i class="bi {{ icon }}" style="--fc:{{ color }};"></i>
-      <div>
-        <div class="cnn-stat-val">{{ val }}</div>
-        <div class="cnn-stat-lbl">{{ lbl }}</div>
-      </div>
-    </div>
-  </div>
-  {% endfor %}
-</div>
-
-{% if configs %}
-<div class="cnn-table-wrap">
-  <table class="table align-middle cnn-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nama</th>
-        <th>Model</th>
-        <th>Epoch</th>
-        <th>Split</th>
-        <th>Fold Val</th>
-        <th>Status</th>
-        <th>Akurasi</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for cfg in configs %}
-      {% set is_best = (cfg.id == best_id) %}
-      {% set disp = display_map.get(cfg.id) %}
-      <tr {% if is_best %}class="row-best"{% endif %}>
-        <td>{{ loop.index }}</td>
-        <td>
-          <div class="d-flex align-items-center">
-            <span>{{ cfg.nama }}</span>
-            {% if is_best %}
-            <span class="badge-best"><i class="bi bi-trophy-fill"></i> Terbaik</span>
-            {% endif %}
-          </div>
-          <div>{{ cfg.created_at.strftime('%d %b %Y') }}</div>
-        </td>
-        <td>
-          <span class="model-badge model-badge--{{ cfg.model_type }}">
-            {{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}
-          </span>
-        </td>
-        <td>
-          {{ cfg.epochs }}
-        </td>
-        <td>
-          {{ cfg.split_config.nama if cfg.split_config else '—' }}
-        </td>
-        <td>
-          Fold {{ cfg.fold_val + 1 }}
-        </td>
-        <td>
-          <span class="status-badge status-badge--{{ cfg.status }}">
-            {% if cfg.status == 'draft' %}Draft
-            {% elif cfg.status == 'training' %}Training…
-            {% elif cfg.status == 'selesai' %}Selesai
-            {% else %}Gagal{% endif %}
-          </span>
-        </td>
-        <td>
-          {% if disp %}
-          <span style="--fc:{{ 'var(--sev-3)' if is_best else 'var(--ink-3)' }};">{{ disp.akurasi }}%</span>
-          <div>
-            {% if disp.sumber == 'cv' %}
-            <span>CV K-Fold</span>
-            {% else %}
-            <span title="1 fold saja, bukan metrik resmi — jalankan Prediksi CV K-Fold">1 fold, belum CV</span>
-            {% endif %}
-          </div>
-          {% else %}
-          <span>—</span>
-          {% endif %}
-        </td>
-        <td>
-          <div class="d-flex align-items-center justify-content-center">
-            <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="btn-action-view" title="Lihat">
-              <i class="bi bi-eye-fill"></i> Lihat
-            </a>
-            <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" class="btn-action-del" title="Hapus"
-                      onclick="showConfirmForm(this,
-                        'Hapus Arsitektur CNN',
-                        'Konfigurasi <strong>{{ cfg.nama }}</strong> beserta semua hasil training dan evaluasi akan dihapus permanen.',
-                        'danger','Ya, Hapus')">
-                <i class="bi bi-trash-fill"></i>
-              </button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-{% else %}
-<div class="cnn-empty">
-  <i class="bi bi-cpu"></i>
-  <p>Belum ada konfigurasi</p>
-  <p>
-    Buat konfigurasi CNN untuk melatih model MobileNetV2 atau EfficientNetB0
-  </p>
-  <a href="{{ url_for('arsitektur.new') }}" class="btn-cnn-primary">
-    <i class="bi bi-plus-lg"></i> Buat Konfigurasi Pertama
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a href="{{ url_for('arsitektur.new') }}" class="btn btn--primary btn--sm">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Konfigurasi
+  </a>
+  <a href="{{ url_for('arsitektur.ringkasan_ulangan') }}" class="btn btn--ghost btn--sm">
+    <i class="bi bi-collection" aria-hidden="true"></i> Ringkasan Repeated CV
   </a>
 </div>
-{% endif %}
 
-{% endblock %}
+<div class="grid grid--3 mb-4">
+  {% set kpi_title = 'Total Konfigurasi' %}{% set kpi_value = configs | length %}
+  {% set kpi_accent = 'var(--accent)' %}{% set kpi_icon_bg = 'var(--accent-wash)' %}
+  {% set kpi_icon_color = 'var(--accent)' %}
+  {% set kpi_icon_path = '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>' %}
+  {% include 'components/kpi_card.html' %}
 
-{% block extra_css %}
-<style>
-.btn-cnn-primary {
-  display: inline-flex; align-items: center; gap: .375rem;
-  padding: .45rem .9rem; border-radius: var(--r-input);
-  font-size: .8rem; font-weight: 700; text-decoration: none;
-  background: linear-gradient(135deg, #0369A1, #0EA5E9); color: #fff;
-  box-shadow: 0 2px 8px rgba(3,105,161,.25);
-  transition: opacity .15s, transform .15s; cursor: pointer;
-}
-.btn-cnn-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+  {% set kpi_title = 'Selesai Training' %}{% set kpi_value = total_selesai %}
+  {% set kpi_accent = 'var(--ok)' %}{% set kpi_icon_bg = 'var(--ok-bg)' %}
+  {% set kpi_icon_color = 'var(--ok)' %}
+  {% set kpi_icon_path = '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>' %}
+  {% include 'components/kpi_card.html' %}
 
-.cnn-stat-card {
-  display: flex; align-items: center; gap: .5rem;
-  padding: .625rem .875rem;
-  background: var(--c-surface); border: 1px solid var(--c-border);
-  border-radius: var(--r-card);
-}
-.cnn-stat-val { font-size: 1.1rem; font-weight: 700; color: var(--c-text); margin: 0; font-variant-numeric: tabular-nums; }
-.cnn-stat-lbl { font-size: .68rem; color: var(--c-muted); margin: 0; }
+  {% set kpi_title = 'Draft / Gagal' %}{% set kpi_value = total_draft %}
+  {% set kpi_accent = 'var(--warn)' %}{% set kpi_icon_bg = 'var(--warn-bg)' %}
+  {% set kpi_icon_color = 'var(--warn)' %}
+  {% set kpi_icon_path = '<circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/>' %}
+  {% include 'components/kpi_card.html' %}
+</div>
 
-.cnn-table-wrap { border-radius: var(--r-card); overflow: hidden; box-shadow: var(--shadow-card); border: 1px solid var(--c-border); }
-
-.model-badge {
-  display: inline-block; padding: .15rem .55rem; border-radius: 999px;
-  font-size: .72rem; font-weight: 700;
-}
-.model-badge--mobilenetv2   { background: rgba(3,105,161,.18); border: 1px solid rgba(14,165,233,.3); color: #38BDF8; }
-.model-badge--efficientnetb0 { background: rgba(124,58,237,.15); border: 1px solid rgba(167,139,250,.3); color: #A78BFA; }
-
-.status-badge {
-  display: inline-block; padding: .15rem .55rem; border-radius: 999px;
-  font-size: .72rem; font-weight: 600;
-}
-.status-badge--draft    { background: rgba(100,116,139,.15); border: 1px solid rgba(100,116,139,.3); color: #94a3b8; }
-.status-badge--training { background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.3); color: #F59E0B; }
-.status-badge--selesai  { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); color: #10B981; }
-.status-badge--gagal    { background: rgba(220,38,38,.12); border: 1px solid rgba(220,38,38,.25); color: #EF4444; }
-
-.btn-action-view {
-  display: inline-flex; align-items: center; gap: .25rem;
-  padding: .28rem .6rem; border-radius: var(--r-input);
-  font-size: .73rem; font-weight: 600; text-decoration: none;
-  background: rgba(3,105,161,.2); color: #38BDF8;
-  border: 1px solid rgba(56,189,248,.25); transition: background .15s;
-}
-.btn-action-view:hover { background: rgba(3,105,161,.35); color: #38BDF8; }
-
-.btn-action-del {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: var(--r-input);
-  background: transparent; color: #DC2626;
-  border: 1px solid rgba(220,38,38,.3); cursor: pointer;
-  font-size: .78rem; transition: background .15s;
-}
-.btn-action-del:hover { background: rgba(220,38,38,.12); }
-
-.cnn-empty {
-  text-align: center; padding: 2.5rem 1rem;
-  background: var(--c-surface); border-radius: var(--r-card);
-  border: 1px solid var(--c-border);
-}
-
-.badge-best {
-  display: inline-flex; align-items: center; gap: .25rem;
-  padding: .15rem .5rem; border-radius: 999px; font-size: .68rem; font-weight: 700;
-  background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.35); color: #F59E0B;
-}
-.row-best td:first-child {
-  border-left: 3px solid #F59E0B;
-}
-</style>
+<section class="panel">
+  <div class="panel__head">
+    <h2><i class="bi bi-cpu" aria-hidden="true"></i> Konfigurasi</h2>
+    <span class="panel__head-note">{{ configs | length }} konfigurasi</span>
+  </div>
+  <div class="panel__body">
+    {% if configs %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Nama</th>
+            <th scope="col">Model</th>
+            <th scope="col">Epoch</th>
+            <th scope="col">Split</th>
+            <th scope="col">Fold Val</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="align-right">Akurasi</th>
+            <th scope="col" class="align-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cfg in configs %}
+          {% set is_best = (cfg.id == best_id) %}
+          {% set disp = display_map.get(cfg.id) %}
+          <tr{% if is_best %} class="is-best"{% endif %}>
+            <td>{{ loop.index }}</td>
+            <td>
+              <span class="table__key-inline">{{ cfg.nama }}</span>
+              {% if is_best %}
+              <span class="chip chip--warn"><i class="bi bi-trophy-fill" aria-hidden="true"></i> Terbaik</span>
+              {% endif %}
+              <div class="hint">{{ cfg.created_at.strftime('%d %b %Y') }}</div>
+            </td>
+            <td><span class="chip chip--muted">{{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}</span></td>
+            <td class="table__num">{{ cfg.epochs }}</td>
+            <td>{{ cfg.split_config.nama if cfg.split_config else '—' }}</td>
+            <td class="table__num">{{ cfg.fold_val + 1 }}</td>
+            <td><span class="chip chip--{{ {'draft': 'muted', 'training': 'warn', 'selesai': 'ok', 'gagal': 'danger'}.get(cfg.status, 'muted') }}">{{ {'draft': 'Draft', 'training': 'Training', 'selesai': 'Selesai', 'gagal': 'Gagal'}.get(cfg.status, cfg.status) }}</span></td>
+            <td class="table__num">
+              {% if disp %}
+              <span class="table__num--fc" style="--fc:{{ 'var(--sev-3)' if is_best else 'var(--ink-2)' }};">{{ disp.akurasi }}%</span>
+              <div class="hint">{{ 'CV K-Fold' if disp.sumber == 'cv' else '1 fold, belum CV' }}</div>
+              {% else %}
+              <span class="hint">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="table-actions justify-content-end">
+                <a href="{{ url_for('arsitektur.detail', config_id=cfg.id) }}" class="btn btn--ghost btn--sm"
+                   title="Lihat" aria-label="Lihat konfigurasi {{ cfg.nama }}">
+                  <i class="bi bi-eye-fill" aria-hidden="true"></i> Lihat
+                </a>
+                <form method="POST" action="{{ url_for('arsitektur.delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="button" class="btn btn--ghost btn--danger-ghost btn--sm"
+                          title="Hapus" aria-label="Hapus konfigurasi {{ cfg.nama }}"
+                          onclick="showConfirmForm(this,
+                            'Hapus Arsitektur CNN',
+                            'Konfigurasi <strong>{{ cfg.nama }}</strong> beserta semua hasil training dan evaluasi akan dihapus permanen.',
+                            'danger','Ya, Hapus')">
+                    <i class="bi bi-trash-fill" aria-hidden="true"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="cnn-empty-state">
+      <i class="bi bi-cpu" aria-hidden="true"></i>
+      <p>Belum ada konfigurasi</p>
+      <p class="hint">Buat konfigurasi CNN untuk melatih model MobileNetV2 atau EfficientNetB0.</p>
+      <a href="{{ url_for('arsitektur.new') }}" class="btn btn--primary btn--sm mt-2">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Konfigurasi Pertama
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

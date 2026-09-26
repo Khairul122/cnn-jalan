@@ -120,6 +120,17 @@
       </div>
 
       <div class="col-12">
+        <label class="d-flex align-items-start gap-2" for="grup_duplikat">
+          <input type="checkbox" id="grup_duplikat" name="grup_duplikat" value="1" class="mt-1">
+          <span>
+            <span class="field__label d-block mb-0">Satukan foto near-duplicate dalam satu fold</span>
+            <span class="hint d-block">Mencegah foto hampir kembar terbelah antara train dan val. Nonaktif secara bawaan (sama dengan
+            notebook Colab); pada dataset ini 41 foto masuk 10 grup near-duplicate.</span>
+          </span>
+        </label>
+      </div>
+
+      <div class="col-12">
         <div class="field">
           <label class="field__label" for="radius_grup_m">Radius grup spasial (meter)</label>
           <input type="number" id="radius_grup_m" name="radius_grup_m" value="0" min="0" max="500"

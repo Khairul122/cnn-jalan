@@ -46,6 +46,23 @@ def parse_aug_off(nilai):
     return tuple(nilai or ())
 
 
+# Augmentasi notebook Colab (cell 6): hanya enam layer ini, dengan faktor berbeda dari profil standar.
+# Kunci sama dengan AUGMENTASI supaya aug_off tetap berlaku.
+def _augmentation_layers_colab(aug_off=()):
+    from tensorflow import keras
+    L = keras.layers
+    aug_off = parse_aug_off(aug_off)
+    pabrik = {
+        'flip': lambda: L.RandomFlip('horizontal'),
+        'rotasi': lambda: L.RandomRotation(factor=20 / 360),
+        'brightness': lambda: L.RandomBrightness(factor=0.25, value_range=(0, 255)),
+        'contrast': lambda: L.RandomContrast(factor=0.25),
+        'zoom': lambda: L.RandomZoom(height_factor=0.15, width_factor=0.15),
+        'translasi': lambda: L.RandomTranslation(height_factor=0.1, width_factor=0.1),
+    }
+    return [pabrik[k]() for k in ('flip', 'rotasi', 'brightness', 'contrast', 'zoom', 'translasi') if k not in aug_off]
+
+
 def _augmentation_layers(aug_off=()):
     """Layer augmentasi Keras yang aktif (semua kecuali kunci di aug_off). Aktif hanya saat
     training=True, mati saat predict/evaluate. Hanya augmentasi yang realistis untuk foto jalan
@@ -99,13 +116,14 @@ def _make_loss(mixup_alpha, label_smoothing=0):
 
 
 def build_model(model_type, input_size, dropout_rate, optimizer_name, learning_rate,
-                mixup_alpha=0, label_smoothing=0, dense_units=64, dense_l2=1e-4, aug_off=()):
+                mixup_alpha=0, label_smoothing=0, dense_units=64, dense_l2=1e-4, aug_off=(), profil='standar'):
     from tensorflow import keras
 
+    colab = profil == 'colab'
     inp = keras.Input(shape=(input_size, input_size, 3))
 
     x = inp
-    for layer in _augmentation_layers(aug_off):
+    for layer in (_augmentation_layers_colab(aug_off) if colab else _augmentation_layers(aug_off)):
         x = layer(x)
 
     if model_type == 'mobilenetv2':
@@ -131,9 +149,10 @@ def build_model(model_type, input_size, dropout_rate, optimizer_name, learning_r
     # bisa dibandingkan lewat UI tanpa ubah kode.
     x = keras.layers.Dense(dense_units, activation='relu',
                            kernel_regularizer=keras.regularizers.L2(dense_l2))(x)
-    x = keras.layers.Dropout(dropout_rate / 2)(x)
+    # Colab: dropout kedua tetap 0,3 dan lapisan output tanpa regularizer.
+    x = keras.layers.Dropout(0.3 if colab else dropout_rate / 2)(x)
     out = keras.layers.Dense(N_CLASSES, activation='softmax',
-                             kernel_regularizer=keras.regularizers.L2(dense_l2))(x)
+                             kernel_regularizer=None if colab else keras.regularizers.L2(dense_l2))(x)
 
     model = keras.Model(inp, out)
     model.compile(
@@ -144,8 +163,9 @@ def build_model(model_type, input_size, dropout_rate, optimizer_name, learning_r
     return model
 
 
-def _apply_fine_tuning(model, model_type, learning_rate, optimizer_name, mixup_alpha=0, label_smoothing=0):
-    """Unfreeze top layers of the base sub-model and recompile with lr/10."""
+def _apply_fine_tuning(model, model_type, learning_rate, optimizer_name, mixup_alpha=0, label_smoothing=0,
+                       profil='standar'):
+    """Unfreeze top layers of the base sub-model and recompile with lr/10 (profil colab: 6 layer, lr/20)."""
     # Dataset kecil (~224-540 train): unfreeze sedikit layer saja untuk hindari overfitting.
     # Diperkecil 2026-09-23 (dari 15/25) — log training berulang kali menunjukkan train acc
     # naik ke 70%+ di Phase 2 sementara val macet ~35-45%, tanda fine-tuning terlalu dalam
@@ -153,6 +173,9 @@ def _apply_fine_tuning(model, model_type, learning_rate, optimizer_name, mixup_a
     # MobileNetV2 ~154 layers → unfreeze last 8
     # EfficientNetB0 ~238 layers → unfreeze last 12
     n_unfreeze = 8 if model_type == 'mobilenetv2' else 12
+    colab = profil == 'colab'
+    if colab:
+        n_unfreeze = 6   # notebook: JUMLAH_LAYER_DIBUKA = 6, termasuk BatchNorm di 6 layer itu
 
     base = None
     for layer in model.layers:
@@ -166,13 +189,13 @@ def _apply_fine_tuning(model, model_type, learning_rate, optimizer_name, mixup_a
     fine_tune_from = max(0, len(base.layers) - n_unfreeze)
     for i, layer in enumerate(base.layers):
         # Keep BatchNorm layers frozen to preserve ImageNet statistics
-        if layer.__class__.__name__ == 'BatchNormalization':
+        if not colab and layer.__class__.__name__ == 'BatchNormalization':
             layer.trainable = False
         else:
             layer.trainable = (i >= fine_tune_from)
 
     model.compile(
-        optimizer=_make_optimizer(optimizer_name, learning_rate / 10),
+        optimizer=_make_optimizer(optimizer_name, learning_rate / (20 if colab else 10)),
         loss=_make_loss(mixup_alpha, label_smoothing),
         metrics=['accuracy'],
     )

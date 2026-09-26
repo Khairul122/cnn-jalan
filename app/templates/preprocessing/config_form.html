@@ -106,7 +106,7 @@
           <div class="col-sm-4">
             <label class="prep-label" for="resize_method">Metode Resampling</label>
             <select id="resize_method" name="resize_method" class="prep-input form-select" onchange="updatePreview()">
-              {% for m, desc in [('LANCZOS','Lanczos (terbaik)'),('BILINEAR','Bilinear'),('BICUBIC','Bicubic'),('NEAREST','Nearest')] %}
+              {% for m, desc in [('LANCZOS','Lanczos (terbaik)'),('BILINEAR','Bilinear'),('BICUBIC','Bicubic'),('NEAREST','Nearest'),('LANCZOS_CV','Lanczos4 OpenCV (notebook Colab)')] %}
               <option value="{{ m }}" {{ 'selected' if (config and config.resize_method == m) or (not config and m == 'LANCZOS') }}>{{ desc }}</option>
               {% endfor %}
             </select>
@@ -222,6 +222,7 @@
               ('gaussian',  'Gaussian',   'Blur Gaussian — reduksi noise acak/salt-pepper'),
               ('median',    'Median',     'Filter median — efektif untuk noise impulsif'),
               ('bilateral', 'Bilateral',  'Filter bilateral — pertahankan tepi, reduksi noise'),
+              ('nlmeans',   'Non-Local Means', 'fastNlMeansDenoisingColored (h=7), denoise yang dipakai notebook Colab'),
           ] %}
           <label class="radio-card" onclick="toggleKsize()">
             <input type="radio" name="denoise_method" value="{{ val }}" style="accent-color:#A78BFA;margin-top:.15rem;"
@@ -312,7 +313,7 @@ function toggleCrop() {
 function toggleKsize() {
   var method = document.querySelector('input[name="denoise_method"]:checked');
   var row = document.getElementById('ksizeRow');
-  if (method && method.value !== 'none') {
+  if (method && method.value !== 'none' && method.value !== 'nlmeans') {
     row.style.display = '';
   } else {
     row.style.display = 'none';

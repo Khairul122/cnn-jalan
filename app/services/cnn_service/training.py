@@ -46,7 +46,7 @@ def _is_better_checkpoint(cand_acc, cand_loss, best_acc, best_loss):
 
 HYPERPARAM_FIELDS = (
     'input_size', 'model_type', 'dropout_rate', 'optimizer', 'learning_rate', 'batch_size', 'epochs', 'patience',
-    'mixup_alpha', 'label_smoothing', 'dense_units', 'dense_l2', 'skip_fine_tuning', 'aug_off',
+    'mixup_alpha', 'label_smoothing', 'dense_units', 'dense_l2', 'skip_fine_tuning', 'aug_off', 'profil',
 )
 
 
@@ -102,8 +102,14 @@ def _mixup_dataset(X, y_int, sample_weight, batch_size, alpha, n_classes, seed):
 
 def _fit_phase(model, data, epochs, batch_size, class_weight, patience, lr_patience, min_lr,
                logger, offset, total_epochs, on_epoch_end, fine_tuning=False, mixup_alpha=0,
-               label_smoothing=0):
+               label_smoothing=0, colab=False):
     """
+    Profil Colab (colab=True): meniru notebook. EarlyStopping memantau val_accuracy (mode max, tanpa
+    min_delta), tanpa ReduceLROnPlateau, dan bobot terbaik = epoch dengan val_accuracy tertinggi pada
+    data validasi. Di train() data validasi itu adalah fold uji sendiri, jadi akurasinya optimistis
+    dibanding profil standar (yang memilih epoch di inner-val terpisah). Bedanya dengan Keras
+    restore_best_weights: bobot terbaik selalu dipakai, bukan hanya saat berhenti lebih awal.
+
     Satu fase training. EarlyStopping & ReduceLROnPlateau memantau inner_val_loss (metrik
     stabil untuk kontrol training). Pemilihan BOBOT TERBAIK memakai kriteria
     _is_better_checkpoint dengan BALANCED accuracy inner-val (rata-rata recall antar kelas,
@@ -125,13 +131,17 @@ def _fit_phase(model, data, epochs, batch_size, class_weight, patience, lr_patie
             lg = logs or {}
             inner_loss = lg.get('val_loss', float('inf'))
 
-            if len(X_inner):
+            if colab:
+                inner_bal_acc = float(lg.get('val_accuracy', 0.0))
+            elif len(X_inner):
                 inner_pred = np.argmax(self.model.predict(X_inner, verbose=0), axis=1)
                 inner_bal_acc = float(balanced_accuracy_score(y_inner, inner_pred))
             else:
                 inner_bal_acc = 0.0
 
-            if _is_better_checkpoint(inner_bal_acc, inner_loss, state['best_acc'], state['best_loss']):
+            lebih_baik = (inner_bal_acc > state['best_acc'] if colab
+                          else _is_better_checkpoint(inner_bal_acc, inner_loss, state['best_acc'], state['best_loss']))
+            if lebih_baik:
                 state['best_acc']  = inner_bal_acc
                 state['best_loss'] = inner_loss
                 state['weights']   = self.model.get_weights()
@@ -161,13 +171,17 @@ def _fit_phase(model, data, epochs, batch_size, class_weight, patience, lr_patie
                     'fine_tuning': fine_tuning,
                 })
 
-    callbacks = [
-        keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience,
-                                      min_delta=MIN_DELTA, mode='min', verbose=0),
-        keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=lr_patience,
-                                          min_lr=min_lr, verbose=0),
-        _Track(),
-    ]
+    if colab:
+        callbacks = [keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=patience, mode='max', verbose=0),
+                     _Track()]
+    else:
+        callbacks = [
+            keras.callbacks.EarlyStopping(monitor='val_loss', patience=patience,
+                                          min_delta=MIN_DELTA, mode='min', verbose=0),
+            keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=lr_patience,
+                                              min_lr=min_lr, verbose=0),
+            _Track(),
+        ]
 
     if mixup_alpha and mixup_alpha > 0:
         if len(X_fit) < batch_size:
@@ -233,16 +247,22 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     logger.info(f'  split_config : {arsitektur.split_config_id}  fold_val={arsitektur.fold_val}')
     logger.info('=' * 60)
 
+    colab = getattr(arsitektur, 'profil', 'standar') == 'colab'
     X_train, y_train, groups_train, X_fold, y_fold, _groups_fold = load_dataset(
-        arsitektur.split_config_id, arsitektur.fold_val, arsitektur.input_size, base_dir)
+        arsitektur.split_config_id, arsitektur.fold_val, arsitektur.input_size, base_dir,
+        hanya_denoise=colab)
 
     # Inner-val: potongan data training untuk early stopping. Fold uji tetap murni.
     # Split di level foto (groups_train), bukan level sampel — varian tahap preprocessing
     # dari foto yang sama tidak boleh terpisah antara fit dan inner-val (cegah leakage).
-    idx_fit, idx_inner = _group_aware_split(
-        groups_train, y_train, test_size=INNER_VAL_FRAC, seed=SEED)
-    X_fit,   y_fit   = X_train[idx_fit],   y_train[idx_fit]
-    X_inner, y_inner = X_train[idx_inner], y_train[idx_inner]
+    if colab and len(X_fold):
+        # Notebook: latih pada seluruh data training, validasi (early stopping + pilih epoch) pada fold uji.
+        X_fit, y_fit, X_inner, y_inner = X_train, y_train, X_fold, y_fold
+    else:
+        idx_fit, idx_inner = _group_aware_split(
+            groups_train, y_train, test_size=INNER_VAL_FRAC, seed=SEED)
+        X_fit,   y_fit   = X_train[idx_fit],   y_train[idx_fit]
+        X_inner, y_inner = X_train[idx_inner], y_train[idx_inner]
 
     from app.kelas import LABEL as label_name
 
@@ -262,8 +282,8 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     # tetap pantau val_loss (kontrol kapan berhenti/turunkan LR), tapi PEMILIHAN bobot
     # terbaik pakai inner_val BALANCED accuracy (lihat _is_better_checkpoint) karena akurasi
     # mentah/val_loss bisa membaik cuma dengan makin sering menebak Sedang (mayoritas).
-    patience     = max(getattr(arsitektur, 'patience', 5), 20)
-    ft_epochs    = max(20, arsitektur.epochs // 2)
+    patience     = getattr(arsitektur, 'patience', 5) if colab else max(getattr(arsitektur, 'patience', 5), 20)
+    ft_epochs    = 40 if colab else max(20, arsitektur.epochs // 2)
     total_epochs = arsitektur.epochs + ft_epochs
     data = (X_fit, y_fit, X_inner, y_inner, X_fold, y_fold)
     head = '  Epoch  loss     acc      in_loss  in_acc   in_bal   uji_loss uji_acc  lr'
@@ -273,6 +293,8 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     dense_l2 = getattr(arsitektur, 'dense_l2', None) or 1e-4
     skip_fine_tuning = bool(getattr(arsitektur, 'skip_fine_tuning', False))
     aug_off = parse_aug_off(getattr(arsitektur, 'aug_off', '') or '')
+    if colab:
+        logger.info('  profil       : colab (validasi = fold uji; epoch terbaik dipilih dari val_accuracy fold uji, optimistis)')
     if aug_off:
         logger.info(f'  augmentasi dimatikan : {", ".join(aug_off)}')
     if mixup_alpha:
@@ -288,14 +310,15 @@ def train(arsitektur, base_dir, on_epoch_end=None):
     model = build_model(arsitektur.model_type, arsitektur.input_size,
                         arsitektur.dropout_rate, arsitektur.optimizer, arsitektur.learning_rate,
                         mixup_alpha=mixup_alpha, label_smoothing=label_smoothing,
-                        dense_units=dense_units, dense_l2=dense_l2, aug_off=aug_off)
+                        dense_units=dense_units, dense_l2=dense_l2, aug_off=aug_off,
+                        profil='colab' if colab else 'standar')
     logger.info(f'PHASE 1  epochs_max={arsitektur.epochs}  patience={patience}')
     logger.info('  [Early stopping/LR: inner_val_loss | Pilihan epoch: inner_val_balanced_acc (loss tiebreaker) | uji_* hanya laporan]')
     logger.info(head)
     p1_weights, p1_loss, h1, p1_bal = _fit_phase(
         model, data, arsitektur.epochs, arsitektur.batch_size, class_weight,
         patience, patience // 2, 1e-6, logger, 0, total_epochs, on_epoch_end,
-        mixup_alpha=mixup_alpha, label_smoothing=label_smoothing)
+        mixup_alpha=mixup_alpha, label_smoothing=label_smoothing, colab=colab)
     logger.info(f'PHASE 1 SELESAI  epoch={len(h1["loss"])}  best_inner_val_bal_acc={p1_bal:.4f}  (loss={p1_loss:.4f})')
 
     if skip_fine_tuning:
@@ -309,16 +332,16 @@ def train(arsitektur, base_dir, on_epoch_end=None):
         model.set_weights(p1_weights)
         model = _apply_fine_tuning(model, arsitektur.model_type, arsitektur.learning_rate,
                                    arsitektur.optimizer, mixup_alpha=mixup_alpha,
-                                   label_smoothing=label_smoothing)
-        logger.info(f'PHASE 2 (fine-tune)  epochs_max={ft_epochs}  lr={arsitektur.learning_rate / 10:.2e}')
+                                   label_smoothing=label_smoothing, profil='colab' if colab else 'standar')
+        logger.info(f'PHASE 2 (fine-tune)  epochs_max={ft_epochs}  lr={arsitektur.learning_rate / (20 if colab else 10):.2e}')
         logger.info(head)
         p2_weights, p2_loss, h2, p2_bal = _fit_phase(
             model, data, ft_epochs, arsitektur.batch_size, class_weight,
-            max(10, patience // 2), max(5, patience // 4), 1e-7,
+            patience if colab else max(10, patience // 2), max(5, patience // 4), 1e-7,
             logger, len(h1['loss']), total_epochs, on_epoch_end, fine_tuning=True,
-            mixup_alpha=mixup_alpha, label_smoothing=label_smoothing)
+            mixup_alpha=mixup_alpha, label_smoothing=label_smoothing, colab=colab)
 
-        if _is_better_checkpoint(p2_bal, p2_loss, p1_bal, p1_loss):
+        if colab or _is_better_checkpoint(p2_bal, p2_loss, p1_bal, p1_loss):   # notebook selalu memakai hasil Fase 2
             model.set_weights(p2_weights)
             pilihan = 'Phase 2 (inner_val_balanced_acc lebih baik)'
         else:

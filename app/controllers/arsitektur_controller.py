@@ -247,16 +247,17 @@ def new():
     if request.method == 'POST':
         nama            = request.form.get('nama', '').strip()
         model_type      = request.form.get('model_type', 'mobilenetv2')
-        learning_rate   = float(request.form.get('learning_rate') or 0.0001)
-        batch_size      = int(request.form.get('batch_size') or 16)
-        epochs          = int(request.form.get('epochs') or 30)
-        patience        = int(request.form.get('patience') or 5)
-        dropout_rate    = float(request.form.get('dropout_rate') or 0.3)
+        learning_rate   = float(request.form.get('learning_rate') or 0.001)
+        batch_size      = int(request.form.get('batch_size') or 32)
+        epochs          = int(request.form.get('epochs') or 80)
+        patience        = int(request.form.get('patience') or 15)
+        dropout_rate    = float(request.form.get('dropout_rate') or 0.5)
         optimizer       = request.form.get('optimizer') or 'adam'
         mixup_alpha     = float(request.form.get('mixup_alpha') or 0)
         label_smoothing = float(request.form.get('label_smoothing') or 0)
         dense_units     = int(request.form.get('dense_units') or 64)
-        dense_l2        = float(request.form.get('dense_l2') or 0.0001)
+        dense_l2        = float(request.form.get('dense_l2') or 0.01)
+        profil          = request.form.get('profil') if request.form.get('profil') in ('colab', 'standar') else 'colab'
         skip_fine_tuning = bool(request.form.get('skip_fine_tuning'))
         # Checkbox yang tidak dicentang tidak terkirim; tanpa penanda 'aug_form' (klien selain form ini, mis. skrip) = semua aktif.
         aug_off         = (','.join(k for k in cnn_service.AUG_KEYS if not request.form.get(f'aug_{k}'))
@@ -281,7 +282,7 @@ def new():
             learning_rate=learning_rate, batch_size=batch_size,
             epochs=epochs, patience=patience, dropout_rate=dropout_rate,
             optimizer=optimizer, mixup_alpha=mixup_alpha, label_smoothing=label_smoothing,
-            dense_units=dense_units, dense_l2=dense_l2, skip_fine_tuning=skip_fine_tuning, aug_off=aug_off,
+            dense_units=dense_units, dense_l2=dense_l2, skip_fine_tuning=skip_fine_tuning, aug_off=aug_off, profil=profil,
             split_config_id=split_config_id,
             fold_val=fold_val, status='draft',
             pengguna_id=current_user.id,

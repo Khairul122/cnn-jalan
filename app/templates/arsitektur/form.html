@@ -3,333 +3,269 @@
 
 {% block breadcrumb %}
 <span class="sep">›</span>
-<a href="{{ url_for('arsitektur.index') }}" style="color:var(--c-accent);text-decoration:none;">Arsitektur CNN</a>
+<a href="{{ url_for('arsitektur.index') }}">Arsitektur CNN</a>
 <span class="sep">›</span>
 <span class="current">Buat Konfigurasi</span>
 {% endblock %}
 
 {% block content %}
-
-<div class="mb-3">
-  {% set ph_title = 'Konfigurasi Arsitektur CNN' %}{% include 'components/page_header.html' %}
-  <p style="font-size:.75rem;color:var(--c-muted);margin:.25rem 0 0;">
-    Transfer learning — base model pretrained ImageNet, frozen weights
-  </p>
-</div>
+{% set ph_title = 'Konfigurasi Arsitektur CNN' %}
+{% set ph_subtitle = 'Transfer learning — base model pretrained ImageNet, frozen weights.' %}
+{% set ph_back_url = url_for('arsitektur.index') %}
+{% include 'components/page_header.html' %}
 
 {% if not split_list %}
-<div style="padding:.875rem 1.125rem;border-radius:var(--r-card);background:rgba(245,158,11,.1);
-            border:1px solid rgba(245,158,11,.25);font-size:.78rem;color:#F59E0B;margin-bottom:1.25rem;">
-  <i class="bi bi-exclamation-triangle-fill"></i>
-  Belum ada split config. <a href="{{ url_for('split.new') }}" style="color:#F59E0B;font-weight:600;">Buat split data</a> terlebih dahulu.
+<div class="note note--warn">
+  <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+  <span>Belum ada split config. <a href="{{ url_for('split.new') }}">Buat split data</a> terlebih dahulu.</span>
 </div>
 {% endif %}
 
-<form method="POST" action="{{ url_for('arsitektur.new') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<form method="POST" action="{{ url_for('arsitektur.new') }}" class="stack">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
   <div class="row g-3">
 
     <!-- Kolom kiri -->
     <div class="col-lg-6">
 
-      <div class="af-card mb-3">
-        <p class="af-section-title"><i class="bi bi-tag-fill" style="color:#38BDF8;"></i> Identitas</p>
+      <section class="panel mb-3">
+        <div class="panel__head"><h2><i class="bi bi-tag" aria-hidden="true"></i> Identitas</h2></div>
+        <div class="panel__body stack">
+          <div class="field">
+            <label class="field__label" for="nama">Nama Konfigurasi <span class="field__req">*</span></label>
+            <input type="text" id="nama" name="nama" required class="control"
+                   placeholder="Contoh: MobileNetV2 80:20 Adam lr1e-4">
+          </div>
 
-        <div class="af-field">
-          <label class="af-label">Nama Konfigurasi <span style="color:#DC2626;">*</span></label>
-          <input type="text" name="nama" required placeholder="Contoh: MobileNetV2 80:20 Adam lr1e-4"
-                 class="af-input">
-        </div>
-
-        <div class="af-field">
-          <label class="af-label">Model Arsitektur</label>
-          <div class="row g-2">
-            <div class="col-6">
-              <label class="af-radio-card" id="card-mobile">
-                <input type="radio" name="model_type" value="mobilenetv2" checked
-                       onchange="selectModel('mobilenetv2')">
-                <div class="af-radio-inner">
-                  <span style="font-size:.82rem;font-weight:700;color:#38BDF8;">MobileNetV2</span>
-                  <span style="font-size:.68rem;color:var(--c-muted);margin-top:.2rem;">Utama · Ringan · Cepat</span>
-                </div>
-              </label>
-            </div>
-            <div class="col-6">
-              <label class="af-radio-card" id="card-efficient">
-                <input type="radio" name="model_type" value="efficientnetb0"
-                       onchange="selectModel('efficientnetb0')">
-                <div class="af-radio-inner">
-                  <span style="font-size:.82rem;font-weight:700;color:#A78BFA;">EfficientNetB0</span>
-                  <span style="font-size:.68rem;color:var(--c-muted);margin-top:.2rem;">Pembanding · Akurat</span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="af-card">
-        <p class="af-section-title"><i class="bi bi-sliders" style="color:#A78BFA;"></i> Hyperparameter</p>
-
-        <div class="row g-3">
-          <div class="col-6">
-            <div class="af-field">
-              <label class="af-label">Learning Rate</label>
-              <select name="learning_rate" class="af-input">
-                <option value="0.001">0.001 ⚠ terlalu tinggi</option>
-                <option value="0.0001" selected>0.0001 (disarankan)</option>
-                <option value="0.00001">0.00001</option>
-              </select>
-              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
-                LR ≥ 0.001 berisiko konvergensi ke kelas mayoritas (class collapse).
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="af-field">
-              <label class="af-label">Batch Size</label>
-              <select name="batch_size" class="af-input">
-                <option value="8">8</option>
-                <option value="16" selected>16 (default)</option>
-                <option value="32">32</option>
-              </select>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="af-field">
-              <label class="af-label">Epochs <span style="font-weight:400;color:var(--c-muted);">(maks)</span></label>
-              <input type="number" name="epochs" value="30" min="1" max="200"
-                     class="af-input" style="font-variant-numeric:tabular-nums;">
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="af-field">
-              <label class="af-label">Early Stop Patience</label>
-              <input type="number" name="patience" value="10" min="1" max="50"
-                     class="af-input" style="font-variant-numeric:tabular-nums;">
-              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
-                Disarankan ≥ 10 untuk dataset kecil.
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="af-field">
-              <label class="af-label">Dropout Rate</label>
-              <select name="dropout_rate" class="af-input">
-                <option value="0.2">0.2</option>
-                <option value="0.3" selected>0.3 (default)</option>
-                <option value="0.5">0.5</option>
-              </select>
-            </div>
-          </div>
-          <div class="col-12">
-            <div class="af-field mb-0">
-              <label class="af-label">Optimizer</label>
-              <div class="d-flex gap-2">
-                {% for opt, lbl in [('adam','Adam'),('sgd','SGD'),('rmsprop','RMSprop')] %}
-                <label style="flex:1;display:flex;align-items:center;gap:.35rem;
-                              padding:.4rem .6rem;border-radius:var(--r-input);cursor:pointer;
-                              border:1px solid var(--c-border);font-size:.78rem;color:var(--c-muted);">
-                  <input type="radio" name="optimizer" value="{{ opt }}" {% if opt == 'adam' %}checked{% endif %}>
-                  {{ lbl }}
+          <div class="field">
+            <span class="field__label" id="model_type_label">Model Arsitektur</span>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="pick-card" id="card-mobile">
+                  <input type="radio" name="model_type" value="mobilenetv2" checked
+                         onchange="selectModel('mobilenetv2')">
+                  <span class="pick-card__title">MobileNetV2</span>
+                  <span class="pick-card__note">Utama · Ringan · Cepat</span>
                 </label>
-                {% endfor %}
               </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="af-field mb-0">
-              <label class="af-label">Mixup Alpha (opsional)</label>
-              <input type="number" name="mixup_alpha" value="0" min="0" max="1" step="0.1"
-                     class="af-input" style="font-variant-numeric:tabular-nums;">
-              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
-                0 = nonaktif (default). &gt;0 (mis. 0.2) mengaktifkan Mixup.
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="af-field mb-0">
-              <label class="af-label">Label Smoothing (opsional)</label>
-              <input type="number" name="label_smoothing" value="0" min="0" max="0.5" step="0.05"
-                     class="af-input" style="font-variant-numeric:tabular-nums;">
-              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
-                0 = nonaktif (default). Mis. 0.1 — kurangi rasa percaya diri berlebih pada label dekat ambang SDI.
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="af-field mb-0">
-              <label class="af-label">Dense Head (units / L2)</label>
-              <div class="d-flex gap-2">
-                <input type="number" name="dense_units" value="64" min="8" max="256"
-                       class="af-input" style="font-variant-numeric:tabular-nums;">
-                <input type="number" name="dense_l2" value="0.0001" min="0" max="1" step="0.0001"
-                       class="af-input" style="font-variant-numeric:tabular-nums;">
-              </div>
-              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
-                Default 64 / 0.0001. TODO.md P4: coba Dense(32) atau L2=0.001 untuk kurangi overfitting dataset kecil.
-              </div>
-            </div>
-          </div>
-          <div class="col-6 d-flex align-items-end">
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="skip_fine_tuning" name="skip_fine_tuning">
-              <label class="form-check-label af-label" for="skip_fine_tuning" style="margin:0;">
-                Jalur A — backbone beku penuh (lewati Phase 2 fine-tuning)
-              </label>
-            </div>
-          </div>
-          <div class="col-12">
-            <div class="af-field mb-0">
-              <label class="af-label">Augmentasi training (di dalam model)</label>
-              <input type="hidden" name="aug_form" value="1">
-              <div class="d-flex flex-wrap gap-3">
-                {% for key, lbl in aug_list %}
-                <div class="form-check mb-0">
-                  <input type="checkbox" class="form-check-input" id="aug_{{ key }}" name="aug_{{ key }}" value="1" checked>
-                  <label class="form-check-label" for="aug_{{ key }}" style="font-size:.78rem;">{{ lbl }}</label>
-                </div>
-                {% endfor %}
-              </div>
-              <div style="font-size:.68rem;color:var(--c-muted);margin-top:.3rem;">
-                Semua aktif = default. Matikan satu per satu untuk ablation; mis. zoom, translasi, dan random erasing mengubah luas
-                kerusakan yang tampak padahal label SDI berbasis luas. Aktif hanya saat training, mati saat prediksi.
+              <div class="col-6">
+                <label class="pick-card" id="card-efficient">
+                  <input type="radio" name="model_type" value="efficientnetb0"
+                         onchange="selectModel('efficientnetb0')">
+                  <span class="pick-card__title">EfficientNetB0</span>
+                  <span class="pick-card__note">Pembanding · Akurat</span>
+                </label>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2><i class="bi bi-sliders" aria-hidden="true"></i> Hyperparameter</h2></div>
+        <div class="panel__body">
+          <div class="row g-3">
+
+            <div class="col-12">
+              <div class="field">
+                <label class="field__label" for="profil">Profil training</label>
+                <select name="profil" id="profil" class="control">
+                  <option value="colab" selected>Colab (meniru notebook)</option>
+                  <option value="standar">Standar (inner-val terpisah)</option>
+                </select>
+                <p class="hint">
+                  Colab: latih pada seluruh data training, early stopping dan pemilihan epoch memakai fold validasi, Fase 2 40 epoch
+                  dengan 6 layer dibuka (lr/20), tanpa ReduceLROnPlateau. Akurasinya cenderung optimistis karena fold validasi ikut
+                  menentukan epoch terbaik. Standar: epoch dipilih pada potongan data training, fold validasi tetap murni.
+                </p>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <label class="field__label" for="learning_rate">Learning Rate</label>
+                <select name="learning_rate" id="learning_rate" class="control">
+                  <option value="0.001" selected>0.001 (Colab)</option>
+                  <option value="0.0001">0.0001 (profil standar)</option>
+                  <option value="0.00001">0.00001</option>
+                </select>
+                <p class="hint">Profil standar disarankan 0.0001; LR ≥ 0.001 di profil itu berisiko class collapse.</p>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <label class="field__label" for="batch_size">Batch Size</label>
+                <select name="batch_size" id="batch_size" class="control">
+                  <option value="8">8</option>
+                  <option value="16">16 (profil standar)</option>
+                  <option value="32" selected>32 (Colab)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <label class="field__label" for="epochs">Epochs <span class="hint">(maks)</span></label>
+                <input type="number" id="epochs" name="epochs" value="80" min="1" max="200" class="control text-mono">
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <label class="field__label" for="patience">Early Stop Patience</label>
+                <input type="number" id="patience" name="patience" value="15" min="1" max="50" class="control text-mono">
+                <p class="hint">Colab: 15. Profil standar memakai minimal 20.</p>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <label class="field__label" for="dropout_rate">Dropout Rate</label>
+                <select name="dropout_rate" id="dropout_rate" class="control">
+                  <option value="0.2">0.2</option>
+                  <option value="0.3">0.3 (profil standar)</option>
+                  <option value="0.5" selected>0.5 (Colab)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="field">
+                <span class="field__label" id="optimizer_label">Optimizer</span>
+                <div class="d-flex flex-wrap gap-2" role="radiogroup" aria-labelledby="optimizer_label">
+                  {% for opt, lbl in [('adam','Adam'),('sgd','SGD'),('rmsprop','RMSprop')] %}
+                  <label class="pick-card pick-card--compact">
+                    <input type="radio" name="optimizer" value="{{ opt }}" {% if opt == 'adam' %}checked{% endif %}>
+                    <span class="pick-card__title">{{ lbl }}</span>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <label class="field__label" for="mixup_alpha">Mixup Alpha (opsional)</label>
+                <input type="number" id="mixup_alpha" name="mixup_alpha" value="0" min="0" max="1" step="0.1" class="control text-mono">
+                <p class="hint">0 = nonaktif (default). &gt;0 (mis. 0.2) mengaktifkan Mixup.</p>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <label class="field__label" for="label_smoothing">Label Smoothing (opsional)</label>
+                <input type="number" id="label_smoothing" name="label_smoothing" value="0" min="0" max="0.5" step="0.05" class="control text-mono">
+                <p class="hint">0 = nonaktif (default). Mis. 0.1 — kurangi rasa percaya diri berlebih pada label dekat ambang SDI.</p>
+              </div>
+            </div>
+
+            <div class="col-6">
+              <div class="field">
+                <span class="field__label">Dense Head (units / L2)</span>
+                <div class="d-flex gap-2">
+                  <input type="number" name="dense_units" value="64" min="8" max="256" class="control text-mono"
+                         aria-label="Dense units">
+                  <input type="number" name="dense_l2" value="0.01" min="0" max="1" step="0.0001" class="control text-mono"
+                         aria-label="Dense L2">
+                </div>
+                <p class="hint">Colab: 64 / 0.01. Profil standar: 64 / 0.0001.</p>
+              </div>
+            </div>
+
+            <div class="col-6 d-flex align-items-end">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="skip_fine_tuning" name="skip_fine_tuning">
+                <label class="form-check-label" for="skip_fine_tuning">
+                  Jalur A — backbone beku penuh (lewati Phase 2 fine-tuning)
+                </label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="field">
+                <span class="field__label">Augmentasi training (di dalam model)</span>
+                <input type="hidden" name="aug_form" value="1">
+                <div class="d-flex flex-wrap gap-3">
+                  {% for key, lbl in aug_list %}
+                  <div class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input" id="aug_{{ key }}" name="aug_{{ key }}" value="1" checked>
+                    <label class="form-check-label" for="aug_{{ key }}">{{ lbl }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+                <p class="hint">
+                  Semua aktif = default. Matikan satu per satu untuk ablation; mis. zoom, translasi, dan random erasing mengubah luas
+                  kerusakan yang tampak padahal label SDI berbasis luas. Aktif hanya saat training, mati saat prediksi.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
 
     </div>
 
     <!-- Kolom kanan -->
     <div class="col-lg-6">
 
-      <div class="af-card mb-3">
-        <p class="af-section-title"><i class="bi bi-diagram-3-fill" style="color:#10B981;"></i> Data & Split</p>
+      <section class="panel mb-3">
+        <div class="panel__head"><h2><i class="bi bi-diagram-3" aria-hidden="true"></i> Data &amp; Split</h2></div>
+        <div class="panel__body stack">
+          <div class="field">
+            <label class="field__label" for="splitSelect">Split Config <span class="field__req">*</span></label>
+            <select name="split_config_id" id="splitSelect" class="control" onchange="updateFoldOptions()">
+              <option value="">— Pilih split config —</option>
+              {% for s in split_list %}
+              <option value="{{ s.id }}" data-k="{{ s.n_splits }}">
+                {{ s.nama }} (K={{ s.n_splits }}, {{ s.total_data }} data)
+              </option>
+              {% endfor %}
+            </select>
+          </div>
 
-        <div class="af-field">
-          <label class="af-label">Split Config <span style="color:#DC2626;">*</span></label>
-          <select name="split_config_id" id="splitSelect" class="af-input" onchange="updateFoldOptions()">
-            <option value="">— Pilih split config —</option>
-            {% for s in split_list %}
-            <option value="{{ s.id }}" data-k="{{ s.n_splits }}">
-              {{ s.nama }} (K={{ s.n_splits }}, {{ s.total_data }} data)
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="af-field mb-0">
-          <label class="af-label">Fold Validasi <span style="color:#DC2626;">*</span></label>
-          <select name="fold_val" id="foldValSelect" class="af-input">
-            <option value="" disabled selected>— Pilih split config terlebih dahulu —</option>
-          </select>
-          <p style="font-size:.68rem;color:var(--c-muted);margin:.3rem 0 0;">
-            Fold yang dipakai sebagai data validasi; fold lainnya menjadi data training.
-          </p>
-        </div>
-      </div>
-
-      <div class="af-card">
-        <p class="af-section-title"><i class="bi bi-info-circle-fill" style="color:#64748B;"></i> Info Tetap</p>
-        <div class="d-flex flex-column gap-2">
-          <div class="af-info-row">
-            <span>Input Size</span><span style="color:var(--c-text);font-weight:600;">224 × 224 px</span>
-          </div>
-          <div class="af-info-row">
-            <span>Jumlah Kelas</span><span style="color:var(--c-text);font-weight:600;">4 (Rusak Berat / Rusak Ringan / Sedang / Baik)</span>
-          </div>
-          <div class="af-info-row">
-            <span>Base Weights</span><span style="color:var(--c-text);font-weight:600;">ImageNet (frozen)</span>
-          </div>
-          <div class="af-info-row">
-            <span>Head</span><span style="color:var(--c-text);font-weight:600;">GlobalAvgPool → Dropout → Softmax</span>
-          </div>
-          <div class="af-info-row">
-            <span>Split</span><span id="splitInfoLabel" style="color:#10B981;font-weight:600;">Stratified K-Fold CV</span>
+          <div class="field">
+            <label class="field__label" for="foldValSelect">Fold Validasi <span class="field__req">*</span></label>
+            <select name="fold_val" id="foldValSelect" class="control">
+              <option value="" disabled selected>— Pilih split config terlebih dahulu —</option>
+            </select>
+            <p class="hint">Fold yang dipakai sebagai data validasi; fold lainnya menjadi data training.</p>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head"><h2><i class="bi bi-info-circle" aria-hidden="true"></i> Info Tetap</h2></div>
+        <div class="panel__body">
+          <dl class="dl">
+            <div class="dl__row"><dt class="dl__k">Input Size</dt><dd class="dl__v">224 × 224 px</dd></div>
+            <div class="dl__row"><dt class="dl__k">Jumlah Kelas</dt><dd class="dl__v">4 (Rusak Berat / Rusak Ringan / Sedang / Baik)</dd></div>
+            <div class="dl__row"><dt class="dl__k">Base Weights</dt><dd class="dl__v">ImageNet (frozen)</dd></div>
+            <div class="dl__row"><dt class="dl__k">Head</dt><dd class="dl__v">GlobalAvgPool → Dropout → Softmax</dd></div>
+            <div class="dl__row"><dt class="dl__k">Split</dt><dd class="dl__v" id="splitInfoLabel">Stratified K-Fold CV</dd></div>
+          </dl>
+        </div>
+      </section>
 
     </div>
   </div>
 
-  <!-- Actions -->
-  <div class="d-flex gap-2 mt-3">
-    <button type="submit" {% if not split_list %}disabled{% endif %}
-            class="btn-cnn-primary" style="border:none;padding:.55rem 1.25rem;
-              {% if not split_list %}opacity:.45;cursor:not-allowed;{% endif %}">
-      <i class="bi bi-floppy-fill"></i> Simpan Konfigurasi
+  <div class="panel__foot">
+    <a href="{{ url_for('arsitektur.index') }}" class="btn btn--ghost">Batal</a>
+    <button type="submit" class="btn btn--primary" {% if not split_list %}disabled{% endif %}>
+      <i class="bi bi-floppy-fill" aria-hidden="true"></i> Simpan Konfigurasi
     </button>
-    <a href="{{ url_for('arsitektur.index') }}" class="btn-cnn-cancel">Batal</a>
   </div>
 </form>
-
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.af-card {
-  background: var(--c-surface); border: 1px solid var(--c-border);
-  border-radius: var(--r-card); padding: 1rem 1.125rem;
-}
-.af-section-title {
-  font-size: .75rem; font-weight: 700; color: var(--c-muted);
-  text-transform: uppercase; letter-spacing: .05em;
-  margin: 0 0 .875rem; display: flex; align-items: center; gap: .35rem;
-}
-.af-field { margin-bottom: .875rem; }
-.af-label { display: block; font-size: .78rem; font-weight: 600; color: var(--c-text); margin-bottom: .35rem; }
-.af-input {
-  width: 100%; padding: .45rem .7rem; border-radius: var(--r-input);
-  border: 1px solid var(--c-border); background: var(--c-bg);
-  color: var(--c-text); font-size: .83rem; outline: none;
-  transition: border-color .15s;
-}
-.af-input:focus { border-color: #0EA5E9; }
-
-.af-radio-card {
-  display: flex; cursor: pointer; border-radius: var(--r-input);
-  border: 1px solid var(--c-border); overflow: hidden; transition: border-color .15s;
-}
-.af-radio-card input[type=radio] { display: none; }
-.af-radio-card.selected { border-color: #38BDF8; }
-.af-radio-inner {
-  flex: 1; padding: .55rem .75rem; display: flex; flex-direction: column;
-  background: var(--c-bg);
-}
-
-.af-info-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: .75rem; color: var(--c-muted);
-  padding: .3rem 0; border-bottom: 1px solid var(--c-border);
-}
-.af-info-row:last-child { border-bottom: none; }
-
-.btn-cnn-primary {
-  display: inline-flex; align-items: center; gap: .375rem;
-  padding: .5rem .9rem; border-radius: var(--r-input);
-  font-size: .8rem; font-weight: 700; text-decoration: none;
-  background: linear-gradient(135deg, #0369A1, #0EA5E9); color: #fff;
-  box-shadow: 0 2px 8px rgba(3,105,161,.25);
-  transition: opacity .15s, transform .15s; cursor: pointer;
-}
-.btn-cnn-primary:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
-.btn-cnn-cancel {
-  padding: .5rem .9rem; border-radius: var(--r-input); text-decoration: none;
-  font-size: .8rem; font-weight: 600;
-  border: 1px solid var(--c-border); color: var(--c-muted);
-  transition: border-color .15s;
-}
-.btn-cnn-cancel:hover { border-color: var(--c-accent); color: var(--c-text); }
-</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function selectModel(type) {
-  document.getElementById('card-mobile').classList.toggle('selected', type === 'mobilenetv2');
-  document.getElementById('card-efficient').classList.toggle('selected', type === 'efficientnetb0');
+  document.getElementById('card-mobile').classList.toggle('is-selected', type === 'mobilenetv2');
+  document.getElementById('card-efficient').classList.toggle('is-selected', type === 'efficientnetb0');
 }
 selectModel('mobilenetv2');
 
