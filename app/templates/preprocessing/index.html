@@ -8,163 +8,202 @@
 
 {% block content %}
 
-<!-- Header -->
-<div class="d-flex align-items-center justify-content-between">
-  <div>{% set ph_title = 'Pipeline Preprocessing' %}{% include 'components/page_header.html' %}</div>
-  <a href="{{ url_for('preprocessing.config_new') }}"
-     onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+<!-- Header & Action -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    {% set ph_title = 'Pipeline Preprocessing' %}
+    {% set ph_subtitle = 'Konfigurasikan dan jalankan pipeline preprocessing 4 tahap pada dataset foto jalan.' %}
+    {% include 'components/page_header.html' %}
+  </div>
+  <a href="{{ url_for('preprocessing.config_new') }}" class="btn btn--primary">
     <i class="bi bi-plus-lg"></i> Buat Konfigurasi
   </a>
 </div>
 
-<!-- Info banner -->
-<div>
-  <div class="d-flex align-items-start">
-    <i class="bi bi-info-circle-fill"></i>
-    <div>
-      <p>Pipeline Preprocessing Gambar</p>
-      <p>
-        <strong>Resize</strong> →
-        <strong>Center Crop</strong> →
-        <strong>Normalisasi</strong> →
-        <strong>Denoise</strong>
-        &nbsp;|&nbsp; Output disimpan di <code>uploads/preprocessed/</code>
-        <br>Augmentasi tidak ada di tahap ini: augmentasi training ada di dalam model dan diatur di form Arsitektur CNN.
-      </p>
+<!-- Stats KPIs -->
+<div class="grid grid--3 mb-4">
+  <div class="kpi">
+    <div class="kpi__text">
+      <span class="kpi__label">Total Foto</span>
+      <strong class="kpi__value">{{ total_foto }}</strong>
+    </div>
+    <div class="kpi__icon" style="--kpi-icon-bg: var(--accent-wash); --kpi-icon-color: var(--accent);">
+      <i class="bi bi-images"></i>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__text">
+      <span class="kpi__label">Sudah Diproses</span>
+      <strong class="kpi__value">{{ total_hasil }}</strong>
+    </div>
+    <div class="kpi__icon" style="--kpi-icon-bg: var(--ok-bg); --kpi-icon-color: var(--ok);">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__text">
+      <span class="kpi__label">Total Konfigurasi</span>
+      <strong class="kpi__value">{{ total_config }}</strong>
+    </div>
+    <div class="kpi__icon" style="--kpi-icon-bg: rgba(139, 92, 246, 0.15); --kpi-icon-color: #8b5cf6;">
+      <i class="bi bi-sliders2"></i>
     </div>
   </div>
 </div>
 
-<!-- Stats -->
-<div class="d-flex">
-  {% for lbl, val, color, icon in [
-      ('Total Foto',    total_foto,   '#38BDF8', 'bi-images'),
-      ('Sudah Diproses',total_hasil,  '#10B981', 'bi-check-circle-fill'),
-      ('Konfigurasi',   total_config, '#A78BFA', 'bi-gear-fill'),
-  ] %}
-  <div>
-    <i class="bi {{ icon }}" style="--fc:{{ color }};"></i>
-    <div>
-      <p>{{ val }}</p>
-      <p>{{ lbl }}</p>
+<!-- Pipeline Steps Visual Panel -->
+<section class="panel mb-4">
+  <div class="panel__head">
+    <h2><i class="bi bi-diagram-3"></i> Pipeline Preprocessing Gambar</h2>
+    <span class="panel__head-note">Output disimpan di <code>uploads/preprocessed/</code></span>
+  </div>
+  <div class="panel__body">
+    <div class="pipeline-flow mb-3">
+      <div class="pipeline-step">
+        <div class="pipeline-step__icon" style="--step-color: #0284c7;"><i class="bi bi-aspect-ratio"></i></div>
+        <div class="pipeline-step__info">
+          <strong>1. Resize</strong>
+          <span>256 × 256 px (Lanczos)</span>
+        </div>
+      </div>
+      <i class="bi bi-chevron-right pipeline-arrow"></i>
+
+      <div class="pipeline-step">
+        <div class="pipeline-step__icon" style="--step-color: #6366f1;"><i class="bi bi-crop"></i></div>
+        <div class="pipeline-step__info">
+          <strong>2. Center Crop</strong>
+          <span>224 × 224 px</span>
+        </div>
+      </div>
+      <i class="bi bi-chevron-right pipeline-arrow"></i>
+
+      <div class="pipeline-step">
+        <div class="pipeline-step__icon" style="--step-color: #10b981;"><i class="bi bi-sliders"></i></div>
+        <div class="pipeline-step__info">
+          <strong>3. Normalisasi</strong>
+          <span>Min-Max / Z-Score</span>
+        </div>
+      </div>
+      <i class="bi bi-chevron-right pipeline-arrow"></i>
+
+      <div class="pipeline-step">
+        <div class="pipeline-step__icon" style="--step-color: #8b5cf6;"><i class="bi bi-filter-circle"></i></div>
+        <div class="pipeline-step__info">
+          <strong>4. Denoise</strong>
+          <span>Bilateral Filter</span>
+        </div>
+      </div>
     </div>
+    <p class="hint mb-0">
+      <i class="bi bi-info-circle-fill" style="color: var(--accent);"></i>
+      Augmentasi data tidak termasuk di tahap ini (augmentasi training dikonfigurasi saat pembuatan model di Arsitektur CNN).
+    </p>
   </div>
-  {% endfor %}
-</div>
+</section>
 
-<!-- Pipeline steps visual -->
-<div class="d-flex align-items-center">
-  {% for step, icon, color in [
-      ('Resize',       'bi-aspect-ratio',        '#38BDF8'),
-      ('Center Crop',  'bi-crop',                '#6366F1'),
-      ('Normalisasi',  'bi-distribute-vertical', '#10B981'),
-      ('Denoise',      'bi-eraser-fill',         '#A78BFA'),
-  ] %}
-  <div style="--fc:{{ color }};">
-    <i class="bi {{ icon }}"></i> {{ step }}
+<!-- Table Config Panel -->
+<section class="panel mb-4">
+  <div class="panel__head">
+    <h2><i class="bi bi-sliders2"></i> Daftar Konfigurasi Pipeline</h2>
   </div>
-  {% if not loop.last %}
-  <i class="bi bi-arrow-right"></i>
-  {% endif %}
-  {% endfor %}
-</div>
+  <div class="panel__body">
+    {% if config_list %}
+    <div class="table-wrap mb-3">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 40px;">#</th>
+            <th>Nama Konfigurasi</th>
+            <th>Resize</th>
+            <th>Normalisasi</th>
+            <th>Denoise</th>
+            <th class="align-right" style="width: 220px;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cfg in config_list %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+              <strong>{{ cfg.nama_config }}</strong>
+              <div class="mt-1">
+                {% if cfg.id == aktif_id %}
+                <span class="status-chip status-chip--ok">Aktif (dipakai training)</span>
+                {% elif cfg.is_default %}
+                <span class="status-chip status-chip--info">Default</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="text-mono">{{ cfg.target_width }}×{{ cfg.target_height }}</span>
+              <div class="hint">{{ cfg.resize_method }}</div>
+            </td>
+            <td>
+              {% set norm_label = {'minmax':'Min-Max','zscore':'Z-Score','none':'Tidak Ada'} %}
+              <span>{{ norm_label.get(cfg.norm_method, cfg.norm_method) }}</span>
+            </td>
+            <td>
+              {% if cfg.denoise_method == 'none' %}
+              <span class="hint">—</span>
+              {% else %}
+              <span>{{ cfg.denoise_method }} <span class="hint">(k={{ cfg.denoise_ksize }})</span></span>
+              {% endif %}
+            </td>
+            <td class="align-right">
+              <div class="d-flex justify-content-end gap-1">
+                <!-- Jalankan -->
+                <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="button" class="btn btn--sm btn--primary" title="Jalankan Preprocessing"
+                          onclick="showConfirmForm(this,
+                            'Jalankan Preprocessing',
+                            'Pipeline 4 tahap akan dijalankan pada <strong>semua {{ total_foto }} foto</strong> dengan konfigurasi <strong>{{ cfg.nama_config }}</strong>. Semua hasil preprocessing sebelumnya <strong>diganti</strong> (hanya satu config yang aktif), dan model yang sudah dilatih dengan config lama perlu dilatih ulang.',
+                            'success','Ya, Jalankan','Proses ini memakan waktu beberapa menit')">
+                    <i class="bi bi-play-fill"></i> Jalankan
+                  </button>
+                </form>
+                <!-- Edit -->
+                <a href="{{ url_for('preprocessing.config_edit', config_id=cfg.id) }}"
+                   class="btn btn--sm btn--ghost" title="Edit">
+                  <i class="bi bi-pencil-fill"></i>
+                </a>
+                <!-- Hapus -->
+                <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="button" class="btn btn--sm btn--danger" title="Hapus"
+                          onclick="showConfirmForm(this,
+                            'Hapus Konfigurasi',
+                            'Konfigurasi <strong>{{ cfg.nama_config }}</strong> beserta semua hasil preprocessing terkait akan dihapus permanen.',
+                            'danger','Ya, Hapus')">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-<!-- Tabel konfigurasi -->
-{% if config_list %}
-<div>
-  <table class="table align-middle cnn-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nama Konfigurasi</th>
-        <th>Resize</th>
-        <th>Normalisasi</th>
-        <th>Denoise</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for cfg in config_list %}
-      <tr>
-        <td>{{ loop.index }}</td>
-        <td>
-          <div>{{ cfg.nama_config }}</div>
-          {% if cfg.id == aktif_id %}
-          <span>Aktif (dipakai training &amp; klasifikasi)</span>
-          {% elif cfg.is_default %}
-          <span>Default</span>
-          {% endif %}
-        </td>
-        <td>
-          <span>
-            {{ cfg.target_width }}×{{ cfg.target_height }}
-          </span>
-          <div>{{ cfg.resize_method }}</div>
-        </td>
-        <td>
-          {% set norm_label = {'minmax':'Min-Max','zscore':'Z-Score','none':'Tidak Ada'} %}
-          <span>{{ norm_label.get(cfg.norm_method, cfg.norm_method) }}</span>
-        </td>
-        <td>
-          {% if cfg.denoise_method == 'none' %}
-          <span>—</span>
-          {% else %}
-          <span>
-            {{ cfg.denoise_method }} (k={{ cfg.denoise_ksize }})
-          </span>
-          {% endif %}
-        </td>
-        <td>
-          <div class="d-flex align-items-center justify-content-center">
-            <!-- Jalankan -->
-            <form method="POST" action="{{ url_for('preprocessing.run', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" title="Jalankan"
-                      onclick="showConfirmForm(this,
-                        'Jalankan Preprocessing',
-                        'Pipeline 4 tahap akan dijalankan pada <strong>semua {{ total_foto }} foto</strong> dengan konfigurasi <strong>{{ cfg.nama_config }}</strong>. Semua hasil preprocessing sebelumnya <strong>diganti</strong> (hanya satu config yang aktif), dan model yang sudah dilatih dengan config lama perlu dilatih ulang.',
-                        'success','Ya, Jalankan','Proses ini memakan waktu beberapa menit')">
-                <i class="bi bi-play-fill"></i> Jalankan
-              </button>
-            </form>
-            <!-- Edit -->
-            <a href="{{ url_for('preprocessing.config_edit', config_id=cfg.id) }}"
-               title="Edit">
-              <i class="bi bi-pencil-fill"></i>
-            </a>
-            <!-- Hapus -->
-            <form method="POST" action="{{ url_for('preprocessing.config_delete', config_id=cfg.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="button" title="Hapus"
-                      onclick="showConfirmForm(this,
-                        'Hapus Konfigurasi',
-                        'Konfigurasi <strong>{{ cfg.nama_config }}</strong> beserta semua hasil preprocessing terkait akan dihapus permanen.',
-                        'danger','Ya, Hapus')">
-                <i class="bi bi-trash-fill"></i>
-              </button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+    <div class="d-flex justify-content-end">
+      <a href="{{ url_for('preprocessing.hasil') }}" class="btn btn--ghost btn--sm">
+        Lihat semua hasil preprocessing <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
 
-<div class="d-flex justify-content-end">
-  <a href="{{ url_for('preprocessing.hasil') }}">
-    Lihat semua hasil preprocessing <i class="bi bi-arrow-right"></i>
-  </a>
-</div>
-
-{% else %}
-<!-- Empty state -->
-<div>
-  <i class="bi bi-sliders"></i>
-  <p>Belum ada konfigurasi</p>
-  <p>Buat konfigurasi pipeline pertama untuk mulai preprocessing gambar</p>
-  <a href="{{ url_for('preprocessing.config_new') }}">
-    <i class="bi bi-plus-lg"></i> Buat Konfigurasi Pertama
-  </a>
-</div>
-{% endif %}
+    {% else %}
+    <!-- Empty state -->
+    <div class="empty-cell py-5">
+      <i class="bi bi-sliders text-muted" style="font-size: 2.5rem;"></i>
+      <p class="mt-2 fw-medium">Belum ada konfigurasi</p>
+      <p class="hint">Buat konfigurasi pipeline pertama untuk mulai preprocessing gambar</p>
+      <a href="{{ url_for('preprocessing.config_new') }}" class="btn btn--primary mt-3">
+        <i class="bi bi-plus-lg"></i> Buat Konfigurasi Pertama
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
 
 {% endblock %}

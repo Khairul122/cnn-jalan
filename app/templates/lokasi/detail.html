@@ -3,9 +3,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>
-  #detail-map { height: 220px; border-radius: var(--r-input); z-index: 0; }
-</style>
 {% endblock %}
 
 {% block breadcrumb %}
@@ -17,116 +14,116 @@
 
 {% block content %}
 {% set ph_title = lokasi.nama_citra %}
+{% set ph_subtitle = 'Koordinat ' ~ lokasi.latitude ~ ', ' ~ lokasi.longitude ~ ' · ' ~ (lokasi.foto_list | length) ~ ' foto' %}
 {% set ph_back_url = url_for('lokasi.index') %}
 {% include 'components/page_header.html' %}
 
-<div class="grid">
+<div class="grid grid--detail">
 
-  <!-- Info + Map card -->
-  <div>
-    <div>
-      <!-- Card header -->
-      <div>
-        <i class="bi bi-geo-alt"></i>
-        <span>
-          Informasi Lokasi
-        </span>
+  <!-- Left column: information and mini map -->
+  <div class="stack">
+    <section class="panel">
+      <div class="panel__head">
+        <h2><i class="bi bi-geo-alt" aria-hidden="true"></i> Informasi Lokasi</h2>
       </div>
-      <ul class="stack">
+      <div class="panel__body">
+        <ul class="dl">
+          {% set dr_label = 'Latitude' %}
+          {% set dr_value = lokasi.latitude %}
+          {% include 'components/detail_row.html' %}
 
-        {% set dr_label = 'Latitude' %}
-        {% set dr_value = lokasi.latitude %}
-        {% include 'components/detail_row.html' %}
+          {% set dr_label = 'Longitude' %}
+          {% set dr_value = lokasi.longitude %}
+          {% include 'components/detail_row.html' %}
 
-        {% set dr_label = 'Longitude' %}
-        {% set dr_value = lokasi.longitude %}
-        {% include 'components/detail_row.html' %}
+          {% set dr_label = 'Panjang (P)' %}
+          {% set dr_value = (lokasi.panjang ~ ' m') if lokasi.panjang is not none else '-' %}
+          {% include 'components/detail_row.html' %}
 
-        {% set dr_label = 'Panjang (P)' %}
-        {% set dr_value = (lokasi.panjang ~ ' m') if lokasi.panjang is not none else '-' %}
-        {% include 'components/detail_row.html' %}
+          {% set dr_label = 'Lebar (L)' %}
+          {% set dr_value = (lokasi.lebar ~ ' m') if lokasi.lebar is not none else '-' %}
+          {% include 'components/detail_row.html' %}
 
-        {% set dr_label = 'Lebar (L)' %}
-        {% set dr_value = (lokasi.lebar ~ ' m') if lokasi.lebar is not none else '-' %}
-        {% include 'components/detail_row.html' %}
+          {% set dr_label = 'Keterangan' %}
+          {% set dr_value = lokasi.keterangan or '-' %}
+          {% include 'components/detail_row.html' %}
 
-        {% set dr_label = 'Keterangan' %}
-        {% set dr_value = lokasi.keterangan or '-' %}
-        {% include 'components/detail_row.html' %}
+          {% set dr_label = 'Sumber Data' %}
+          {% set badge_value = lokasi.sumber_data %}
+          {% set dr_value %}{% include 'components/status_badge.html' %}{% endset %}
+          {% set dr_raw = true %}
+          {% include 'components/detail_row.html' %}
+          {% set dr_raw = false %}
+        </ul>
+      </div>
+    </section>
 
-        {% set dr_label = 'Sumber Data' %}
-        {% set badge_value = lokasi.sumber_data %}
-        {% set dr_value %}{% include 'components/status_badge.html' %}{% endset %}
-        {% set dr_raw = true %}
-        {% include 'components/detail_row.html' %}
-        {% set dr_raw = false %}
-
-      </ul>
-
-      <!-- Mini Map -->
-      <div>
-        <div>
-          <i class="bi bi-map"></i>
-          <span>Titik Lokasi</span>
-        </div>
+    <section class="panel">
+      <div class="panel__head">
+        <h2><i class="bi bi-map" aria-hidden="true"></i> Peta Titik Lokasi</h2>
+      </div>
+      <div class="panel__body">
         <div id="detail-map"></div>
       </div>
-    </div>
+    </section>
   </div>
 
-  <!-- Foto grid -->
-  <div>
-    <div>
-      <!-- Card header -->
-      <div>
-        <i class="bi bi-images"></i>
-        <span>
-          Dokumentasi Foto
-        </span>
-        <span>
-          {{ lokasi.foto_list | length }} file
-        </span>
-      </div>
-      <div>
-        {% if lokasi.foto_list %}
-          <div class="grid">
-            {% for foto in lokasi.foto_list %}
-            <div>
-              <div
-                   onmouseover="this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'"
-                   onmouseout="this.style.boxShadow='none';this.style.transform='none'">
-                <div>
-                  <img src="{{ url_for('static', filename=foto.path_file) }}"
-                       alt="Foto kerusakan jalan: {{ foto.nama_file }}"
-                       onerror="this.src='https://placehold.co/200x130?text=Foto'" loading="lazy">
-                  {% if foto.hasil_klasifikasi %}
-                  <span>
-                    {{ foto.hasil_klasifikasi.tingkat_kerusakan.nama_tingkat }}
-                    {{ (foto.hasil_klasifikasi.confidence_score * 100) | round(1) }}%
-                  </span>
-                  {% endif %}
-                </div>
-                <div>
-                  <p>
-                    {{ foto.nama_file }}
-                  </p>
-                  <p>
-                    {{ foto.ukuran_kb or '-' }} KB
-                  </p>
-                </div>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="cnn-empty-state">
-            <i class="bi bi-images"></i>
-            <p>Belum ada foto untuk lokasi ini.</p>
-          </div>
-        {% endif %}
-      </div>
+  <!-- Right column: photo documentation navigation -->
+  <section class="panel">
+    <div class="panel__head">
+      <h2><i class="bi bi-images" aria-hidden="true"></i> Dokumentasi Foto Jalan</h2>
+      <span class="panel__head-note">{{ lokasi.foto_list | length }} file</span>
     </div>
-  </div>
+    <div class="panel__body">
+      {% if lokasi.foto_list %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Nama File</th>
+              <th scope="col" class="align-right">Ukuran</th>
+              <th scope="col">Label</th>
+              <th scope="col" class="align-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for foto in lokasi.foto_list %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="truncate" title="{{ foto.nama_file }}">{{ foto.nama_file }}</td>
+              <td class="table__num">{{ foto.ukuran_kb or '-' }} KB</td>
+              <td>
+                {% if foto.hasil_klasifikasi %}
+                <span class="chip" style="--fc: {{ foto.hasil_klasifikasi.tingkat_kerusakan.warna_peta }};">
+                  {{ foto.hasil_klasifikasi.tingkat_kerusakan.nama_tingkat }}
+                  <span class="text-mono">{{ (foto.hasil_klasifikasi.confidence_score * 100) | round(1) }}%</span>
+                </span>
+                {% else %}
+                <span class="chip chip--muted">Belum Berlabel</span>
+                {% endif %}
+              </td>
+              <td class="align-right">
+                <a href="{{ url_for('static', filename=foto.path_file) }}"
+                   target="_blank"
+                   rel="noopener"
+                   class="btn btn--sm btn--ghost">
+                  <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Tab Baru
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="cnn-empty-state">
+        <i class="bi bi-images" aria-hidden="true"></i>
+        <p>Belum ada foto untuk lokasi ini.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
 
 </div>
 {% endblock %}
@@ -143,12 +140,12 @@
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '© OpenStreetMap'
+    attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
   var icon = L.divIcon({
-    className: '',
-    html: '<div></div>',
+    className: 'detail-map__dot',
+    html: '',
     iconSize: [14, 14],
     iconAnchor: [7, 7]
   });

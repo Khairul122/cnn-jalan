@@ -623,6 +623,11 @@
 .grid--auto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .stack { display: flex; flex-direction: column; gap: var(--gap); }
 
+/* Detail pages: content column beside a 360px side column, single column
+   below 1024px. The 360px track is stable across desktop widths. */
+.grid--detail { grid-template-columns: 360px minmax(0, 1fr); }
+@media (max-width: 1023px) { .grid--detail { grid-template-columns: minmax(0, 1fr); } }
+
 @media (min-width: 1024px) { .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 1023px) { .grid--3, .grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 639px)  { .grid--2, .grid--3, .grid--4 { grid-template-columns: minmax(0, 1fr); } }
@@ -1033,96 +1038,71 @@ select.control { padding-right: var(--s-2); }
 .auth-card__subtitle { margin: 4px 0 0; font-size: var(--t-sm); color: rgba(255, 255, 255, .72); }
 .auth-card__foot { margin-top: var(--s-5); text-align: center; font-size: var(--t-xs); color: rgba(255, 255, 255, .72); }
 
-.items-start { align-items: flex-start; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
 
-/* Photo Card Component */
-.photo-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--s-3);
+
+/* Leaflet marker dot for the detail mini map. The icon HTML is empty; the dot
+   is drawn by CSS so no inline style is needed. */
+.detail-map__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--sev-1);
+  border: 2px solid var(--surface-1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sev-1) 25%, transparent);
 }
-.photo-card {
-  background: var(--surface-1);
-  border: 1px solid var(--rule);
-  border-radius: var(--r-1);
-  overflow: hidden;
-  transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
-}
-.photo-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--rule-strong);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-}
-.photo-card__preview {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  background: #0d1117;
-  overflow: hidden;
-}
-.photo-card__preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.4s var(--ease);
-}
-.photo-card:hover .photo-card__preview img {
-  transform: scale(1.03);
-}
-.photo-card__badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  font-size: var(--t-xs);
-  font-weight: 600;
-  border-radius: 999px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  background: rgba(18, 22, 28, 0.82);
-  color: var(--fc, #fff);
-  border: 1px solid color-mix(in srgb, var(--fc, #fff) 40%, transparent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  z-index: 2;
-}
-.photo-card__badge--muted {
-  color: var(--ink-3);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-.photo-card__score {
-  opacity: 0.85;
-  font-family: var(--font-mono);
-  font-size: var(--t-xs);
-}
-.photo-card__meta {
+
+#detail-map { height: 220px; border-radius: var(--r-1); z-index: 0; }
+
+/* Pipeline Flow Component */
+.pipeline-flow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--s-2);
-  padding: 10px var(--s-3);
-  background: var(--surface-1);
-  border-top: 1px solid var(--rule);
+  padding: var(--s-3);
+  background: var(--surface-0);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  flex-wrap: wrap;
 }
-.photo-card__info {
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  flex: 1;
+  min-width: 140px;
+}
+.pipeline-step__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--step-color, var(--accent)) 15%, transparent);
+  color: var(--step-color, var(--accent));
+  flex-shrink: 0;
+  font-size: 16px;
+}
+.pipeline-step__info {
   display: flex;
   flex-direction: column;
-  min-width: 0;
 }
-.photo-card__filename {
+.pipeline-step__info strong {
   font-size: var(--t-sm);
   font-weight: 600;
   color: var(--ink-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.photo-card__size {
+.pipeline-step__info span {
   font-size: var(--t-xs);
   color: var(--ink-2);
+}
+.pipeline-arrow {
+  color: var(--ink-3);
+  font-size: 14px;
+  flex-shrink: 0;
 }

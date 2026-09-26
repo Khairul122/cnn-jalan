@@ -67,6 +67,34 @@ class TestNoTailwindClasses(unittest.TestCase):
         self.assertIn("cdn.tailwindcss.com", html)
         self.assertNotIn("{% extends", html)
 
+    def test_page_templates_carry_no_inline_style_block(self):
+        """Aturan tampilan tinggal di components.css/layout.css. Blok <style> di
+        template memakai kelas ad-hoc yang lolos dari design system. Daftar izin
+        di bawah menyusut sampai kosong; jangan tambah entri baru."""
+        allowlist = {
+            # Menyusut: pindahkan aturannya ke components.css lalu hapus entri.
+            "arsitektur/detail.html", "arsitektur/evaluasi.html",
+            "arsitektur/form.html", "arsitektur/gis.html", "arsitektur/index.html",
+            "dashboard/index.html", "peta/index.html",
+            "preprocessing/config_form.html", "preprocessing/hasil.html",
+            "split/detail.html", "split/form.html", "split/index.html",
+            # Tetap: satu-satunya inline style yang sah, mengunci layout auth.
+            "auth/login.html", "auth/register.html",
+        }
+        for rel in sorted(allowlist):
+            self.assertTrue((TEMPLATES / rel).exists(), f"{rel} tidak ada")
+        for path in sorted(TEMPLATES.rglob("*.html")):
+            rel = path.relative_to(TEMPLATES).as_posix()
+            if rel.startswith("landing/") or rel in allowlist:
+                continue
+            html = path.read_text(encoding="utf-8")
+            self.assertNotIn("<style>", html, f"{rel} punya blok <style> inline")
+
+    def test_detail_layout_uses_shared_grid_class(self):
+        html = (TEMPLATES / "lokasi" / "detail.html").read_text(encoding="utf-8")
+        self.assertIn("grid--detail", html)
+        self.assertNotIn("detail-grid", html, "grid kolom ad-hoc masih dipakai")
+
 
 if __name__ == "__main__":
     unittest.main()
