@@ -6,7 +6,6 @@ from PIL import Image
 from app import db
 from app.models.dokumentasi_foto import DokumentasiFoto
 from app.models.lokasi_kerusakan import LokasiKerusakan
-from app.models.label_kerusakan import LabelKerusakan
 
 from .dataset import _preprocessed_subquery
 from .training import train, save_model, hyperparams
@@ -121,19 +120,22 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
 def predict_all(arsitektur, base_dir):
     """Jalankan inferensi pada semua foto yang punya koordinat + label. Pakai ensemble model
     fold CV + TTA kalau tersedia (lihat _resolve_prediction_models), fallback model tunggal."""
+    from app.services import label_source
+
     models = _resolve_prediction_models(arsitektur, base_dir)
 
     prep_sq = _preprocessed_subquery()
+    # Label efektif diambil lebih dulu: sesi DB dilepas tepat setelah query di bawah.
+    labels = label_source.label_map()
 
     rows = (
         db.session.query(
             DokumentasiFoto.id,
             DokumentasiFoto.path_file,
-            LabelKerusakan.tingkat_kerusakan_id,
+            LokasiKerusakan.id.label('lokasi_id'),
             prep_sq.c.prep_path,
         )
         .join(LokasiKerusakan, DokumentasiFoto.lokasi_id == LokasiKerusakan.id)
-        .join(LabelKerusakan, LabelKerusakan.lokasi_id == LokasiKerusakan.id)
         .outerjoin(prep_sq, prep_sq.c.dokumentasi_id == DokumentasiFoto.id)
         .filter(LokasiKerusakan.latitude != None)
         .all()
@@ -143,6 +145,9 @@ def predict_all(arsitektur, base_dir):
     input_size = arsitektur.input_size
     results = []
     for row in rows:
+        tingkat = labels.get(row.lokasi_id)      # tanpa label efektif: foto dilewati
+        if tingkat is None:
+            continue
         # Utamakan denoise preprocessed agar konsisten dengan training, fallback ke original
         path_rel = row.prep_path if row.prep_path else row.path_file
         img_path = os.path.join(base_dir, 'app', 'static', path_rel)
@@ -154,7 +159,7 @@ def predict_all(arsitektur, base_dir):
             probs = _predict_probs_with(models, arr)
             pred = int(np.argmax(probs))
             conf = float(np.max(probs))
-            aktual = int(row.tingkat_kerusakan_id) - 1  # indeks kelas, lihat app/kelas.py
+            aktual = int(tingkat) - 1  # indeks kelas, lihat app/kelas.py
         except Exception:
             continue
 

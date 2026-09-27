@@ -10,7 +10,7 @@
 
 {% block content %}
 {% set ph_title = 'Riwayat Klasifikasi CNN' %}
-{% set ph_subtitle = 'Semua hasil prediksi foto tunggal, terbaru dahulu. Hapus hasil untuk membatalkan klasifikasi.' %}
+{% set ph_subtitle = 'Upload foto tunggal + prediksi massal Arsitektur CNN, terbaru dahulu.' %}
 {% include 'components/page_header.html' %}
 
 <div class="d-flex flex-wrap gap-2 mb-3">
@@ -20,8 +20,8 @@
   {% if total %}
   <form method="POST" action="{{ url_for('klasifikasi.hapus_semua') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="button" class="btn btn--ghost btn--danger-ghost btn--sm"
-            onclick="showConfirmForm(this,'Hapus Semua Hasil Klasifikasi','<strong>{{ total }} hasil klasifikasi</strong> beserta foto dan peta turunannya akan dihapus permanen.','danger','Ya, Hapus Semua')">
-      <i class="bi bi-trash" aria-hidden="true"></i> Hapus semua
+            onclick="showConfirmForm(this,'Hapus Semua Hasil Klasifikasi','<strong>{{ total }} hasil klasifikasi foto tunggal</strong> beserta foto dan peta turunannya akan dihapus permanen.','danger','Ya, Hapus Semua')">
+      <i class="bi bi-trash" aria-hidden="true"></i> Hapus semua (foto tunggal)
     </button>
   </form>
   {% endif %}
@@ -56,32 +56,38 @@
             <th>Tingkat</th>
             <th>Confidence</th>
             <th>Status</th>
+            <th>Sumber</th>
             <th>Dibuat</th>
             <th class="align-right">Aksi</th>
           </tr>
         </thead>
-        <tbody>{% for h in riwayat %}<tr>
-            <td>{{ h.dokumentasi.nama_file if h.dokumentasi else '—' }}</td>
-            <td>{{ h.dokumentasi.lokasi.nama_citra if h.dokumentasi and h.dokumentasi.lokasi else '—' }}</td>
-            <td><span class="status-chip" style="--fc: {{ h.tingkat_kerusakan.warna_peta }};">{{ h.tingkat_kerusakan.nama_tingkat }}</span></td>
-            <td class="text-mono">{{ (h.confidence_score * 100) | round(1) }}%</td>
-            <td>{% if h.is_valid %}<span class="status-chip status-chip--ok">Memadai</span>{% else %}<span class="status-chip status-chip--warn">Perlu verifikasi</span>{% endif %}</td>
-            <td class="hint">{{ h.created_at }}</td>
+        <tbody>{% for r in riwayat %}<tr>
+            <td>{{ r.foto }}</td>
+            <td>{{ r.lokasi }}</td>
+            <td><span class="status-chip" style="--fc: {{ r.warna }};">{{ r.tingkat }}</span></td>
+            <td class="text-mono">{{ r.confidence }}%</td>
+            <td>{% if r.perlu_verifikasi %}<span class="status-chip status-chip--warn">Perlu tinjau</span>{% else %}<span class="status-chip status-chip--ok">Memadai</span>{% endif %}</td>
+            <td>{% if r.sumber == 'massal' %}<a href="{{ url_for('arsitektur.gis', config_id=r.arsitektur_id) }}" class="hint">Massal #{{ r.arsitektur_id }}</a>{% else %}<span class="hint">Tunggal</span>{% endif %}</td>
+            <td class="hint">{{ r.created_at }}</td>
             <td class="align-right"><div class="d-flex justify-content-end gap-1">
-              <a class="btn btn--sm btn--ghost" href="{{ url_for('klasifikasi.hasil', hasil_id=h.id) }}">Detail</a>
+              {% if r.sumber == 'tunggal' %}
+              <a class="btn btn--sm btn--ghost" href="{{ url_for('klasifikasi.hasil', hasil_id=r.id) }}">Detail</a>
               {% if current_user.role == 'admin' %}
-              <form method="POST" action="{{ url_for('klasifikasi.hasil_delete', hasil_id=h.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <form method="POST" action="{{ url_for('klasifikasi.hasil_delete', hasil_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="button" class="btn btn--sm btn--danger-ghost" title="Hapus hasil"
-                        aria-label="Hapus hasil klasifikasi {{ h.dokumentasi.nama_file if h.dokumentasi else h.id }}"
-                        onclick="showConfirmForm(this,'Hapus Hasil Klasifikasi','Hasil prediksi <strong>{{ h.dokumentasi.nama_file if h.dokumentasi else h.id }}</strong> beserta foto dan peta turunannya akan dihapus permanen.','danger','Ya, Hapus')">
+                        aria-label="Hapus hasil klasifikasi {{ r.foto }}"
+                        onclick="showConfirmForm(this,'Hapus Hasil Klasifikasi','Hasil prediksi <strong>{{ r.foto }}</strong> beserta foto dan peta turunannya akan dihapus permanen.','danger','Ya, Hapus')">
                   <i class="bi bi-trash" aria-hidden="true"></i>
                 </button>
               </form>
               {% endif %}
+              {% else %}
+              <a class="btn btn--sm btn--ghost" href="{{ url_for('arsitektur.gis', config_id=r.arsitektur_id) }}">GIS</a>
+              {% endif %}
             </div></td>
           </tr>{% endfor %}</tbody>
       </table>
-    </div>{% else %}<p class="hint">Belum ada hasil klasifikasi. <a href="{{ url_for('klasifikasi.upload') }}">Klasifikasi foto pertama</a>.</p>{% endif %}
+    </div>{% else %}<p class="hint">Belum ada hasil. <a href="{{ url_for('klasifikasi.upload') }}">Klasifikasi foto pertama</a> atau jalankan <a href="{{ url_for('arsitektur.index') }}">prediksi massal</a> di Arsitektur CNN.</p>{% endif %}
   </div>
 </section>
 {% endblock %}

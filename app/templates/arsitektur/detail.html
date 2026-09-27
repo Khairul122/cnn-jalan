@@ -190,7 +190,7 @@
   <div class="col-6 col-md-3">
     <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
                 border-radius:var(--r-card);text-align:center;">
-      <div style="font-size:1.05rem;font-weight:700;color:#10B981;font-variant-numeric:tabular-nums;">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums;">
         {{ '%.2f%%'|format(evaluasi.akurasi if evaluasi else best_acc.val_accuracy * 100) }}
       </div>
       <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
@@ -201,7 +201,7 @@
   <div class="col-6 col-md-3">
     <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
                 border-radius:var(--r-card);text-align:center;">
-      <div style="font-size:1.05rem;font-weight:700;color:#38BDF8;font-variant-numeric:tabular-nums;">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--ink-1);font-variant-numeric:tabular-nums;">
         {{ '%.4f'|format(best_loss.val_loss) }}
       </div>
       <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
@@ -213,7 +213,7 @@
   <div class="col-6 col-md-3">
     <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
                 border-radius:var(--r-card);text-align:center;">
-      <div style="font-size:1.05rem;font-weight:700;color:#A78BFA;font-variant-numeric:tabular-nums;">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums;">
         {{ best_acc.epoch }}
       </div>
       <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">Epoch Puncak Fold Uji (info)</div>
@@ -222,7 +222,7 @@
   <div class="col-6 col-md-3">
     <div style="padding:.6rem .875rem;background:var(--c-surface);border:1px solid var(--c-border);
                 border-radius:var(--r-card);text-align:center;">
-      <div style="font-size:1.05rem;font-weight:700;color:#F59E0B;font-variant-numeric:tabular-nums;">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--ink-1);font-variant-numeric:tabular-nums;">
         {{ '%.2f%%'|format(best_acc.accuracy * 100) }}
       </div>
       <div style="font-size:.68rem;color:var(--c-muted);margin-top:.1rem;">
@@ -484,64 +484,63 @@
 {% endif %}
 <style>
 .model-badge { display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:700; }
-.model-badge--mobilenetv2    { background:rgba(3,105,161,.18);border:1px solid rgba(14,165,233,.3);color:#38BDF8; }
-.model-badge--efficientnetb0 { background:rgba(124,58,237,.15);border:1px solid rgba(167,139,250,.3);color:#A78BFA; }
+.model-badge--mobilenetv2    { background:var(--surface-2);border:1px solid var(--rule);color:var(--ink-2); }
+.model-badge--efficientnetb0 { background:var(--surface-2);border:1px solid var(--rule);color:var(--ink-2); }
 .status-badge { display:inline-block;padding:.15rem .55rem;border-radius:999px;font-size:.72rem;font-weight:600; }
-.status-badge--draft    { background:rgba(100,116,139,.15);border:1px solid rgba(100,116,139,.3);color:#94a3b8; }
-.status-badge--training { background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#F59E0B; }
-.status-badge--selesai  { background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#10B981; }
-.status-badge--gagal    { background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.25);color:#EF4444; }
+.status-badge--draft    { background:var(--surface-2);border:1px solid var(--rule);color:var(--ink-2); }
+.status-badge--training { background:var(--warn-bg);border:1px solid var(--warn);color:var(--warn); }
+.status-badge--selesai  { background:var(--ok-bg);border:1px solid var(--ok);color:var(--ok); }
+.status-badge--gagal    { background:var(--danger-bg);border:1px solid var(--danger);color:var(--danger); }
 .detail-chip {
   padding:.15rem .55rem;border-radius:999px;font-size:.72rem;
-  background:rgba(255,255,255,.05);border:1px solid var(--c-border);color:var(--c-muted);
+  background:var(--surface-2);border:1px solid var(--rule);color:var(--ink-2);
 }
 .btn-train {
   display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .875rem;
-  border-radius:var(--r-input);font-size:.8rem;font-weight:700;cursor:pointer;
-  background:linear-gradient(135deg,#059669,#10B981);color:#fff;border:none;
-  box-shadow:0 2px 8px rgba(5,150,105,.25);transition:opacity .15s;
+  border-radius:var(--r-1);font-size:.8rem;font-weight:700;cursor:pointer;
+  background:var(--accent);color:#fff;border:none;transition:background var(--dur-1);
 }
-.btn-train:hover { opacity:.88; }
+.btn-train:hover { background:var(--accent-hover); }
 .btn-del-sm {
   display:inline-flex;align-items:center;justify-content:center;
-  width:32px;height:32px;border-radius:var(--r-input);
-  background:transparent;color:#DC2626;
-  border:1px solid rgba(220,38,38,.3);cursor:pointer;font-size:.8rem;transition:background .15s;
+  width:32px;height:32px;border-radius:var(--r-1);
+  background:transparent;color:var(--danger);
+  border:1px solid var(--rule);cursor:pointer;font-size:.8rem;transition:background var(--dur-1);
 }
-.btn-del-sm:hover { background:rgba(220,38,38,.12); }
+.btn-del-sm:hover { background:var(--danger-bg); }
 .chart-card {
-  background:var(--c-surface);border:1px solid var(--c-border);
-  border-radius:var(--r-card);padding:1rem 1.125rem;
+  background:var(--surface-1);border:1px solid var(--rule);
+  border-radius:var(--r-1);padding:1rem 1.125rem;
 }
-.chart-title { font-size:.78rem;font-weight:600;color:var(--c-text);margin:0 0 .875rem;display:flex;align-items:center;gap:.35rem; }
+.chart-title { font-size:.78rem;font-weight:600;color:var(--ink-1);margin:0 0 .875rem;display:flex;align-items:center;gap:.35rem; }
 
 /* Section header */
 .section-header {
-  font-size:.78rem;font-weight:700;color:var(--c-text);
+  font-size:.78rem;font-weight:700;color:var(--ink-1);
   display:flex;align-items:center;gap:.4rem;
   padding:.75rem 0;margin-bottom:.875rem;
-  border-top:1px solid var(--c-border);
+  border-top:1px solid var(--rule);
 }
 
 /* Progress */
 .train-progress-wrap {
-  background:var(--c-surface);border:1px solid var(--c-border);
-  border-radius:var(--r-card);padding:1.25rem 1.375rem;margin-bottom:1rem;
+  background:var(--surface-1);border:1px solid var(--rule);
+  border-radius:var(--r-1);padding:1.25rem 1.375rem;margin-bottom:1rem;
 }
-.progress-track { height:10px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden; }
-.progress-fill { height:100%;border-radius:999px;background:linear-gradient(90deg,#0EA5E9,#10B981);transition:width .6s ease; }
+.progress-track { height:10px;border-radius:999px;background:var(--surface-2);overflow:hidden; }
+.progress-fill { height:100%;border-radius:999px;background:var(--accent);transition:width .6s ease; }
 .spinner-pulse {
-  width:10px;height:10px;border-radius:50%;background:#10B981;flex-shrink:0;
+  width:10px;height:10px;border-radius:50%;background:var(--ok);flex-shrink:0;
   animation:pulse-dot 1.2s ease-in-out infinite;
 }
 @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);} }
-.phase-step { color:var(--c-muted);display:inline-flex;align-items:center;gap:.25rem;transition:color .2s; }
-.phase-step.active { color:var(--c-text);font-weight:600; }
-.phase-step.done   { color:#10B981; }
+.phase-step { color:var(--ink-3);display:inline-flex;align-items:center;gap:.25rem;transition:color .2s; }
+.phase-step.active { color:var(--ink-1);font-weight:600; }
+.phase-step.done   { color:var(--ok); }
 
 /* Evaluasi */
-.ev-card { background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-card);padding:1rem 1.125rem; }
-.ev-section-title { font-size:.72rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 .875rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap; }
+.ev-card { background:var(--surface-1);border:1px solid var(--rule);border-radius:var(--r-1);padding:1rem 1.125rem; }
+.ev-section-title { font-size:.72rem;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin:0 0 .875rem;display:flex;align-items:center;gap:.35rem;flex-wrap:wrap; }
 .cm-grid { display:grid;grid-template-columns:52px repeat(4,1fr);gap:4px; }
 .cm-cell { border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.5rem .25rem;font-size:.78rem; }
 .cm-corner { background:transparent; }

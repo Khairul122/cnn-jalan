@@ -12,6 +12,7 @@ from app.models.peta_kerusakan import PetaKerusakan
 from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.preprocessing_config import PreprocessingConfig
+from app.models.prediksi_model import PrediksiModel
 from app.services import cnn_service
 from app.progress_store import ProgressStore
 
@@ -153,13 +154,49 @@ def _hapus_hasil(hasil):
 @klasifikasi_bp.route('/riwayat')
 @login_required
 def index():
-    """Daftar semua hasil klasifikasi, terbaru dahulu, dengan aksi hapus."""
-    riwayat = (HasilKlasifikasiCnn.query
-               .order_by(HasilKlasifikasiCnn.created_at.desc())
-               .all())
-    total_perlu_verifikasi = sum(1 for h in riwayat if not h.is_valid)
-    return render_template('klasifikasi/index.html', riwayat=riwayat,
-                           total=len(riwayat), total_perlu_verifikasi=total_perlu_verifikasi)
+    """Daftar hasil klasifikasi dari dua sumber, terbaru dahulu.
+
+    Dua tabel berbeda menyimpan hasil klasifikasi, jadi keduanya ditampilkan:
+    - `HasilKlasifikasiCnn`: upload foto tunggal (satu baris per upload, ada peta turunan).
+    - `PrediksiModel`: prediksi massal per arsitektur CNN (hasil `predict_all`/`predict_cv`).
+
+    confidence dinormalkan ke 0..100 supaya template cukup menampilkan satu angka;
+    `confidence_score` di 0..1 sedangkan `confidence` sudah persen sejak ditulis.
+    """
+    from app.kelas import LABEL
+
+    riwayat = [{
+        'sumber': 'tunggal',
+        'id': h.id,
+        'foto': h.dokumentasi.nama_file if h.dokumentasi else '—',
+        'lokasi': h.dokumentasi.lokasi.nama_citra if h.dokumentasi and h.dokumentasi.lokasi else '—',
+        'tingkat': h.tingkat_kerusakan.nama_tingkat,
+        'warna': h.tingkat_kerusakan.warna_peta,
+        'confidence': round(h.confidence_score * 100, 1),
+        'perlu_verifikasi': not h.is_valid,
+        'created_at': h.created_at,
+    } for h in (HasilKlasifikasiCnn.query
+                .order_by(HasilKlasifikasiCnn.created_at.desc()).all())]
+
+    riwayat += [{
+        'sumber': 'massal',
+        'id': p.id,
+        'foto': p.dokumentasi.nama_file if p.dokumentasi else '—',
+        'lokasi': p.dokumentasi.lokasi.nama_citra if p.dokumentasi and p.dokumentasi.lokasi else '—',
+        'tingkat': LABEL.get(p.prediksi, '?'),
+        'warna': p.warna,
+        'confidence': round(p.confidence, 1),
+        'perlu_verifikasi': p.confidence < 50 or (p.aktual is not None and p.prediksi != p.aktual),
+        'created_at': p.created_at,
+        'arsitektur_id': p.arsitektur_id,
+    } for p in (PrediksiModel.query
+                .order_by(PrediksiModel.created_at.desc()).all())]
+
+    riwayat.sort(key=lambda r: r['created_at'], reverse=True)
+    return render_template(
+        'klasifikasi/index.html', riwayat=riwayat,
+        total=len(riwayat),
+        total_perlu_verifikasi=sum(1 for r in riwayat if r['perlu_verifikasi']))
 
 
 @klasifikasi_bp.route('/hasil/<int:hasil_id>/delete', methods=['POST'])

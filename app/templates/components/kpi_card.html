@@ -16,7 +16,9 @@
     </span>
     {% endif %}
   </div>
+  {% if kpi_icon_path is defined and kpi_icon_path %}
   <div class="kpi__icon" style="--kpi-icon-bg:{{ kpi_icon_bg }};--kpi-icon-color:{{ kpi_icon_color }}" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">{{ kpi_icon_path | safe }}</svg>
   </div>
+  {% endif %}
 </div>

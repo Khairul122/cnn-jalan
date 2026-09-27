@@ -59,8 +59,7 @@
 <!-- Empty state -->
 <div style="text-align:center;padding:4rem 2rem;border-radius:var(--r-card);
             border:1px dashed var(--c-border);background:var(--c-surface);">
-  <div style="font-size:2.5rem;margin-bottom:.75rem;">📊</div>
-  <p style="font-size:.9rem;font-weight:600;color:var(--c-text);margin:.0;">Belum ada hasil evaluasi</p>
+  <p style="font-size:.9rem;font-weight:600;color:var(--c-text);margin:0;">Belum ada hasil evaluasi</p>
   <p style="font-size:.78rem;color:var(--c-muted);margin:.35rem 0 1.25rem;">
     Klik "Jalankan Evaluasi" untuk menghitung confusion matrix dan metrik per kelas.
   </p>
@@ -223,8 +222,8 @@
 }
 .ev-btn:hover { opacity: .85; transform: translateY(-1px); }
 .ev-btn-primary {
-  background: linear-gradient(135deg, #0369A1, #0EA5E9); color: #fff;
-  box-shadow: 0 2px 8px rgba(3,105,161,.25);
+  background: var(--accent); color: #fff;
+  box-shadow: none;
 }
 .ev-btn-ghost {
   border: 1px solid var(--c-border); color: var(--c-muted);

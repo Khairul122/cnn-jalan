@@ -24,25 +24,25 @@
   {% set kpi_title = 'Total Konfigurasi' %}{% set kpi_value = configs | length %}
   {% set kpi_accent = 'var(--accent)' %}{% set kpi_icon_bg = 'var(--accent-wash)' %}
   {% set kpi_icon_color = 'var(--accent)' %}
-  {% set kpi_icon_path = '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>' %}
+  {% set kpi_icon_path = '' %}
   {% include 'components/kpi_card.html' %}
 
   {% set kpi_title = 'Selesai Training' %}{% set kpi_value = total_selesai %}
   {% set kpi_accent = 'var(--ok)' %}{% set kpi_icon_bg = 'var(--ok-bg)' %}
   {% set kpi_icon_color = 'var(--ok)' %}
-  {% set kpi_icon_path = '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>' %}
+  {% set kpi_icon_path = '' %}
   {% include 'components/kpi_card.html' %}
 
   {% set kpi_title = 'Draft / Gagal' %}{% set kpi_value = total_draft %}
   {% set kpi_accent = 'var(--warn)' %}{% set kpi_icon_bg = 'var(--warn-bg)' %}
   {% set kpi_icon_color = 'var(--warn)' %}
-  {% set kpi_icon_path = '<circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/>' %}
+  {% set kpi_icon_path = '' %}
   {% include 'components/kpi_card.html' %}
 </div>
 
 <section class="panel">
   <div class="panel__head">
-    <h2><i class="bi bi-cpu" aria-hidden="true"></i> Konfigurasi</h2>
+    <h2>Konfigurasi</h2>
     <span class="panel__head-note">{{ configs | length }} konfigurasi</span>
   </div>
   <div class="panel__body">
@@ -70,9 +70,6 @@
             <td>{{ loop.index }}</td>
             <td>
               <span class="table__key-inline">{{ cfg.nama }}</span>
-              {% if is_best %}
-              <span class="chip chip--warn"><i class="bi bi-trophy-fill" aria-hidden="true"></i> Terbaik</span>
-              {% endif %}
               <div class="hint">{{ cfg.created_at.strftime('%d %b %Y') }}</div>
             </td>
             <td><span class="chip chip--muted">{{ 'MobileNetV2' if cfg.model_type == 'mobilenetv2' else 'EfficientNetB0' }}</span></td>
@@ -113,12 +110,9 @@
     </div>
     {% else %}
     <div class="cnn-empty-state">
-      <i class="bi bi-cpu" aria-hidden="true"></i>
       <p>Belum ada konfigurasi</p>
       <p class="hint">Buat konfigurasi CNN untuk melatih model MobileNetV2 atau EfficientNetB0.</p>
-      <a href="{{ url_for('arsitektur.new') }}" class="btn btn--primary btn--sm mt-2">
-        <i class="bi bi-plus-lg" aria-hidden="true"></i> Buat Konfigurasi Pertama
-      </a>
+      <a href="{{ url_for('arsitektur.new') }}" class="btn btn--primary btn--sm mt-2">Buat Konfigurasi Pertama</a>
     </div>
     {% endif %}
   </div>

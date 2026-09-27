@@ -45,7 +45,11 @@
   </div>
 </section>
 
-{% if prep_pct == 100 %}
+{% if total_berlabel == 0 %}
+{% set prep_tone = 'warn' %}
+{% set prep_icon = 'bi-exclamation-triangle-fill' %}
+{% set prep_text = 'Belum ada foto yang punya label tingkat kerusakan, jadi split belum bisa dibuat. Jalankan Labeling Visual terlebih dahulu — hasil run klasterisasi terakhir otomatis menjadi sumber label halaman ini.' %}
+{% elif prep_pct == 100 %}
 {% set prep_tone = 'ok' %}
 {% set prep_icon = 'bi-check-circle-fill' %}
 {% set prep_text = 'Preprocessing selesai — semua <strong>' ~ total_berlabel ~ '</strong> foto sudah diproses lengkap (resize, crop, normalisasi, denoise). Training akan memakai <strong>' ~ total_sampel ~ '</strong> sampel efektif (gambar dari semua tahap); validasi/fold uji tetap 1 gambar/foto (tahap denoise) supaya sebanding dengan evaluasi CV.' %}

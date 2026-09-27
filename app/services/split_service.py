@@ -44,19 +44,18 @@ class SplitService:
 
 
 def jumlah_label_basi(config_id):
-    """Jumlah item split yang kelas tersimpannya beda dengan label sekarang (atau labelnya sudah dihapus)."""
-    from sqlalchemy import func, or_
+    """Jumlah item split yang kelas tersimpannya beda dengan label efektif sekarang
+    (lihat app.services.label_source) atau lokasinya sudah tidak berlabel."""
     from app import db
     from app.models.dokumentasi_foto import DokumentasiFoto
-    from app.models.label_kerusakan import LabelKerusakan
     from app.models.split_item import SplitItem
+    from app.services import label_source
 
-    return (
-        db.session.query(func.count(SplitItem.id))
+    labels = label_source.label_map()
+    rows = (
+        db.session.query(SplitItem.tingkat_kerusakan_id, DokumentasiFoto.lokasi_id)
         .join(DokumentasiFoto, SplitItem.dokumentasi_id == DokumentasiFoto.id)
-        .outerjoin(LabelKerusakan, LabelKerusakan.lokasi_id == DokumentasiFoto.lokasi_id)
-        .filter(SplitItem.config_id == config_id,
-                or_(LabelKerusakan.id.is_(None),
-                    LabelKerusakan.tingkat_kerusakan_id != SplitItem.tingkat_kerusakan_id))
-        .scalar()
+        .filter(SplitItem.config_id == config_id)
+        .all()
     )
+    return sum(1 for tingkat, lokasi_id in rows if labels.get(lokasi_id) != tingkat)

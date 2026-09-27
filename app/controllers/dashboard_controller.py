@@ -4,10 +4,10 @@ from app import db
 from app.kelas import KEYS
 from app.models.lokasi_kerusakan import LokasiKerusakan
 from app.models.pengguna import Pengguna
-from app.models.label_kerusakan import LabelKerusakan
 from app.models.prediksi_model import PrediksiModel
 from app.models.hasil_evaluasi import HasilEvaluasi
 from app.models.dokumentasi_foto import DokumentasiFoto
+from app.services import label_source
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -66,6 +66,7 @@ def _landing_data():
         return None
 
     per_class = ev.get_per_class()
+    label_counts = label_source.per_class()
     benar = PrediksiModel.query.filter(PrediksiModel.prediksi == PrediksiModel.aktual).count()
     kelas = []
     for i, k in enumerate(KELAS):
@@ -73,7 +74,7 @@ def _landing_data():
         kelas.append({
             'key': k['key'], 'nama': k['nama'], 'warna': k['warna'], 'sdi': k['sdi'],
             'prediksi': PrediksiModel.query.filter_by(prediksi=i).count(),
-            'label': LabelKerusakan.query.filter_by(tingkat_kerusakan_id=i + 1).count(),
+            'label': label_counts.get(i + 1, 0),
             'precision': pc.get('precision'), 'recall': pc.get('recall'), 'f1': pc.get('f1-score'),
         })
 
@@ -163,10 +164,11 @@ def index():
     total_lokasi   = LokasiKerusakan.query.count()
     total_pengguna = Pengguna.query.count()
     total_foto     = DokumentasiFoto.query.count()
-    total_label    = LabelKerusakan.query.count()
     total_prediksi = PrediksiModel.query.count()
 
-    label_ct = {k: LabelKerusakan.query.filter_by(tingkat_kerusakan_id=i + 1).count() for i, k in enumerate(KEYS)}
+    label_counts = label_source.per_class()
+    total_label    = sum(label_counts.values())
+    label_ct = {k: label_counts.get(i + 1, 0) for i, k in enumerate(KEYS)}
 
     headline     = _headline_accuracy()
     akurasi_cnn  = headline['akurasi'] if headline else None

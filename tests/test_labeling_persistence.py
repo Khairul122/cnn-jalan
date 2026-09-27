@@ -65,6 +65,25 @@ class LabelingPersistenceTest(unittest.TestCase):
             self.assertEqual(run.item_list[0].tingkat_kerusakan_id, 4)
             self.assertIsNone(LabelKerusakan.query.filter_by(lokasi_id=self.location_id).first())
 
+    def test_background_run_updates_existing_row(self):
+        with self.app.app_context():
+            run = HasilLabeling(config_id=self.config_id, status='proses', pengguna_id=self.user_id)
+            db.session.add(run)
+            db.session.commit()
+            run_id = run.id
+            features = {self.location_id: {'embedding': [1.0, 2.0], 'kepadatan_tepi': 0.2}}
+            with mock.patch.object(labeling_service, 'ekstrak_fitur_lokasi', return_value=(features, [])), \
+                 mock.patch.object(labeling_service, 'klasterisasi', return_value=({self.location_id: {
+                     'klaster': 0, 'jarak_centroid': 0.4}}, 0.9)), \
+                 mock.patch.object(labeling_service, 'urutkan_klaster_ke_tingkat', return_value={0: 4}):
+                result = labeling_service.jalankan_klasterisasi(
+                    db.session.get(LabelingConfig, self.config_id),
+                    self.app.config['UPLOAD_FOLDER'], self.user_id, run=run
+                )
+            self.assertEqual(result.id, run_id)
+            self.assertEqual(HasilLabeling.query.count(), 1)
+            self.assertEqual(db.session.get(HasilLabeling, run_id).status, 'selesai')
+
     def test_apply_upserts_and_is_idempotent(self):
         with self.app.app_context():
             run = HasilLabeling(

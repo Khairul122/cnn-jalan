@@ -7,6 +7,7 @@ from flask_login import current_user, login_required
 from app import db
 from app.auth_utils import admin_required
 from app.models.hasil_labeling import HasilLabeling
+from app.models.hasil_labeling_item import HasilLabelingItem
 from app.models.label_kerusakan import LabelKerusakan
 from app.models.labeling_config import LabelingConfig
 from app.models.lokasi_kerusakan import LokasiKerusakan
@@ -81,10 +82,17 @@ def index():
 
     lokasi_list = LokasiKerusakan.query.order_by(LokasiKerusakan.id).all()
     config = _labeling_config()
+    latest_run = HasilLabeling.query.order_by(HasilLabeling.id.desc()).first()
+    result_by_location = {
+        item.lokasi_id: item for item in (
+            HasilLabelingItem.query.filter_by(run_id=latest_run.id).all()
+            if latest_run and latest_run.status == 'selesai' else []
+        )
+    }
     run_list = HasilLabeling.query.order_by(HasilLabeling.id.desc()).limit(10).all()
     return render_template(
         'label/index.html', lokasi_list=lokasi_list,
-        config=config, run_list=run_list,
+        config=config, run_list=run_list, result_by_location=result_by_location,
     )
 
 
@@ -199,6 +207,11 @@ def _progres(run_id, **nilai):
 def _run_klasterisasi(app, config_id, run_id, upload_folder, pengguna_id):
     """Background thread: klasterisasi + tulis hasil, lalu tandai selesai untuk polling UI."""
     with app.app_context():
+        run_row = db.session.get(HasilLabeling, run_id)
+        if run_row is None:
+            _progres(run_id, status='error', error='Run labeling tidak ditemukan.')
+            return
+
         def on_progress(selesai, total):
             _progres(run_id, pct=round(selesai / total * 90) if total else 5,
                      step=f'Mengekstrak fitur visual — lokasi {selesai} / {total}')
@@ -209,7 +222,8 @@ def _run_klasterisasi(app, config_id, run_id, upload_folder, pengguna_id):
         try:
             hasil = labeling_service.jalankan_klasterisasi(
                 db.session.get(LabelingConfig, config_id), upload_folder, pengguna_id,
-                on_progress=on_progress, on_run=on_run, run=run_row)
+                on_progress=on_progress, on_run=on_run, run=run_row,
+                progress=lambda pct, step: _progres(run_id, pct=pct, step=step))
             if hasil.status == 'gagal':
                 _progres(run_id, status='error', error=f'Klasterisasi gagal: {hasil.catatan or "tidak ada hasil"}')
             else:
@@ -252,14 +266,22 @@ def progress():
 @login_required
 def progress_config(config_id):
     """Progres run aktif untuk config tertentu, tanpa menghidupkan ulang run lama."""
+    # Run terbaru dulu, dan 'selesai' ikut dikirim agar UI tahu harus redirect ke review.
     prog = next(
-        (p for p in _progress.snapshot().values()
-         if p.get('config_id') == config_id and p.get('status') in ('running', 'error')),
+        (p for _, p in sorted(_progress.snapshot().items(), reverse=True)
+         if p.get('config_id') == config_id),
         None,
     )
-    if prog is None:
-        return jsonify({'status': 'idle'})
-    return jsonify(prog)
+    if prog is not None:
+        return jsonify(prog)
+    latest = (HasilLabeling.query.filter_by(config_id=config_id)
+              .order_by(HasilLabeling.id.desc()).first())
+    if latest and latest.status == 'selesai':
+        return jsonify({'status': 'selesai', 'pct': 100,
+                        'reload': f'/label/?run={latest.id}'})
+    if latest and latest.status == 'gagal':
+        return jsonify({'status': 'error', 'error': latest.catatan or 'Klasterisasi gagal.'})
+    return jsonify({'status': 'idle'})
 
 
 @label_bp.route('/review/<int:run_id>')
@@ -270,7 +292,6 @@ def review(run_id):
     for item in run.item_list:
         name = item.tingkat.nama_tingkat
         items_per_kelas.setdefault(name, []).append(item)
-    items_per_kelas = {name: items[:5] for name, items in items_per_kelas.items()}
     distribution = json.loads(run.distribusi_kelas or '{}')
     return render_template(
         'label/review.html', run=run, items_per_kelas=items_per_kelas,

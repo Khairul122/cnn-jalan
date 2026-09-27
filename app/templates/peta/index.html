@@ -21,7 +21,7 @@
   </button>
   <button id="tabCnn" type="button" class="segment__item" role="tab" aria-selected="false"
           onclick="switchLayer('cnn')">
-    <i class="bi bi-cpu-fill" aria-hidden="true"></i> Prediksi CNN
+    Prediksi CNN
   </button>
 </div>
 
@@ -116,12 +116,9 @@
 
   {% else %}
   <div class="cnn-empty-state">
-    <i class="bi bi-cpu" aria-hidden="true"></i>
     <p>Belum ada prediksi CNN</p>
     <p class="hint">Latih model di halaman Arsitektur CNN, lalu jalankan prediksi dari halaman GIS model tersebut.</p>
-    <a href="{{ url_for('arsitektur.index') }}" class="btn btn--primary btn--sm mt-2">
-      <i class="bi bi-arrow-right" aria-hidden="true"></i> Ke Arsitektur CNN
-    </a>
+    <a href="{{ url_for('arsitektur.index') }}" class="btn btn--primary btn--sm mt-2">Ke Arsitektur CNN</a>
   </div>
   {% endif %}
 

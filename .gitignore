@@ -14,25 +14,27 @@ app/static/models/
 # Training logs
 app/static/logs/
 
-# User uploads (photos + preprocessed images)
-app/static/uploads/foto/
-app/static/uploads/preprocessed/
+# User uploads & image datasets
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+app/static/uploads/foto/*
+!app/static/uploads/foto/.gitkeep
+app/static/uploads/preprocessed/*
+!app/static/uploads/preprocessed/.gitkeep
+app/static/uploads/augmented/*
+!app/static/uploads/augmented/.gitkeep
 
-# Environment & secrets
-.env
-config.local.py
-
-# IDE
-.vscode/
-.idea/
-*.sublime-project
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Dataset directory
-data/
+# Dataset directory & image binary files
+data/*
+!data/.gitkeep
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.bmp
+!app/static/logo/*.png
+!app/static/logo/*.jpg
+!app/static/logo/*.svg
 
 
 # Cadangan sebelum migrasi kelas

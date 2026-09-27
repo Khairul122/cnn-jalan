@@ -86,6 +86,13 @@
   function creep() {
     if (creepTimer || lastRealPct !== null || stepTotal() === 0) return;
     creepTimer = setInterval(function () {
+      if (lastRealPct !== null) {
+        clearInterval(creepTimer);
+        creepTimer = null;
+        if (fillEl) fillEl.style.width = lastRealPct + '%';
+        if (pctEl) pctEl.textContent = lastRealPct + '%';
+        return;
+      }
       creepPct += Math.max(0.2, (96 - creepPct) * 0.03);
       if (creepPct > 96) creepPct = 96;
       if (fillEl) fillEl.style.width = creepPct + '%';
@@ -152,6 +159,21 @@
     form.submit();
   }
 
+  /* POST form ber-atribut data-progress-url dikirim lewat fetch, jadi redirect 302
+     dari server TIDAK memindahkan halaman dengan sendirinya. URL tujuan hasil
+     redirect disimpan di postUrl, dan finish() menahan navigasi sampai POST
+     benar-benar beres — kalau tidak, overlay berhenti di ±96% dan halaman diam di
+     tempat seolah tombolnya tidak bekerja. */
+  var postUrl = null, postDone = null, postSettled = false;
+
+  function finish(withUrl) {
+    (postDone || Promise.resolve()).then(function () {
+      var target = withUrl || postUrl;
+      if (target) location.assign(target);
+      else hide();          // POST gagal: tutup overlay, halaman dibiarkan apa adanya
+    });
+  }
+
   function poll(url, form) {
     var secs = pollSecs;
     setTimeout(function () {
@@ -169,11 +191,18 @@
             poll(url, form);
             return;
           }
-          if (d.status === 'gagal') { fail(d.error || 'Proses gagal.'); return; }
-          if (d.reload) { location.replace(d.reload); return; }
-          // 'selesai' tanpa reload (mis. server membalas flash & render ulang): POST-lah
-          // yang membawa navigasi; hentikan polling supaya tidak menggantung.
-          stopCycle = true;
+          if (d.status === 'gagal' || d.status === 'error') { fail(d.error || 'Proses gagal.'); return; }
+          if (d.status === 'selesai' || d.reload) {
+            /* 'selesai' tanpa reload bisa berarti "server belum membuat state"
+               (POST baru mulai) — jangan berhenti sebelum POST-nya sendiri beres. */
+            if (!d.reload && !postSettled) { poll(url, form); return; }
+            stopCycle = true;
+            stopTimers();
+            finish(d.reload);
+            return;
+          }
+          // idle berarti server belum membuat state progress; coba polling lagi.
+          poll(url, form);
         })
         .catch(function () { poll(url, form); });
     }, secs * 1000);
@@ -185,16 +214,21 @@
 
     var d = form.dataset;
     pollSecs = parseInt(d.progressPoll, 10) || 2;
+    postUrl = null;
+    postDone = null;
+    postSettled = false;
     show(d.progress || d.progressTitle || 'Memproses…');
 
     if (d.progressUrl) {
       creep();   // jaring pengaman bila persen nyata lambat datang
-      fetch(form.action, {
+      postDone = fetch(form.action, {
         method: 'POST',
         body: new FormData(form),
         credentials: 'same-origin',
         headers: { 'X-Requested-With': 'fetch' }
-      }).catch(function () { /* thread mungkin sudah jalan: biarkan polling */ });
+      }).then(function (r) { postUrl = r.url; })
+        .catch(function () { /* thread mungkin sudah jalan: biarkan polling */ })
+        .then(function () { postSettled = true; });
       poll(d.progressUrl, form);
       return;
     }

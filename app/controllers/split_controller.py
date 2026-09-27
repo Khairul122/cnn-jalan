@@ -11,11 +11,10 @@ from app.models.split_config import SplitConfig
 from app.models.split_item import SplitItem
 from app.models.dokumentasi_foto import DokumentasiFoto
 from app.models.lokasi_kerusakan import LokasiKerusakan
-from app.models.label_kerusakan import LabelKerusakan
 from app.models.arsitektur_config import ArsitekturConfig
 from app.models.tingkat_kerusakan import TingkatKerusakan
 from app.models.hasil_preprocessing import HasilPreprocessing
-from app.services import cnn_service
+from app.services import cnn_service, label_source
 from app.services.cnn_service import TRAIN_EXPAND_STEPS
 from app.services.split_service import SplitService, jumlah_label_basi
 from collections import Counter
@@ -71,20 +70,21 @@ def _expanded_sample_count(doc_ids):
 
 def _get_labeled_items():
     """
-    Ambil semua DokumentasiFoto yang lokasinya sudah punya LabelKerusakan.
+    Ambil semua DokumentasiFoto yang lokasinya punya label efektif (label_source:
+    label manual > hasil run klasterisasi terakhir > label hasil Terapkan).
     Return list of dict {dokumentasi_id, label_id, nama_file, latitude, longitude}.
     """
+    labels = label_source.label_map()
     rows = (
         db.session.query(
             DokumentasiFoto.id,
             DokumentasiFoto.nama_file,
             DokumentasiFoto.path_file,
+            DokumentasiFoto.lokasi_id,
             LokasiKerusakan.latitude,
             LokasiKerusakan.longitude,
-            LabelKerusakan.tingkat_kerusakan_id,
         )
         .join(LokasiKerusakan, DokumentasiFoto.lokasi_id == LokasiKerusakan.id)
-        .join(LabelKerusakan, LabelKerusakan.lokasi_id == LokasiKerusakan.id)
         .order_by(DokumentasiFoto.id)
         .all()
     )
@@ -95,9 +95,10 @@ def _get_labeled_items():
             'path_file':      r.path_file,
             'latitude':       float(r.latitude),
             'longitude':      float(r.longitude),
-            'label_id':       r.tingkat_kerusakan_id,
+            'label_id':       labels[r.lokasi_id],
         }
         for r in rows
+        if labels.get(r.lokasi_id)
     ]
 
 
@@ -158,7 +159,18 @@ def new():
             return redirect(url_for('split.new'))
 
         if not items:
-            flash('Tidak ada data berlabel. Tambah label SDI terlebih dahulu.', 'warning')
+            prep_total = HasilPreprocessing.query.filter_by(status='selesai').count()
+            run = label_source.active_run()
+            alasan = (
+                f'Hasil run klasterisasi #{run.id} dipakai otomatis, tetapi tidak ada fotonya.'
+                if run else
+                'Belum ada run klasterisasi yang selesai — jalankan Labeling Visual dulu.'
+            )
+            flash(
+                f'Belum ada foto berlabel (preprocessing selesai untuk {prep_total} tahap-record). '
+                f'{alasan}',
+                'warning',
+            )
             return redirect(url_for('split.new'))
 
         min_class = min(kelas_count.values()) if kelas_count else 0
