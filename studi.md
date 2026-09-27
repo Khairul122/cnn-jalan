@@ -208,10 +208,7 @@ Bilateral filter (default): `cv2.bilateralFilter(img, d=3, sigmaColor=75, sigmaS
 
 Alternatif: Gaussian, Median, NLMeans (h=7, hColor=7)
 
-### 5.3 Konsistensi dengan Notebook Colab
-Pipeline preprocessing dirancang untuk menghasilkan output yang konsisten dengan notebook Google Colab yang dikembangkan sebelumnya. Fungsi `_resolve_image_path()` menangani path resolution yang berbeda antara lingkungan server dan notebook.
-
-### 5.4 Statistik Hasil
+### 5.3 Statistik Hasil
 Setiap foto menghasilkan 4 gambar terpisah (kumulatif) yang disimpan di `uploads/preprocessed/{doc_id}/`:
 ```
 resize.jpg      → hasil resize 256×256
@@ -492,9 +489,8 @@ Dense(4, softmax, L2=1e-4)  ← Output layer
 - Top N layer backbone di-unfreeze
 - MobileNetV2: last 8 layer unfreeze
 - EfficientNetB0: last 12 layer unfreeze
-- Colab profile: last 6 layer unfreeze
-- Learning rate: `lr / 10` (standar) atau `lr / 20` (colab)
-- BatchNormalization **tetap frozen** (non-Colab) — menjaga statistik ImageNet
+- Learning rate: `lr / 10`
+- BatchNormalization **tetap frozen** — menjaga statistik ImageNet
 
 **Kenapa dikurangi dari 15/25 → 8/12:**
 - Training berulang menunjukkan train acc naik ke 70%+ sementara val macet ~35-45%
@@ -520,21 +516,8 @@ Dense(4, softmax, L2=1e-4)  ← Output layer
 ### 10.2 Early Stopping
 Training berhenti lebih awal jika val_loss tidak membaik selama `patience` epoch — mencegah overfitting.
 
-### 10.3 Profil Colab vs Standar
-
-| Aspek | Standar | Colab |
-|-------|---------|-------|
-| Augmentasi | 10 layer | 6 layer |
-| Unfreeze | 8/12 layer | 6 layer |
-| LR fine-tune | lr/10 | lr/20 |
-| Dropout kedua | dropout_rate/2 | 0.3 (fixed) |
-| Output regularizer | L2(1e-4) | None |
-| Data training | Expanded (multi-stage) | 1 gambar/foto (denoise only) |
-
-**Profil Colab** lebih konservatif — dirancang untuk meniru perilaku notebook Colab asli.
-
-### 10.4 Model Selection
-Best model dipilih berdasarkan val_loss terendah selama training (saved callback).
+### 10.3 Model Selection
+Best model dipilih berdasarkan inner_val_balanced_acc tertinggi dan val_loss terendah selama training (saved callback).
 
 ---
 

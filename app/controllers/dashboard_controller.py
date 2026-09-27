@@ -68,9 +68,39 @@ def _landing_data():
     from app.services import cnn_service
 
     cfg = cnn_service.best_model()
-    ev = HasilEvaluasi.query.filter_by(arsitektur_id=cfg.id).first() if cfg else None
+    if not cfg:
+        return None
+
+    ev = HasilEvaluasi.query.filter_by(arsitektur_id=cfg.id).first()
+    if not ev:
+        from app.services.metrics_service import cv_summary
+        import json
+        import numpy as np
+        cv = cv_summary(cfg)
+        if cv:
+            per_class_dict = {
+                k: {
+                    'precision': cv['precision'][k],
+                    'recall': cv['recall'][k],
+                    'f1-score': cv['f1'][k],
+                }
+                for k in cv['f1']
+            }
+            ev = HasilEvaluasi(
+                arsitektur_id    = cfg.id,
+                total_data_val   = cv['n'],
+                akurasi          = cv['akurasi'],
+                confusion_matrix = json.dumps(cv['confusion_matrix']),
+                per_class        = json.dumps(per_class_dict),
+                macro_precision  = round(float(np.mean(list(cv['precision'].values()))), 1),
+                macro_recall     = round(float(np.mean(list(cv['recall'].values()))), 1),
+                macro_f1         = cv['macro_f1'],
+            )
+            db.session.add(ev)
+            db.session.commit()
+
     total = PrediksiModel.query.count()
-    if not (cfg and ev and total):
+    if not (ev and total):
         return None
 
     per_class = ev.get_per_class()

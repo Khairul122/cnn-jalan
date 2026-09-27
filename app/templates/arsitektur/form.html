@@ -35,7 +35,7 @@
           <div class="field">
             <label class="field__label" for="nama">Nama Konfigurasi <span class="field__req">*</span></label>
             <input type="text" id="nama" name="nama" required class="control"
-                   value="Colab MobileNetV2 (Fold 3 dari 5)" placeholder="Contoh: MobileNetV2 80:20 Adam lr1e-4">
+                   value="MobileNetV2 (Fold 3 dari 5)" placeholder="Contoh: MobileNetV2 80:20 Adam lr1e-4">
           </div>
 
           <div class="field">
@@ -67,30 +67,15 @@
         <div class="panel__body">
           <div class="row g-3">
 
-            <div class="col-12">
-              <div class="field">
-                <label class="field__label" for="profil">Profil training</label>
-                <select name="profil" id="profil" class="control">
-                  <option value="colab" selected>Colab (meniru notebook)</option>
-                  <option value="standar">Standar (inner-val terpisah)</option>
-                </select>
-                <p class="hint">
-                  Colab: latih pada seluruh data training, early stopping dan pemilihan epoch memakai fold validasi, Fase 2 40 epoch
-                  dengan 6 layer dibuka (lr/20), tanpa ReduceLROnPlateau. Akurasinya cenderung optimistis karena fold validasi ikut
-                  menentukan epoch terbaik. Standar: epoch dipilih pada potongan data training, fold validasi tetap murni.
-                </p>
-              </div>
-            </div>
-
             <div class="col-6">
               <div class="field">
                 <label class="field__label" for="learning_rate">Learning Rate</label>
                 <select name="learning_rate" id="learning_rate" class="control">
-                  <option value="0.001" selected>0.001 (Colab)</option>
-                  <option value="0.0001">0.0001 (profil standar)</option>
+                  <option value="0.001">0.001</option>
+                  <option value="0.0001" selected>0.0001 (disarankan)</option>
                   <option value="0.00001">0.00001</option>
                 </select>
-                <p class="hint">Profil standar disarankan 0.0001; LR ≥ 0.001 di profil itu berisiko class collapse.</p>
+                <p class="hint">Disarankan 0.0001; LR ≥ 0.001 berisiko class collapse.</p>
               </div>
             </div>
 
@@ -99,8 +84,8 @@
                 <label class="field__label" for="batch_size">Batch Size</label>
                 <select name="batch_size" id="batch_size" class="control">
                   <option value="8">8</option>
-                  <option value="16">16 (profil standar)</option>
-                  <option value="32" selected>32 (Colab)</option>
+                  <option value="16" selected>16</option>
+                  <option value="32">32</option>
                 </select>
               </div>
             </div>
@@ -115,8 +100,8 @@
             <div class="col-6">
               <div class="field">
                 <label class="field__label" for="patience">Early Stop Patience</label>
-                <input type="number" id="patience" name="patience" value="15" min="1" max="50" class="control text-mono">
-                <p class="hint">Colab: 15. Profil standar memakai minimal 20.</p>
+                <input type="number" id="patience" name="patience" value="20" min="1" max="50" class="control text-mono">
+                <p class="hint">Patience early stopping (minimal 20).</p>
               </div>
             </div>
 
@@ -125,8 +110,8 @@
                 <label class="field__label" for="dropout_rate">Dropout Rate</label>
                 <select name="dropout_rate" id="dropout_rate" class="control">
                   <option value="0.2">0.2</option>
-                  <option value="0.3">0.3 (profil standar)</option>
-                  <option value="0.5" selected>0.5 (Colab)</option>
+                  <option value="0.3" selected>0.3</option>
+                  <option value="0.5">0.5</option>
                 </select>
               </div>
             </div>
@@ -170,7 +155,7 @@
                   <input type="number" name="dense_l2" value="0.01" min="0" max="1" step="0.0001" class="control text-mono"
                          aria-label="Dense L2">
                 </div>
-                <p class="hint">Colab: 64 / 0.01. Profil standar: 64 / 0.0001.</p>
+                <p class="hint">Rekomendasi default: 64 / 0.0001.</p>
               </div>
             </div>
 
@@ -292,7 +277,7 @@ function updateFoldOptions() {
     const o       = document.createElement('option');
     o.value       = i;
     o.textContent = `Fold ${i + 1} sebagai validasi (~${Math.round(100 / K)}% data)`;
-    // Notebook Colab memakai fold 3 dari 5 sebagai validasi (indeks 2).
+    // Fold 3 dari 5 sebagai default validasi (indeks 2).
     if (i === (K === 5 ? 2 : 0)) o.selected = true;
     foldSel.appendChild(o);
   }

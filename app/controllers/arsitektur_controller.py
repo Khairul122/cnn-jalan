@@ -342,7 +342,7 @@ def new():
         label_smoothing = float(request.form.get('label_smoothing') or 0)
         dense_units     = int(request.form.get('dense_units') or 64)
         dense_l2        = float(request.form.get('dense_l2') or 0.01)
-        profil          = request.form.get('profil') if request.form.get('profil') in ('colab', 'standar') else 'colab'
+        profil          = 'standar'
         skip_fine_tuning = bool(request.form.get('skip_fine_tuning'))
         # Checkbox yang tidak dicentang tidak terkirim; tanpa penanda 'aug_form' (klien selain form ini, mis. skrip) = semua aktif.
         aug_off         = (','.join(k for k in cnn_service.AUG_KEYS if not request.form.get(f'aug_{k}'))

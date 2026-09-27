@@ -249,7 +249,7 @@ LabelingConfig (user setting)
 - **Service:** `app/services/augmentation_service.py`
 - **Model:** `app/models/augmentasi_config.py`
 - **Hasil:** `app/models/hasil_augmentasi.py`
-- **In-model layers:** `app/services/cnn_service/model.py` (`_augmentation_layers()`, `_augmentation_layers_colab()`)
+- **In-model layers:** `app/services/cnn_service/model.py` (`_augmentation_layers()`)
 
 ### 10 Transformasi
 
@@ -318,7 +318,6 @@ splits = skg.split(X, y, groups=groups)  # groups dari dedup_service
   - Semua stage preprocessing non-acak yang tersedia (resize, crop, normalisasi, denoise) — **dedup** jika konten file identik
   - Salinan augmentasi offline ber-seed
 - Fallback: 1 sampel original jika tidak ada preprocessing
-- `hanya_denoise=True` (profil Colab): hanya 1 gambar per foto (tahap denoise)
 
 **Validasi set:**
 - **1 gambar per foto** — utamakan tahap `denoise`, fallback ke original
@@ -365,7 +364,7 @@ Input (224×224×3)
     │
     ├──► Dense(dense_units=64, activation='relu', kernel_regularizer=L2=1e-4)
     │
-    ├──► Dropout (0.3 if colab, else dropout_rate/2)
+    ├──► Dropout (dropout_rate/2)
     │
     └──► Dense(N_CLASSES=4, activation='softmax')
 ```
@@ -376,7 +375,6 @@ Input (224×224×3)
 |-----------|-------------|----------------|
 | Layers | ~154 | ~238 |
 | Unfreeze (fine-tune) | Last 8 | Last 12 |
-| Unfreeze (Colab) | Last 6 | Last 6 |
 | Input size default | 224×224 | 224×224 |
 
 ### Hyperparameter Default
@@ -394,14 +392,13 @@ Input (224×224×3)
 | `mixup_alpha` | 0 (nonaktif) |
 | `label_smoothing` | 0 (nonaktif) |
 | `skip_fine_tuning` | False |
-| `profil` | 'standar' (atau 'colab') |
 | `aug_off` | '' (semua aktif) |
 | `input_size` | 224 |
 
 ### Fine-Tuning Strategy
 - **Phase 1:** Backbone frozen, head dilatih
-- **Phase 2 (optional):** Top N layer backbone dibuka (unfreeze), recompile dengan `lr/10` (standar) atau `lr/20` (colab)
-- **BatchNormalization** tetap frozen (non-Colab) untuk preserve ImageNet statistics
+- **Phase 2 (optional):** Top N layer backbone dibuka (unfreeze), recompile dengan `lr/10`
+- **BatchNormalization** tetap frozen untuk preserve ImageNet statistics
 - Keputusan 2026-09-23: jumlah unfreeze dikurangi dari 15/25 → **8/12** karena training berulang menunjukkan train acc naik ke 70%+ sementara val macet ~35-45% (tanda fine-tuning terlalu dalam untuk dataset kecil)
 
 ### Loss Function
@@ -420,12 +417,6 @@ Input (224×224×3)
 2. Jika `skip_fine_tuning=False`: Phase 1 (backbone frozen) → Phase 2 (fine-tuning)
 3. Early stopping berdasarkan `patience` epoch
 4. Best model disimpan (path ke checkpoint)
-
-### Profil Colab
-- `profil='colab'` → 6 layer augmentasi saja (flip, rotasi 20/360, brightness 0.25, contrast 0.25, zoom 0.15, translasi 0.1)
-- Learning rate lebih rendah (×20 lebih kecil saat fine-tuning)
-- Dropout kedua tetap 0.3, lapisan output tanpa regularizer
-- `aug_off` kosong (semua augmentasi aktif)
 
 ---
 

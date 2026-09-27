@@ -191,9 +191,6 @@ def load_dataset(split_config_id, fold_val, input_size, base_dir, hanya_denoise=
     groups_train (dokumentasi_id per sampel training) dikembalikan agar pemanggil bisa
     beroperasi di level foto — dipakai _group_aware_split di train() supaya varian tahap
     dari foto yang sama tidak saling bocor antara data fit dan inner-val.
-
-    hanya_denoise=True (profil Colab): training memakai 1 gambar per foto (tahap denoise, seperti
-    validasi), tanpa ekspansi tahap resize/crop/normalisasi.
     """
     prep_sq = _preprocessed_subquery()   # 1 path 'denoise' per foto → dipakai untuk val
 
