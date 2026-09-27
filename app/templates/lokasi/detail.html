@@ -84,7 +84,6 @@
               <th scope="col">Pratinjau</th>
               <th scope="col">Nama File</th>
               <th scope="col" class="align-right">Ukuran</th>
-              <th scope="col">Label</th>
               <th scope="col" class="align-right">Aksi</th>
             </tr>
           </thead>
@@ -101,16 +100,6 @@
               </td>
               <td class="truncate" title="{{ foto.nama_file }}">{{ foto.nama_file }}</td>
               <td class="table__num">{{ foto.ukuran_kb or '-' }} KB</td>
-              <td>
-                {% if foto.hasil_klasifikasi %}
-                <span class="chip" style="--fc: {{ foto.hasil_klasifikasi.tingkat_kerusakan.warna_peta }};">
-                  {{ foto.hasil_klasifikasi.tingkat_kerusakan.nama_tingkat }}
-                  <span class="text-mono">{{ (foto.hasil_klasifikasi.confidence_score * 100) | round(1) }}%</span>
-                </span>
-                {% else %}
-                <span class="chip chip--muted">Belum Berlabel</span>
-                {% endif %}
-              </td>
               <td class="align-right">
                 <a href="{{ _foto_url }}"
                    target="_blank"
