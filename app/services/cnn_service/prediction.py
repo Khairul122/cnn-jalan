@@ -13,11 +13,13 @@ from .training import train, save_model, hyperparams
 _model_cache = {}   # path → (mtime, model)
 
 
-def predict_cv(arsitektur, base_dir, on_progress=None):
+def predict_cv(arsitektur, base_dir, on_progress=None, on_fold_done=None):
     """
     K-Fold cross-validation prediction.
     Each photo's fold is predicted by a model trained on all OTHER folds.
     on_progress(fold_done, n_folds, epoch, total_epochs) — called each epoch + at fold completion.
+    on_fold_done(fold_k, history) — called sekali per fold setelah training selesai, supaya
+    pemanggil bisa menyimpan kurva per-epoch bertanda fold (lihat hasil_training.fold_index).
     Returns list of {dokumentasi_id, prediksi, aktual, confidence, probabilitas}.
     """
     import gc
@@ -70,7 +72,7 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
                     on_progress(fk, n_splits, epoch, total)
             return cb
 
-        model, _ = train(cfg_obj, base_dir, on_epoch_end=make_epoch_cb(fold_k))
+        model, history = train(cfg_obj, base_dir, on_epoch_end=make_epoch_cb(fold_k))
 
         # Simpan model tiap fold — dipakai sebagai ensemble saat klasifikasi foto baru
         # (lihat _ensemble_models_for/_predict_probs), bukan cuma dibuang setelah dipakai
@@ -78,6 +80,10 @@ def predict_cv(arsitektur, base_dir, on_progress=None):
         arsitektur_id = getattr(arsitektur, 'id', None)
         if arsitektur_id is not None:
             save_model(model, arsitektur_id, base_dir, suffix=f'_fold{fold_k}')
+
+        # Simpan kurva per-epoch fold ini supaya pemanggil bisa menandai asal fold
+        if on_fold_done is not None:
+            on_fold_done(fold_k, history)
 
         for item in fold_items[fold_k]:
             # Utamakan denoise preprocessed agar konsisten dengan training, fallback ke original

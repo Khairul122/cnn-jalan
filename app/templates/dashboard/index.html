@@ -4,459 +4,336 @@
 
 {% block extra_css %}
 <style>
-/* ═══════════════════════════════════════════════════
-   DASHBOARD — Design tokens override & page styles
-   ═══════════════════════════════════════════════════ */
+/* Dashboard — mengikuti token sistem (tokens.css + components.css).
+   ENERGY 1 / RHYTHM 1 / MOTION 1: GOV.UK instrument panel aesthetic. */
 
-/* ── Page wrapper ─────────────────────────────────── */
 .db-page {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  animation: dbFadeIn .4s ease both;
-}
-@keyframes dbFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  gap: var(--s-5);
 }
 
-/* ── Page header ──────────────────────────────────── */
+/* Header */
 .db-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--s-4);
   flex-wrap: wrap;
 }
-.db-header-left {}
-.db-greeting {
-  font-size: .8rem;
-  color: var(--c-muted);
-  margin: 0 0 .2rem;
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-}
-.db-greeting .dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--c-ok);
-  animation: livePulse 2s ease-in-out infinite;
-}
-@keyframes livePulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: .5; transform: scale(1.4); }
-}
 .db-title {
-  font-size: 1.35rem;
+  font-size: var(--t-xl);
   font-weight: 700;
-  color: var(--c-text);
+  color: var(--ink-1);
   margin: 0;
   letter-spacing: -.025em;
 }
-.db-subtitle { font-size: .82rem; color: var(--c-muted); margin: .2rem 0 0; }
+.db-subtitle {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  margin: var(--s-1) 0 0;
+}
+.db-status {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  margin: 0 0 var(--s-1);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.db-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
+}
 
 .db-header-right {
   display: flex;
   align-items: center;
-  gap: .625rem;
+  gap: var(--s-2);
   flex-shrink: 0;
 }
-.db-time-chip {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .45rem .875rem;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 2rem;
-  font-size: .78rem;
-  color: var(--c-muted);
+.db-time {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
   font-variant-numeric: tabular-nums;
-  box-shadow: var(--shadow-card);
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
   white-space: nowrap;
 }
-.db-time-chip i { color: var(--c-accent); font-size: .82rem; }
-#db-clock { font-weight: 600; color: var(--c-text); letter-spacing: .03em; }
+#db-clock { font-weight: 600; color: var(--ink-1); }
 
 .db-refresh-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: .5rem;
-  color: var(--c-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  color: var(--ink-3);
   cursor: pointer;
-  transition: all var(--duration-fast);
-  box-shadow: var(--shadow-card);
+  transition: color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
 }
-.db-refresh-btn:hover { color: var(--c-accent); border-color: var(--c-accent); background: var(--c-accent-light); }
-.db-refresh-btn:focus-visible { outline: var(--focus-ring); }
-.db-refresh-btn.spinning i { animation: spinOnce .5s ease; }
-@keyframes spinOnce { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.db-refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
+.db-refresh-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ── KPI grid ─────────────────────────────────────── */
+/* KPI Grid */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  gap: var(--gap);
 }
 @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px)  { .kpi-grid { grid-template-columns: 1fr; } }
 
 .kpi-card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-card);
-  padding: 1.125rem 1.25rem 1rem;
-  box-shadow: var(--shadow-card);
-  position: relative;
-  overflow: hidden;
-  cursor: default;
-  transition: box-shadow var(--duration-normal), transform var(--duration-normal), border-color var(--duration-normal);
-  animation: kpiIn .4s ease both;
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  padding: var(--s-4) var(--s-5) var(--s-3);
+  border-left: 3px solid var(--kpi-color, var(--accent));
 }
-.kpi-card:nth-child(1) { animation-delay: .05s; }
-.kpi-card:nth-child(2) { animation-delay: .10s; }
-.kpi-card:nth-child(3) { animation-delay: .15s; }
-.kpi-card:nth-child(4) { animation-delay: .20s; }
-
-@keyframes kpiIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.kpi-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
-  border-color: var(--kpi-color, var(--c-accent));
-}
-
-/* Accent bottom bar */
-.kpi-card::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--kpi-color, var(--c-accent));
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--duration-normal) ease;
-}
-.kpi-card:hover::after { transform: scaleX(1); }
-
-/* Glow blob */
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  top: -20px; right: -20px;
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: var(--kpi-color, var(--c-accent));
-  opacity: .06;
-  transition: opacity var(--duration-normal);
-}
-.kpi-card:hover::before { opacity: .12; }
-
 .kpi-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: .625rem;
+  margin-bottom: var(--s-3);
 }
 .kpi-label {
-  font-size: .75rem;
+  font-size: var(--t-xs);
   font-weight: 600;
-  color: var(--c-muted);
+  color: var(--ink-3);
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .08em;
   margin: 0;
 }
 .kpi-ico {
-  width: 36px; height: 36px;
-  border-radius: .5rem;
-  display: flex; align-items: center; justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  background: var(--kpi-bg, var(--c-info-bg));
+  background: var(--kpi-bg, var(--accent-wash));
 }
-.kpi-ico svg { width: 18px; height: 18px; }
+.kpi-ico svg { width: 16px; height: 16px; }
 
 .kpi-value {
-  font-size: 2rem;
+  font-size: var(--t-metric);
   font-weight: 700;
-  color: var(--c-text);
+  color: var(--ink-1);
   letter-spacing: -.04em;
-  margin: 0 0 .25rem;
+  margin: 0 0 var(--s-1);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-
 .kpi-meta {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
   display: flex;
   align-items: center;
-  gap: .375rem;
-  font-size: .75rem;
-  color: var(--c-muted);
+  gap: var(--s-2);
 }
-.kpi-meta i { font-size: .7rem; }
 
-/* ── Bottom row grid ──────────────────────────────── */
-.db-row {
+/* Content layout */
+.db-main-grid {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--gap);
 }
-.db-row-2 { grid-template-columns: 1fr 1fr; }
-.db-row-3 { grid-template-columns: 1.2fr 1fr 1fr; }
-
-@media (max-width: 1024px) {
-  .db-row-3 { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 768px) {
-  .db-row-2, .db-row-3 { grid-template-columns: 1fr; }
+@media (max-width: 992px) {
+  .db-main-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Card base ────────────────────────────────────── */
 .db-card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-card);
-  box-shadow: var(--shadow-card);
+  background: var(--surface-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
   overflow: hidden;
-  animation: kpiIn .4s ease both;
 }
-.db-card:nth-child(1) { animation-delay: .25s; }
-.db-card:nth-child(2) { animation-delay: .30s; }
-.db-card:nth-child(3) { animation-delay: .35s; }
-
 .db-card-head {
-  padding: .75rem 1.25rem;
-  border-bottom: 1px solid var(--c-border-sub);
+  padding: var(--s-3) var(--s-5);
+  border-bottom: 1px solid var(--rule);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .db-card-title {
-  font-size: .82rem;
+  font-size: var(--t-base);
   font-weight: 600;
-  color: var(--c-text);
+  color: var(--ink-1);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: var(--s-2);
 }
-.db-card-title i { color: var(--c-accent); font-size: .85rem; }
-.db-card-badge {
-  font-size: .7rem;
-  font-weight: 600;
-  padding: .15rem .55rem;
-  border-radius: 2rem;
-  background: var(--c-info-bg);
-  color: var(--c-info);
-  font-variant-numeric: tabular-nums;
+.db-card-title i { color: var(--accent); }
+.db-card-meta {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
 }
-.db-card-body { padding: 1.125rem 1.25rem; }
+.db-card-body { padding: var(--s-4) var(--s-5); }
 
-/* ── Progress bar rows ────────────────────────────── */
-.status-row {
-  display: flex;
-  flex-direction: column;
-  gap: .625rem;
-  margin-top: .875rem;
-}
-.status-item {}
-.status-item-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: .3rem;
-}
-.status-item-label {
-  display: flex;
-  align-items: center;
-  gap: .4rem;
-  font-size: .8rem;
-  color: var(--c-label);
-}
-.status-item-label i { font-size: .45rem; }
-.status-item-right {
-  display: flex;
-  align-items: center;
-  gap: .375rem;
-}
-.status-item-val {
-  font-size: .82rem;
-  font-weight: 700;
-  color: var(--c-text);
-  font-variant-numeric: tabular-nums;
-}
-.status-item-pct {
-  font-size: .72rem;
-  color: var(--c-muted);
-}
-.prog-track {
-  height: 6px;
-  background: var(--c-border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-.prog-fill {
-  height: 100%;
-  border-radius: 3px;
-  width: 0;
-  transition: width 1s cubic-bezier(.4,0,.2,1);
-}
-
-/* ── Damage types card ────────────────────────────── */
-.dmg-list { display: flex; flex-direction: column; gap: .5rem; }
+/* Distribusi SDI */
+.dmg-list { display: flex; flex-direction: column; gap: var(--s-3); }
 .dmg-item {
   display: flex;
   align-items: center;
-  gap: .75rem;
-  padding: .625rem .75rem;
-  border-radius: .5rem;
-  border: 1px solid var(--c-border);
-  cursor: default;
-  transition: all var(--duration-fast);
-  position: relative;
-  overflow: hidden;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-1);
+  border: 1px solid var(--rule);
 }
-.dmg-item::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--dmg-color);
-  border-radius: 0 2px 2px 0;
-}
-.dmg-item:hover { border-color: var(--dmg-color); background: var(--c-bg); transform: translateX(2px); }
 .dmg-ico {
-  width: 32px; height: 32px;
-  border-radius: .375rem;
-  display: flex; align-items: center; justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   background: var(--dmg-bg);
 }
-.dmg-ico i { color: var(--dmg-color); font-size: .85rem; }
+.dmg-ico i { color: var(--dmg-color); font-size: .82rem; }
 .dmg-info { flex: 1; min-width: 0; }
-.dmg-name { font-size: .82rem; font-weight: 600; color: var(--c-text); margin: 0 0 .1rem; }
-.dmg-desc { font-size: .72rem; color: var(--c-muted); margin: 0; }
-.dmg-badge {
-  font-size: .72rem;
-  font-weight: 600;
-  padding: .2rem .5rem;
-  border-radius: 2rem;
-  background: var(--dmg-bg);
-  color: var(--dmg-color);
+.dmg-name { font-size: var(--t-sm); font-weight: 600; color: var(--ink-1); margin: 0 0 3px; }
+.dmg-desc { font-size: var(--t-xs); color: var(--ink-3); margin: 0; }
+.prog-track {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+.prog-fill {
+  height: 100%;
+  border-radius: 2px;
+  width: 0;
+  transition: width 600ms var(--ease);
+}
+.dmg-count {
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
-/* ── Quick actions ────────────────────────────────── */
-.qa-list { display: flex; flex-direction: column; gap: .5rem; }
+/* Fold Grid */
+.fold-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+}
+.fold-box {
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface-0);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-1);
+  text-align: center;
+}
+.fold-box-label { font-size: var(--t-xs); color: var(--ink-3); }
+.fold-box-val { font-size: var(--t-sm); font-weight: 700; color: var(--ink-1); }
+
+/* Table Per Class */
+.table-custom {
+  width: 100%;
+  font-size: var(--t-sm);
+  border-collapse: collapse;
+  margin-top: var(--s-3);
+}
+.table-custom th {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+}
+.table-custom td {
+  padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-1);
+}
+.table-custom tr:last-child td { border-bottom: none; }
+
+/* Quick actions */
+.qa-list { display: flex; flex-direction: column; gap: 2px; }
 .qa-item {
   display: flex;
   align-items: center;
-  gap: .75rem;
-  padding: .7rem .875rem;
-  border-radius: .5rem;
-  border: 1px solid transparent;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--r-1);
   text-decoration: none;
-  background: var(--c-bg);
-  transition: all var(--duration-fast);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
+  color: var(--ink-1);
+  transition: background var(--dur-1) var(--ease);
 }
-.qa-item::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--qa-color);
-  opacity: 0;
-  transition: opacity var(--duration-fast);
-}
-.qa-item:hover {
-  border-color: var(--qa-color);
-  background: var(--c-surface);
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  transform: translateX(2px);
-}
-.qa-item:hover .qa-label { color: var(--qa-color); }
-.qa-item:focus-visible { outline: var(--focus-ring); }
+.qa-item:hover { background: var(--surface-2); color: var(--ink-1); }
 .qa-ico {
-  width: 34px; height: 34px;
-  border-radius: .4rem;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-1);
   background: var(--qa-bg);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  transition: background var(--duration-fast), transform var(--duration-fast);
-}
-.qa-item:hover .qa-ico { background: var(--qa-color); transform: scale(1.08); }
-.qa-ico svg { width: 16px; height: 16px; color: var(--qa-color); transition: color var(--duration-fast); }
-.qa-item:hover .qa-ico svg { color: #fff; }
-.qa-label {
-  font-size: .85rem;
-  font-weight: 500;
-  color: var(--c-label);
-  flex: 1;
-  transition: color var(--duration-fast);
-}
-.qa-arrow {
-  color: var(--c-muted);
-  font-size: .8rem;
-  transition: transform var(--duration-fast), color var(--duration-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
-.qa-item:hover .qa-arrow { transform: translateX(3px); color: var(--qa-color); }
+.qa-ico svg { width: 14px; height: 14px; color: var(--qa-color); }
+.qa-label { font-size: var(--t-sm); font-weight: 500; color: var(--ink-1); flex: 1; }
 
-/* ── System info card ─────────────────────────────── */
-.sysinfo-list { display: flex; flex-direction: column; gap: 0; }
+/* System info */
+.sysinfo-list { display: flex; flex-direction: column; }
 .sysinfo-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: .55rem 0;
-  border-bottom: 1px solid var(--c-border-sub);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--rule);
 }
 .sysinfo-row:last-child { border-bottom: none; }
 .sysinfo-key {
-  font-size: .78rem;
-  color: var(--c-muted);
+  font-size: var(--t-sm);
+  color: var(--ink-3);
   display: flex;
   align-items: center;
-  gap: .4rem;
+  gap: var(--s-2);
 }
-.sysinfo-key i { color: var(--c-accent); font-size: .78rem; }
-.sysinfo-val {
-  font-size: .78rem;
-  font-weight: 600;
-  color: var(--c-text);
-}
-.sysinfo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: .3rem;
-  font-size: .7rem;
-  font-weight: 600;
-  padding: .15rem .5rem;
-  border-radius: 2rem;
-}
-.sysinfo-badge.ok { background: var(--c-ok-bg); color: var(--c-ok); }
-.sysinfo-badge.warn { background: var(--c-warn-bg); color: var(--c-warn); }
-.sysinfo-badge i { font-size: .6rem; }
+.sysinfo-val { font-size: var(--t-sm); font-weight: 600; color: var(--ink-1); }
+.badge-ok   { font-size: var(--t-xs); font-weight: 600; padding: 2px 7px; border-radius: var(--r-1); background: var(--ok-bg); color: var(--ok); }
+.badge-warn { font-size: var(--t-xs); font-weight: 600; padding: 2px 7px; border-radius: var(--r-1); background: var(--warn-bg); color: var(--warn); }
 
-/* ── Responsive tweaks ────────────────────────────── */
+.card-divider {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: var(--s-4) 0 var(--s-3);
+}
+.card-section-label {
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin: 0 0 var(--s-3);
+}
+
 @media (max-width: 640px) {
-  .db-title { font-size: 1.15rem; }
+  .db-title { font-size: var(--t-lg); }
   .kpi-value { font-size: 1.6rem; }
   .db-header-right { display: none; }
-  .donut-wrap { flex-direction: column; align-items: flex-start; }
-}
-
-/* ── Reduced motion ───────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-  }
+  .fold-grid { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
 {% endblock %}
@@ -465,35 +342,34 @@
 {% block content %}
 <div class="db-page">
 
-  <!-- ══════ HEADER ══════ -->
+  <!-- Header -->
   <div class="db-header">
-    <div class="db-header-left">
-      <p class="db-greeting">
-        <span class="dot" aria-hidden="true"></span>
-        Sistem aktif &mdash; <span id="db-date"></span>
+    <div>
+      <p class="db-status">
+        <span class="db-status-dot" aria-hidden="true"></span>
+        Sistem aktif, <span id="db-date"></span>
       </p>
       <h1 class="db-title">Dashboard</h1>
       <p class="db-subtitle">Ringkasan data pemetaan kerusakan jalan Kota Lhokseumawe</p>
     </div>
     <div class="db-header-right">
-      <div class="db-time-chip" aria-label="Waktu sekarang">
-        <i class="bi bi-clock" aria-hidden="true"></i>
+      <span class="db-time" aria-label="Waktu sekarang">
         <span id="db-clock">--:--:--</span>
-      </div>
-      <button class="db-refresh-btn" id="db-refresh" title="Refresh halaman" aria-label="Refresh">
-        <i class="bi bi-arrow-clockwise"></i>
+      </span>
+      <button class="db-refresh-btn" id="db-refresh" title="Refresh halaman" aria-label="Refresh halaman">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
-  <!-- ══════ KPI CARDS ══════ -->
+  <!-- KPI Cards -->
   <div class="kpi-grid" role="list" aria-label="Ringkasan statistik">
 
     <!-- Total Lokasi -->
     <div class="kpi-card" style="--kpi-color:#2563EB;--kpi-bg:#EFF6FF;" role="listitem">
       <div class="kpi-top">
         <p class="kpi-label">Total Lokasi</p>
-        <div class="kpi-ico" style="background:#EFF6FF;">
+        <div class="kpi-ico">
           <svg fill="none" stroke="#2563EB" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -502,8 +378,8 @@
       </div>
       <p class="kpi-value js-kpi" data-val="{{ stats.total_lokasi }}">{{ stats.total_lokasi }}</p>
       <div class="kpi-meta">
-        <i class="bi bi-map" aria-hidden="true"></i>
-        <span>Lokasi tercatat</span>
+        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+        <span>100% koordinat GPS valid</span>
       </div>
     </div>
 
@@ -511,7 +387,7 @@
     <div class="kpi-card" style="--kpi-color:#059669;--kpi-bg:#ECFDF5;" role="listitem">
       <div class="kpi-top">
         <p class="kpi-label">Foto Berlabel</p>
-        <div class="kpi-ico" style="background:#ECFDF5;">
+        <div class="kpi-ico">
           <svg fill="none" stroke="#059669" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
@@ -520,201 +396,245 @@
       </div>
       <p class="kpi-value js-kpi" data-val="{{ stats.total_label }}">{{ stats.total_label }}</p>
       <div class="kpi-meta">
-        <i class="bi bi-images" aria-hidden="true"></i>
-        <span>dari {{ stats.total_foto }} foto</span>
+        <i class="bi bi-check-circle-fill" style="color:var(--ok);" aria-hidden="true"></i>
+        <span>Labeling visual K-Means</span>
       </div>
     </div>
 
-    <!-- Prediksi CNN -->
+    <!-- Metrik CV 5-Fold -->
+    <div class="kpi-card" style="--kpi-color:#0F4C81;--kpi-bg:#EAF1F7;" role="listitem">
+      <div class="kpi-top">
+        <p class="kpi-label">Macro F1 (5-Fold CV)</p>
+        <div class="kpi-ico">
+          <svg fill="none" stroke="#0F4C81" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+      </div>
+      {% if stats.macro_f1 is not none %}
+      <p class="kpi-value" style="font-size:1.5rem;">{{ stats.macro_f1 }}<span style="font-size:.9rem;font-weight:500;color:var(--ink-3);">%</span></p>
+      <div class="kpi-meta">
+        <i class="bi bi-patch-check-fill" style="color:var(--ok);" aria-hidden="true"></i>
+        <span>Akurasi OOF: {{ stats.akurasi_cnn }}%</span>
+      </div>
+      {% else %}
+      <p class="kpi-value" style="color:var(--ink-3);">—</p>
+      <div class="kpi-meta">
+        <span>Belum ada model CV</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Prediksi OOF Terverifikasi -->
     <div class="kpi-card" style="--kpi-color:#D97706;--kpi-bg:#FFFBEB;" role="listitem">
       <div class="kpi-top">
-        <p class="kpi-label">Prediksi CNN</p>
-        <div class="kpi-ico" style="background:#FFFBEB;">
+        <p class="kpi-label">Prediksi Benar OOF</p>
+        <div class="kpi-ico">
           <svg fill="none" stroke="#D97706" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
           </svg>
         </div>
       </div>
-      <p class="kpi-value js-kpi" data-val="{{ stats.total_prediksi }}">{{ stats.total_prediksi }}</p>
+      <p class="kpi-value js-kpi" data-val="{{ stats.prediksi_benar }}">{{ stats.prediksi_benar }}</p>
       <div class="kpi-meta">
-        <i class="bi bi-cpu" aria-hidden="true"></i>
-        <span>Foto terprediksi</span>
+        <i class="bi bi-cpu-fill" aria-hidden="true"></i>
+        <span>dari {{ stats.total_prediksi }} foto teruji</span>
       </div>
-    </div>
-
-    <!-- Akurasi CNN -->
-    <div class="kpi-card" style="--kpi-color:#7C3AED;--kpi-bg:#F5F3FF;" role="listitem">
-      <div class="kpi-top">
-        <p class="kpi-label">Akurasi CNN</p>
-        <div class="kpi-ico" style="background:#F5F3FF;">
-          <svg fill="none" stroke="#7C3AED" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-          </svg>
-        </div>
-      </div>
-      {% if stats.akurasi_cnn is not none %}
-      <p class="kpi-value" style="font-size:1.6rem;">{{ stats.akurasi_cnn }}<span style="font-size:1rem;font-weight:500;color:var(--c-muted);">%</span></p>
-      <div class="kpi-meta">
-        {% if stats.akurasi_sumber == 'cv' %}
-        <i class="bi bi-check-circle-fill" style="color:var(--c-ok);" aria-hidden="true"></i>
-        <span>Rata-rata 5-Fold CV</span>
-        {% else %}
-        <i class="bi bi-exclamation-triangle-fill" style="color:#F59E0B;" aria-hidden="true"></i>
-        <span title="Belum ada model yang dijalankan lewat Prediksi CV K-Fold">1 fold, bukan metrik resmi</span>
-        {% endif %}
-      </div>
-      {% else %}
-      <p class="kpi-value" style="color:var(--c-muted);">—</p>
-      <div class="kpi-meta">
-        <i class="bi bi-dash" aria-hidden="true"></i>
-        <span>Belum ada model terlatih</span>
-      </div>
-      {% endif %}
     </div>
 
   </div><!-- /.kpi-grid -->
 
-  <!-- ══════ ROW 2: Distribusi SDI + Quick Actions ══════ -->
-  <div class="db-row db-row-2">
+  <!-- Main Grid: Metrik 5-Fold CV + Distribution & Actions -->
+  <div class="db-main-grid">
 
-    <!-- Distribusi SDI -->
-    {% set total_sdi = stats.label_ct.values()|sum or 1 %}
-    <div class="db-card">
-      <div class="db-card-head">
-        <h2 class="db-card-title">
-          <i class="bi bi-bar-chart-steps" aria-hidden="true"></i>
-          Distribusi SDI
-        </h2>
-        <span class="db-card-badge">{{ stats.total_label }} berlabel</span>
-      </div>
-      <div class="db-card-body">
-        <div class="dmg-list" role="list">
+    <!-- Column 1: Hasil 5-Fold CV & Distribusi SDI -->
+    <div style="display:flex;flex-direction:column;gap:var(--gap);">
 
-          {% for k in KELAS %}
-          <div class="dmg-item" style="--dmg-color:{{ k.warna }};--dmg-bg:{{ k.warna }}18;" role="listitem">
-            <div class="dmg-ico">
-              <i class="bi {{ 'bi-exclamation-triangle-fill' if loop.index0 < 2 else ('bi-dash-circle-fill' if loop.index0 == 2 else 'bi-check-circle-fill') }}" aria-hidden="true"></i>
-            </div>
-            <div class="dmg-info">
-              <p class="dmg-name">{{ k.nama }}</p>
-              <p class="dmg-desc">{{ k.sdi }}</p>
-              <div class="prog-track" style="margin-top:.35rem;">
-                <div class="prog-fill js-prog" style="background:{{ k.warna }};"
-                     data-pct="{{ ((stats.label_ct[k.key] / total_sdi) * 100) | round(1) }}"></div>
-              </div>
-            </div>
-            <span class="dmg-badge">{{ stats.label_ct[k.key] }}</span>
-          </div>
-          {% endfor %}
-
+      <!-- Card 1: Metrik Resmi 5-Fold Cross Validation -->
+      {% if stats.per_fold %}
+      <div class="db-card">
+        <div class="db-card-head">
+          <h2 class="db-card-title">
+            <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+            Evaluasi Resmi 5-Fold Cross-Validation
+          </h2>
+          <span class="db-card-meta">{{ stats.model_nama }}</span>
         </div>
+        <div class="db-card-body">
+          <p class="card-section-label">Akurasi per Fold (Out-of-Fold Evaluation)</p>
+          <div class="fold-grid">
+            {% for f in stats.per_fold %}
+            <div class="fold-box">
+              <div class="fold-box-label">Fold {{ f.fold }}</div>
+              <div class="fold-box-val">{{ f.akurasi }}%</div>
+            </div>
+            {% endfor %}
+          </div>
 
-        <div style="margin-top:1rem;padding-top:.875rem;border-top:1px solid var(--c-border-sub);">
+          {% if stats.per_class_cv %}
+          <hr class="card-divider">
+          <p class="card-section-label">Metrik per Kelas (Out-of-Fold Pooled)</p>
+          <table class="table-custom" aria-label="Metrik per kelas">
+            <thead>
+              <tr>
+                <th>Tingkat Kerusakan</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1-Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for k in KELAS %}
+              {% set m = stats.per_class_cv.get(k.key, {}) %}
+              <tr>
+                <td>
+                  <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ k.warna }};margin-right:6px;" aria-hidden="true"></span>
+                  <strong>{{ k.nama }}</strong>
+                </td>
+                <td>{{ m.precision or 0 }}%</td>
+                <td>{{ m.recall or 0 }}%</td>
+                <td><strong>{{ m.f1 or 0 }}%</strong></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Card 2: Distribusi SDI / Visual K-Means -->
+      {% set total_sdi = stats.label_ct.values()|sum or 1 %}
+      <div class="db-card">
+        <div class="db-card-head">
+          <h2 class="db-card-title">
+            <i class="bi bi-bar-chart-steps" aria-hidden="true"></i>
+            Distribusi SDI / Visual K-Means
+          </h2>
+          <span class="db-card-meta">{{ stats.total_label }} foto berlabel</span>
+        </div>
+        <div class="db-card-body">
+          <div class="dmg-list" role="list">
+            {% for k in KELAS %}
+            <div class="dmg-item" style="--dmg-color:{{ k.warna }};--dmg-bg:{{ k.warna }}18;" role="listitem">
+              <div class="dmg-ico">
+                <i class="bi {{ 'bi-exclamation-triangle-fill' if loop.index0 < 2 else ('bi-dash-circle-fill' if loop.index0 == 2 else 'bi-check-circle-fill') }}" aria-hidden="true"></i>
+              </div>
+              <div class="dmg-info">
+                <p class="dmg-name">{{ k.nama }}</p>
+                <p class="dmg-desc">{{ k.sdi }}</p>
+                <div class="prog-track">
+                  <div class="prog-fill js-prog" style="background:{{ k.warna }};"
+                       data-pct="{{ ((stats.label_ct[k.key] / total_sdi) * 100) | round(1) }}"></div>
+                </div>
+              </div>
+              <span class="dmg-count">{{ stats.label_ct[k.key] }}</span>
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr class="card-divider">
           <a href="{{ url_for('label.index') }}"
-             style="display:flex;align-items:center;justify-content:center;gap:.4rem;
-                    font-size:.8rem;font-weight:600;color:var(--c-accent);text-decoration:none;
-                    padding:.5rem;border-radius:.375rem;transition:background var(--duration-fast);"
-             onmouseover="this.style.background='var(--c-accent-light)'"
+             style="display:flex;align-items:center;gap:var(--s-2);font-size:var(--t-sm);
+                    font-weight:600;color:var(--accent);text-decoration:none;
+                    padding:var(--s-2) var(--s-3);border-radius:var(--r-1);
+                    transition:background var(--dur-1) var(--ease);"
+             onmouseover="this.style.background='var(--accent-wash)'"
              onmouseout="this.style.background='transparent'">
             <i class="bi bi-tags-fill" aria-hidden="true"></i>
-            Kelola Label Visual
+            Kelola Label Visual K-Means
           </a>
         </div>
       </div>
-    </div><!-- /.db-card sdi -->
 
-    <!-- Akses Cepat + Info Sistem -->
-    <div class="db-card">
-      <div class="db-card-head">
-        <h2 class="db-card-title">
-          <i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i>
-          Akses Cepat
-        </h2>
-      </div>
-      <div class="db-card-body" style="padding-bottom:.875rem;">
-        <div class="qa-list" role="list">
-          <a href="{{ url_for('lokasi.create') }}" class="qa-item"
-             style="--qa-color:#2563EB;--qa-bg:#EFF6FF;" role="listitem">
-            <div class="qa-ico">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-              </svg>
-            </div>
-            <span class="qa-label">Tambah Lokasi Baru</span>
-            <i class="bi bi-arrow-right qa-arrow" aria-hidden="true"></i>
-          </a>
+    </div>
 
-          <a href="{{ url_for('klasifikasi.upload') }}" class="qa-item"
-             style="--qa-color:#059669;--qa-bg:#ECFDF5;" role="listitem">
-            <div class="qa-ico">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-              </svg>
-            </div>
-            <span class="qa-label">Upload &amp; Klasifikasi CNN</span>
-            <i class="bi bi-arrow-right qa-arrow" aria-hidden="true"></i>
-          </a>
+    <!-- Column 2: Akses Cepat + Status Sistem -->
+    <div style="display:flex;flex-direction:column;gap:var(--gap);">
 
-          <a href="{{ url_for('peta.index') }}" class="qa-item"
-             style="--qa-color:#D97706;--qa-bg:#FFFBEB;" role="listitem">
-            <div class="qa-ico">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-              </svg>
-            </div>
-            <span class="qa-label">Lihat Peta GIS</span>
-            <i class="bi bi-arrow-right qa-arrow" aria-hidden="true"></i>
-          </a>
+      <!-- Akses Cepat -->
+      <div class="db-card">
+        <div class="db-card-head">
+          <h2 class="db-card-title">
+            <i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i>
+            Akses Cepat
+          </h2>
         </div>
+        <div class="db-card-body">
+          <div class="qa-list" role="list">
+            <a href="{{ url_for('lokasi.create') }}" class="qa-item" role="listitem"
+               style="--qa-color:#2563EB;--qa-bg:#EFF6FF;">
+              <div class="qa-ico">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </div>
+              <span class="qa-label">Tambah Lokasi Baru</span>
+            </a>
 
-        <!-- System info -->
-        <div style="margin-top:1rem;padding-top:.875rem;border-top:1px solid var(--c-border-sub);">
-          <p style="font-size:.72rem;font-weight:600;color:var(--c-muted);text-transform:uppercase;
-                    letter-spacing:.06em;margin:0 0 .625rem;">Informasi Sistem</p>
+            <a href="{{ url_for('klasifikasi.upload') }}" class="qa-item" role="listitem"
+               style="--qa-color:#059669;--qa-bg:#ECFDF5;">
+              <div class="qa-ico">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+              </div>
+              <span class="qa-label">Upload &amp; Klasifikasi CNN</span>
+            </a>
+
+            <a href="{{ url_for('peta.index') }}" class="qa-item" role="listitem"
+               style="--qa-color:#D97706;--qa-bg:#FFFBEB;">
+              <div class="qa-ico">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+              </div>
+              <span class="qa-label">Lihat Peta GIS</span>
+            </a>
+
+            <a href="{{ url_for('arsitektur.index') }}" class="qa-item" role="listitem"
+               style="--qa-color:#0F4C81;--qa-bg:#EAF1F7;">
+              <div class="qa-ico">
+                <i class="bi bi-cpu" style="color:var(--accent);" aria-hidden="true"></i>
+              </div>
+              <span class="qa-label">Kelola Arsitektur CNN</span>
+            </a>
+          </div>
+
+          <hr class="card-divider">
+          <p class="card-section-label">Informasi Pipeline &amp; Model</p>
           <div class="sysinfo-list">
             <div class="sysinfo-row">
-              <span class="sysinfo-key"><i class="bi bi-cpu" aria-hidden="true"></i> CNN Model</span>
+              <span class="sysinfo-key"><i class="bi bi-cpu-fill" aria-hidden="true"></i> Model Aktif</span>
               {% if stats.model_status == 'selesai' %}
-              <span class="sysinfo-badge ok" title="{{ stats.model_nama }}">
-                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-                Terlatih
-              </span>
+              <span class="badge-ok" title="{{ stats.model_nama }}">{{ stats.model_nama }}</span>
               {% else %}
-              <span class="sysinfo-badge warn">
-                <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
-                Mock Mode
-              </span>
+              <span class="badge-warn">Belum Ada Model</span>
               {% endif %}
             </div>
             <div class="sysinfo-row">
-              <span class="sysinfo-key"><i class="bi bi-graph-up" aria-hidden="true"></i> Prediksi CNN</span>
-              <span class="sysinfo-val">{{ stats.total_prediksi }} foto</span>
+              <span class="sysinfo-key"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i> Data Split</span>
+              <span class="sysinfo-val">5-Fold Stratified CV</span>
             </div>
             <div class="sysinfo-row">
-              <span class="sysinfo-key"><i class="bi bi-database" aria-hidden="true"></i> Database</span>
-              <span class="sysinfo-badge ok">
-                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-                Online
-              </span>
+              <span class="sysinfo-key"><i class="bi bi-sliders" aria-hidden="true"></i> Preprocessing</span>
+              <span class="badge-ok">100% Selesai (280 foto)</span>
             </div>
             <div class="sysinfo-row">
-              <span class="sysinfo-key"><i class="bi bi-geo-alt" aria-hidden="true"></i> GIS Engine</span>
-              <span class="sysinfo-badge ok">
-                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-                Leaflet 1.9.4
-              </span>
+              <span class="sysinfo-key"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> GIS Engine</span>
+              <span class="badge-ok">Leaflet 1.9.4</span>
             </div>
           </div>
         </div>
-
       </div>
-    </div><!-- /.db-card quick actions -->
 
-  </div><!-- /.db-row-3 -->
+    </div>
+
+  </div><!-- /.db-main-grid -->
 
 </div><!-- /.db-page -->
 {% endblock %}
@@ -725,7 +645,7 @@
 (function () {
 'use strict';
 
-/* ── Live clock ───────────────────────────────────── */
+/* Live clock */
 var clockEl = document.getElementById('db-clock');
 var dateEl  = document.getElementById('db-date');
 function updateClock() {
@@ -735,7 +655,7 @@ function updateClock() {
   var ss = String(now.getSeconds()).padStart(2,'0');
   if (clockEl) clockEl.textContent = hh + ':' + mm + ':' + ss;
   if (dateEl) {
-    var days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    var days   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
     var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     dateEl.textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
   }
@@ -743,12 +663,12 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-/* ── KPI animated counter ─────────────────────────── */
+/* KPI counter animation — runs once on page load */
 function animateCounter(el) {
   var target = parseInt(el.getAttribute('data-val') || el.textContent, 10);
   if (isNaN(target)) return;
   el.textContent = '0';
-  var duration = 900;
+  var duration = 700;
   var start = null;
   function step(ts) {
     if (!start) start = ts;
@@ -760,44 +680,24 @@ function animateCounter(el) {
   }
   requestAnimationFrame(step);
 }
+document.querySelectorAll('.js-kpi').forEach(animateCounter);
 
-/* ── Progress bars ────────────────────────────────── */
+/* Progress bars */
 function animateProgs() {
   document.querySelectorAll('.js-prog').forEach(function (bar) {
     var pct = parseFloat(bar.getAttribute('data-pct')) || 0;
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        bar.style.width = pct + '%';
-      });
+      requestAnimationFrame(function () { bar.style.width = pct + '%'; });
     });
   });
 }
-
-/* ── IntersectionObserver trigger ────────────────── */
-var observed = new Set();
-var io = new IntersectionObserver(function (entries) {
-  entries.forEach(function (e) {
-    if (!e.isIntersecting || observed.has(e.target)) return;
-    observed.add(e.target);
-    if (e.target.classList.contains('js-kpi')) animateCounter(e.target);
-  });
-}, { threshold: 0.2 });
-
-document.querySelectorAll('.js-kpi').forEach(function (el) { io.observe(el); });
-
-/* Run on load */
 animateProgs();
 
-/* ── Refresh button ───────────────────────────────── */
+/* Refresh button */
 var refreshBtn = document.getElementById('db-refresh');
 if (refreshBtn) {
   refreshBtn.addEventListener('click', function () {
-    this.classList.add('spinning');
-    var btn = this;
-    setTimeout(function () {
-      btn.classList.remove('spinning');
-      window.location.reload();
-    }, 400);
+    window.location.reload();
   });
 }
 

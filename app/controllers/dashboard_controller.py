@@ -31,7 +31,11 @@ def _headline_accuracy():
     if cv:
         return {
             'akurasi'       : cv['akurasi'],
+            'macro_f1'      : cv['macro_f1'],
+            'precision'     : cv['precision'],
             'recall'        : cv['recall'],
+            'f1'            : cv['f1'],
+            'per_fold'      : cv['per_fold'],
             'model_nama'    : best_cfg.nama,
             'sumber'        : 'cv',
         }
@@ -41,7 +45,11 @@ def _headline_accuracy():
         return None
     return {
         'akurasi'       : round(ev.akurasi or 0, 1),
+        'macro_f1'      : round(ev.macro_f1 or 0, 1),
+        'precision'     : {k: round(v['precision'], 1) for k, v in ev.get_per_class().items()},
         'recall'        : {k: round(v['recall'], 1) for k, v in ev.get_per_class().items()},
+        'f1'            : {k: round(v['f1-score'], 1) for k, v in ev.get_per_class().items()},
+        'per_fold'      : [],
         'model_nama'    : best_cfg.nama,
         'sumber'        : '1fold',
     }
@@ -161,30 +169,75 @@ def landing_gis():
 @dashboard_bp.route('/dashboard')
 @login_required
 def index():
+    from app.models.hasil_preprocessing import HasilPreprocessing
+    from app.models.arsitektur_config import ArsitekturConfig
+
     total_lokasi   = LokasiKerusakan.query.count()
     total_pengguna = Pengguna.query.count()
     total_foto     = DokumentasiFoto.query.count()
     total_prediksi = PrediksiModel.query.count()
 
     label_counts = label_source.per_class()
-    total_label    = sum(label_counts.values())
-    label_ct = {k: label_counts.get(i + 1, 0) for i, k in enumerate(KEYS)}
+    total_label  = sum(label_counts.values())
+    label_ct     = {k: label_counts.get(i + 1, 0) for i, k in enumerate(KEYS)}
 
     headline     = _headline_accuracy()
-    akurasi_cnn  = headline['akurasi'] if headline else None
+    akurasi_cnn  = headline['akurasi']   if headline else None
+    macro_f1     = headline['macro_f1']  if headline else None
     model_nama   = headline['model_nama'] if headline else None
     model_status = 'selesai' if headline else 'mock'
 
+    # Distribusi prediksi per kelas (dari OOF predictions)
+    prediksi_per_kelas = {
+        i: PrediksiModel.query.filter_by(prediksi=i).count()
+        for i in range(4)
+    }
+    prediksi_benar = PrediksiModel.query.filter(
+        PrediksiModel.prediksi == PrediksiModel.aktual
+    ).count()
+
+    # Info model aktif
+    cfg = ArsitekturConfig.query.filter_by(status='selesai').first()
+    model_info = None
+    if cfg:
+        model_info = {
+            'nama': cfg.nama,
+            'model_type': cfg.model_type,
+            'split': cfg.split_config.nama if cfg.split_config else '-',
+            'epochs': cfg.epochs,
+        }
+
+    # Per-fold accuracy (jika CV)
+    per_fold = headline['per_fold'] if headline else []
+
+    # Per-class metrics dari CV summary
+    per_class_cv = None
+    if headline and headline['sumber'] == 'cv':
+        per_class_cv = {
+            k: {
+                'precision': headline['precision'].get(k),
+                'recall':    headline['recall'].get(k),
+                'f1':        headline['f1'].get(k),
+            }
+            for k in headline['precision']
+        }
+
     stats = {
-        'total_lokasi'   : total_lokasi,
-        'total_pengguna' : total_pengguna,
-        'total_foto'     : total_foto,
-        'total_label'    : total_label,
-        'total_prediksi' : total_prediksi,
-        'label_ct'       : label_ct,
-        'akurasi_cnn'    : akurasi_cnn,
-        'model_nama'     : model_nama,
-        'model_status'   : model_status,
-        'akurasi_sumber' : headline['sumber'] if headline else None,
+        'total_lokasi'      : total_lokasi,
+        'total_pengguna'    : total_pengguna,
+        'total_foto'        : total_foto,
+        'total_label'       : total_label,
+        'total_prediksi'    : total_prediksi,
+        'label_ct'          : label_ct,
+        'akurasi_cnn'       : akurasi_cnn,
+        'macro_f1'          : macro_f1,
+        'model_nama'        : model_nama,
+        'model_status'      : model_status,
+        'akurasi_sumber'    : headline['sumber'] if headline else None,
+        'prediksi_per_kelas': prediksi_per_kelas,
+        'prediksi_benar'    : prediksi_benar,
+        'model_info'        : model_info,
+        'per_fold'          : per_fold,
+        'per_class_cv'      : per_class_cv,
     }
     return render_template('dashboard/index.html', stats=stats)

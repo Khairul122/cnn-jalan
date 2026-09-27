@@ -98,9 +98,13 @@ def _run_evaluasi(app, config_id, cfg_obj, base_dir):
 
 
 def _run_training(app, config_id, base_dir):
-    """Background thread: training â†’ auto evaluasi â†’ DB write."""
+    """Background thread: training K-Fold CV -> auto evaluasi agregat -> DB write."""
+    import json
+    import numpy as np
+
     with app.app_context():
         from app.services import cnn_service
+        from app.services.metrics_service import cv_summary
 
         cfg = db.session.get(ArsitekturConfig, config_id)
         if not cfg:
@@ -111,33 +115,46 @@ def _run_training(app, config_id, base_dir):
         _cfg_snapshot = {
             'id':              cfg.id,
             'split_config_id': cfg.split_config_id,
-            'fold_val':        cfg.fold_val,
             **cnn_service.hyperparams(cfg),
         }
         db.session.remove()
 
-        def on_epoch_end(epoch, total, logs):
+        # Hapus hasil lama
+        HasilTraining.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
+        HasilEvaluasi.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
+        PrediksiModel.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
+        db.session.commit()
+
+        # Progress callback tiap epoch: update KEDUA store
+        # - _progress   dibaca /progress endpoint (detail.html progress bar & epoch counter)
+        # - _cv_progress dibaca /cv-progress endpoint (cv-progress banner di gis.html)
+        def on_progress(fold_done, total_folds, epoch, total_epochs):
+            # Pct keseluruhan: fold yang sudah selesai + kemajuan epoch fold aktif
+            fold_base = fold_done / total_folds * 100
+            epoch_contrib = (epoch / total_epochs / total_folds * 100) if total_epochs else 0
+            overall_pct = round(fold_base + epoch_contrib)
+
             _progress[config_id] = {
-                'phase':        'fine_tuning' if logs.get('fine_tuning') else 'training',
-                'current':      epoch,
-                'total':        total,
-                'pct':          round(epoch / total * 100),
-                'loss':         round(logs.get('loss', 0), 4),
-                'accuracy':     round(logs.get('accuracy', 0) * 100, 2),
-                'val_loss':     round(logs.get('val_loss', 0), 4),
-                'val_accuracy': round(logs.get('val_accuracy', 0) * 100, 2),
+                'phase':   'training',
+                'current': epoch,
+                'total':   total_epochs,
+                'pct':     overall_pct,
+            }
+            _cv_progress[config_id] = {
+                'fold':         fold_done + 1,  # 1-based untuk tampilan
+                'total_folds':  total_folds,
+                'epoch':        epoch,
+                'total_epochs': total_epochs,
+                'pct':          overall_pct,
+                'running':      True,
             }
 
-        try:
-            cfg_obj = SimpleNamespace()
-            for k, v in _cfg_snapshot.items():
-                setattr(cfg_obj, k, v)
-
-            model, history = cnn_service.train(cfg_obj, base_dir, on_epoch_end=on_epoch_end)
-
+        # Callback tiap fold selesai: simpan kurva per-epoch bertanda fold
+        def on_fold_done(fold_k, history):
             rows = [
                 HasilTraining(
                     arsitektur_id=config_id,
+                    fold_index=fold_k,
                     epoch=i + 1,
                     loss=history['loss'][i],
                     accuracy=history['accuracy'][i],
@@ -147,39 +164,71 @@ def _run_training(app, config_id, base_dir):
                 for i in range(len(history['loss']))
             ]
             db.session.bulk_save_objects(rows)
-
-            model_path = cnn_service.save_model(model, config_id, base_dir)
-
-            # Simpan model_path saja, status tetap 'training' sampai semua selesai
-            ArsitekturConfig.query.filter_by(id=config_id).update({'model_path': model_path})
             db.session.commit()
-            db.session.remove()
 
-            # â”€â”€ Auto evaluasi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            _progress[config_id] = {'phase': 'evaluating', 'pct': 100}
+        try:
+            cfg_obj = SimpleNamespace()
+            for k, v in _cfg_snapshot.items():
+                setattr(cfg_obj, k, v)
 
-            cfg_obj.model_path = model_path
-            eval_result = cnn_service.evaluate(cfg_obj, base_dir)
-            _save_evaluasi(config_id, eval_result)
-            db.session.remove()
+            # Jalankan K-Fold CV (melatih semua fold)
+            results = cnn_service.predict_cv(
+                cfg_obj, base_dir,
+                on_progress=on_progress,
+                on_fold_done=on_fold_done,
+            )
 
-            # â”€â”€ Auto prediksi GIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            _progress[config_id] = {'phase': 'predicting', 'pct': 100}
-
-            predict_results = cnn_service.predict_all(cfg_obj, base_dir)
-            PrediksiModel.query.filter_by(arsitektur_id=config_id).delete(synchronize_session=False)
-            for r in predict_results:
+            # Simpan PrediksiModel (OOF predictions untuk GIS overlay)
+            for r in results:
                 db.session.add(PrediksiModel.dari_hasil(config_id, r))
-            # Semua proses selesai â€” baru set status 'selesai'
+            db.session.commit()
+
+            # Simpan model_path (fold 0) & pred_type = 'cv'
             ArsitekturConfig.query.filter_by(id=config_id).update({
-                'status':    'selesai',
-                'pred_type': 'single',
+                'model_path': f'models/model_{config_id}_fold0.keras',
+                'pred_type': 'cv',
             })
             db.session.commit()
+
+            # Komputasi metrik agregatif (confusion matrix keseluruhan 5-fold CV)
+            cv = cv_summary(cfg)
+            if cv:
+                per_class_dict = {
+                    k: {
+                        'precision': cv['precision'][k],
+                        'recall': cv['recall'][k],
+                        'f1-score': cv['f1'][k],
+                    }
+                    for k in cv['f1']
+                }
+                macro_p = round(float(np.mean(list(cv['precision'].values()))), 1)
+                macro_r = round(float(np.mean(list(cv['recall'].values()))), 1)
+
+                _save_evaluasi(config_id, {
+                    'total_data_val': cv['n'],
+                    'akurasi': cv['akurasi'],
+                    'confusion_matrix': json.dumps(cv['confusion_matrix']),
+                    'per_class': per_class_dict,
+                    'macro': {
+                        'precision': macro_p,
+                        'recall': macro_r,
+                        'f1': cv['macro_f1'],
+                    },
+                })
+                db.session.commit()
+
+            # Semua proses selesai — baru set status 'selesai'
+            ArsitekturConfig.query.filter_by(id=config_id).update({
+                'status': 'selesai',
+            })
+            db.session.commit()
+
+            _progress[config_id] = {'phase': 'selesai', 'pct': 100}
+            _cv_progress.pop(config_id, None)
             db.session.remove()
 
         except Exception as e:
-            traceback.print_exc()  # log full traceback ke terminal Flask
+            traceback.print_exc()
             db.session.rollback()
             try:
                 ArsitekturConfig.query.filter_by(id=config_id).update({'status': 'gagal'})
